@@ -1,0 +1,442 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1024</width>
+    <height>700</height>
+   </rect>
+  </property>
+  <widget class="QWidget" name="mCentralWidget">
+   <layout class="QVBoxLayout" name="mMainWindowLayout">
+    <item>
+     <widget class="QTabWidget" name="mTabWidget">
+      <property name="currentIndex">
+       <number>-1</number>
+      </property>
+      <property name="documentMode">
+       <bool>true</bool>
+      </property>
+      <property name="tabsClosable">
+       <bool>true</bool>
+      </property>
+      <property name="movable">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="mMenuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1024</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="mFileMenu">
+    <property name="title">
+     <string>&amp;Файл</string>
+    </property>
+    <addaction name="mNewAction"/>
+    <addaction name="mOpenAction"/>
+    <addaction name="mSaveAction"/>
+    <addaction name="mSaveAsAction"/>
+    <addaction name="separator"/>
+    <addaction name="mCloseAction"/>
+    <addaction name="mCloseAllAction"/>
+    <addaction name="separator"/>
+    <addaction name="mExitAction"/>
+   </widget>
+   <widget class="QMenu" name="mViewMenu">
+    <property name="title">
+     <string>&amp;Вид</string>
+    </property>
+    <widget class="QMenu" name="mZoomMenu">
+     <property name="title">
+      <string>&amp;Масштаб</string>
+     </property>
+    </widget>
+    <addaction name="mZoomMenu"/>
+    <addaction name="mZoomInAction"/>
+    <addaction name="mZoomOutAction"/>
+   </widget>
+   <widget class="QMenu" name="mEditMenu">
+    <property name="title">
+     <string>&amp;Правка</string>
+    </property>
+    <addaction name="mUndoAction"/>
+    <addaction name="mRedoAction"/>
+    <addaction name="separator"/>
+    <addaction name="mCutAction"/>
+    <addaction name="mCopyAction"/>
+    <addaction name="mPasteAction"/>
+    <addaction name="mDeleteAction"/>
+    <addaction name="separator"/>
+    <addaction name="mSelectAllAction"/>
+    <addaction name="separator"/>
+    <addaction name="mOptionsAction"/>
+   </widget>
+   <widget class="QMenu" name="mObjectMenu">
+    <property name="title">
+     <string>&amp;Объект</string>
+    </property>
+    <addaction name="mBringToFrontAction"/>
+    <addaction name="mSendToBackAction"/>
+    <addaction name="mMoveUpAction"/>
+    <addaction name="mMoveDownAction"/>
+   </widget>
+   <addaction name="mFileMenu"/>
+   <addaction name="mEditMenu"/>
+   <addaction name="mViewMenu"/>
+   <addaction name="mObjectMenu"/>
+  </widget>
+  <widget class="QStatusBar" name="mStatusBar"/>
+  <widget class="QToolBar" name="mFileToolBar">
+   <property name="windowTitle">
+    <string>Файл</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="mNewAction"/>
+   <addaction name="mOpenAction"/>
+   <addaction name="mSaveAction"/>
+   <addaction name="mSaveAsAction"/>
+  </widget>
+  <widget class="QToolBar" name="mEditToolBar">
+   <property name="windowTitle">
+    <string>Правка</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="mUndoAction"/>
+   <addaction name="mRedoAction"/>
+   <addaction name="separator"/>
+   <addaction name="mCutAction"/>
+   <addaction name="mCopyAction"/>
+   <addaction name="mPasteAction"/>
+   <addaction name="mDeleteAction"/>
+  </widget>
+  <widget class="QToolBar" name="mViewToolBar">
+   <property name="windowTitle">
+    <string>Вид</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="mZoomInAction"/>
+   <addaction name="mZoomOutAction"/>
+  </widget>
+  <widget class="QToolBar" name="mObjectToolBar">
+   <property name="windowTitle">
+    <string>Объект</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="mBringToFrontAction"/>
+   <addaction name="mSendToBackAction"/>
+   <addaction name="mMoveUpAction"/>
+   <addaction name="mMoveDownAction"/>
+  </widget>
+  <action name="mNewAction">
+   <property name="icon">
+    <iconset resource="../res/resources.qrc">
+     <normaloff>:/images/file_new.png</normaloff>:/images/file_new.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Создать</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="mOpenAction">
+   <property name="icon">
+    <iconset resource="../res/resources.qrc">
+     <normaloff>:/images/file_open.png</normaloff>:/images/file_open.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Открыть...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="mSaveAction">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../res/resources.qrc">
+     <normaloff>:/images/file_save.png</normaloff>:/images/file_save.png</iconset>
+   </property>
+   <property name="text">
+    <string>Со&amp;хранить</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="mSaveAsAction">
+   <property name="icon">
+    <iconset resource="../res/resources.qrc">
+     <normaloff>:/images/file_save_as.png</normaloff>:/images/file_save_as.png</iconset>
+   </property>
+   <property name="text">
+    <string>Сохранить &amp;как...</string>
+   </property>
+  </action>
+  <action name="mExitAction">
+   <property name="text">
+    <string>В&amp;ыход</string>
+   </property>
+  </action>
+  <action name="mCloseAction">
+   <property name="text">
+    <string>&amp;Закрыть</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+W</string>
+   </property>
+  </action>
+  <action name="mCloseAllAction">
+   <property name="text">
+    <string>Закрыть &amp;все</string>
+   </property>
+  </action>
+  <action name="mUndoAction">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../res/resources.qrc">
+     <normaloff>:/images/edit_undo.png</normaloff>:/images/edit_undo.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Отменить</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Z</string>
+   </property>
+  </action>
+  <action name="mRedoAction">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../res/resources.qrc">
+     <normaloff>:/images/edit_redo.png</normaloff>:/images/edit_redo.png</iconset>
+   </property>
+   <property name="text">
+    <string>Пов&amp;торить</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+Z</string>
+   </property>
+  </action>
+  <action name="mCopyAction">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../res/resources.qrc">
+     <normaloff>:/images/edit_copy.png</normaloff>:/images/edit_copy.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Копировать</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+C</string>
+   </property>
+  </action>
+  <action name="mCutAction">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../res/resources.qrc">
+     <normaloff>:/images/edit_cut.png</normaloff>:/images/edit_cut.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Вырезать</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+X</string>
+   </property>
+  </action>
+  <action name="mPasteAction">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../res/resources.qrc">
+     <normaloff>:/images/edit_paste.png</normaloff>:/images/edit_paste.png</iconset>
+   </property>
+   <property name="text">
+    <string>Вст&amp;авить</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+V</string>
+   </property>
+  </action>
+  <action name="mDeleteAction">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../res/resources.qrc">
+     <normaloff>:/images/edit_delete.png</normaloff>:/images/edit_delete.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Удалить</string>
+   </property>
+   <property name="shortcut">
+    <string>Del</string>
+   </property>
+  </action>
+  <action name="mSelectAllAction">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>В&amp;ыделить все</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+A</string>
+   </property>
+  </action>
+  <action name="mOptionsAction">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Настройки...</string>
+   </property>
+  </action>
+  <action name="mZoomInAction">
+   <property name="icon">
+    <iconset resource="../res/resources.qrc">
+     <normaloff>:/images/zoom_in.png</normaloff>:/images/zoom_in.png</iconset>
+   </property>
+   <property name="text">
+    <string>У&amp;величить</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl++</string>
+   </property>
+  </action>
+  <action name="mZoomOutAction">
+   <property name="icon">
+    <iconset resource="../res/resources.qrc">
+     <normaloff>:/images/zoom_out.png</normaloff>:/images/zoom_out.png</iconset>
+   </property>
+   <property name="text">
+    <string>Ум&amp;еньшить</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+-</string>
+   </property>
+  </action>
+  <action name="mBringToFrontAction">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../res/resources.qrc">
+     <normaloff>:/images/bring_to_front.png</normaloff>:/images/bring_to_front.png</iconset>
+   </property>
+   <property name="text">
+    <string>На &amp;передний план</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Home</string>
+   </property>
+  </action>
+  <action name="mSendToBackAction">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../res/resources.qrc">
+     <normaloff>:/images/send_to_back.png</normaloff>:/images/send_to_back.png</iconset>
+   </property>
+   <property name="text">
+    <string>На &amp;задний план</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+End</string>
+   </property>
+  </action>
+  <action name="mMoveUpAction">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../res/resources.qrc">
+     <normaloff>:/images/move_up.png</normaloff>:/images/move_up.png</iconset>
+   </property>
+   <property name="text">
+    <string>Переместить в&amp;верх</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+PgUp</string>
+   </property>
+  </action>
+  <action name="mMoveDownAction">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../res/resources.qrc">
+     <normaloff>:/images/move_down.png</normaloff>:/images/move_down.png</iconset>
+   </property>
+   <property name="text">
+    <string>Переместить в&amp;низ</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+PgDown</string>
+   </property>
+  </action>
+ </widget>
+ <resources>
+  <include location="../res/resources.qrc"/>
+ </resources>
+ <connections>
+  <connection>
+   <sender>mExitAction</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>389</x>
+     <y>277</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
