@@ -66,10 +66,10 @@ public:
 	virtual QStringList getMissedTextures() const;
 
 	// Заменяет текстуру в слое
-	virtual void changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture);
+	virtual QList<GameObject *> changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture);
 
 	// Отрисовывает слой
-	virtual void draw();
+	virtual void draw(bool ignoreVisibleState = false);
 
 private:
 

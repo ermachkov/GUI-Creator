@@ -312,7 +312,7 @@ QStringList EditorWindow::getMissedTextures() const
 void EditorWindow::changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture)
 {
 	// заменяем текстуры во всех объектах
-	mLocation->getRootLayer()->changeTexture(fileName, texture);
+	QList<GameObject *> objects = mLocation->getRootLayer()->changeTexture(fileName, texture);
 
 	// обновляем текущее выделение
 	selectGameObjects(mSelectedObjects);
@@ -320,6 +320,15 @@ void EditorWindow::changeTexture(const QString &fileName, const QSharedPointer<T
 	// обновляем координаты центра вращения
 	if (mRotationMode)
 		mOriginalCenter = mSnappedCenter = mSelectedObjects.size() == 1 ? mSelectedObjects.front()->getRotationCenter() : mOriginalRect.center();
+
+	// формируем список измененных слоев
+	QSet<BaseLayer *> layers;
+	foreach (GameObject *object, objects)
+		layers |= object->getParentLayer();
+
+	// выдаем сигналы об изменении слоев
+	foreach (BaseLayer *layer, layers)
+		emit layerChanged(mLocation, layer);
 }
 
 void EditorWindow::initializeGL()
@@ -1055,7 +1064,7 @@ void EditorWindow::emitLayerChangedSignals(const QSet<BaseLayer *> &layers)
 	mChanged = true;
 	emit locationChanged(mChanged);
 	foreach (BaseLayer *layer, layers)
-		emit layerChanged(layer);
+		emit layerChanged(mLocation, layer);
 }
 
 EditorWindow::SelectionMarker EditorWindow::findSelectionMarker(const QPointF &pos) const

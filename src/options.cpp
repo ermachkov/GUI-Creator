@@ -8,7 +8,7 @@ Options::Options(QSettings &settings)
 {
 	settings.beginGroup("/General");
 	mDataDirectory = Utils::addTrailingSlash(settings.value("/DataDirectory", QDir::currentPath()).toString());
-	mLastDirectory = Utils::addTrailingSlash(settings.value("/LastDirectory").toString());
+	mLastDirectory = Utils::addTrailingSlash(settings.value("/LastDirectory", QDir::currentPath()).toString());
 	mRecentFiles = settings.value("/RecentFiles").toStringList();
 	settings.endGroup();
 }

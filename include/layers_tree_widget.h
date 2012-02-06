@@ -54,7 +54,7 @@ public slots:
 	void onDelete();
 
 	// обработчик - произошли изменения в окне редактирования
-	void onEditorWindowLayerChanged(BaseLayer *layer);
+	void onEditorWindowLayerChanged(Location *location, BaseLayer *layer);
 
 protected:
 

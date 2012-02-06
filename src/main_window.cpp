@@ -46,6 +46,10 @@ MainWindow::MainWindow()
 	mRecentFilesSeparator = mFileMenu->insertSeparator(mExitAction);
 	updateRecentFilesActions("");
 
+	// настраиваем акселераторы по Alt для пунктов меню плавающих окон
+	mSpriteBrowser->toggleViewAction()->setText("&Спрайты");
+	mLayersWindow->toggleViewAction()->setText("С&лои");
+
 	// добавляем в меню Вид пункты для плавающих окон
 	QAction *zoomAction = mZoomMenu->menuAction();
 	mViewMenu->insertAction(zoomAction, mSpriteBrowser->toggleViewAction());
@@ -553,7 +557,7 @@ EditorWindow *MainWindow::createEditorWindow(const QString &fileName)
 	connect(editorWindow, SIGNAL(selectionChanged(bool)), this, SLOT(onEditorWindowSelectionChanged(bool)));
 	connect(editorWindow, SIGNAL(locationChanged(bool)), this, SLOT(onEditorWindowLocationChanged(bool)));
 	connect(editorWindow, SIGNAL(mouseMoved(const QPointF &)), this, SLOT(onEditorWindowMouseMoved(const QPointF &)));
-	connect(editorWindow, SIGNAL(layerChanged(BaseLayer *)), mLayersWindow, SIGNAL(layerChanged(BaseLayer *)));
+	connect(editorWindow, SIGNAL(layerChanged(Location *, BaseLayer *)), mLayersWindow, SIGNAL(layerChanged(Location *, BaseLayer *)));
 
 	// активируем нужные пункты меню
 	mSaveAsAction->setEnabled(true);

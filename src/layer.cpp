@@ -202,17 +202,20 @@ QStringList Layer::getMissedTextures() const
 	return list;
 }
 
-void Layer::changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture)
+QList<GameObject *> Layer::changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture)
 {
 	// заменяем текстуру во всех дочерних объектах
+	QList<GameObject *> objects;
 	foreach (GameObject *object, mGameObjects)
-		object->changeTexture(fileName, texture);
+		if (object->changeTexture(fileName, texture))
+			objects.push_back(object);
+	return objects;
 }
 
-void Layer::draw()
+void Layer::draw(bool ignoreVisibleState)
 {
 	// отрисовываем все объекты в слое от нижнего к верхнему, если слой видим
-	if (mVisibleState == LAYER_VISIBLE)
+	if (ignoreVisibleState || mVisibleState == LAYER_VISIBLE)
 	{
 		for (int i = mGameObjects.size() - 1; i >= 0; --i)
 			mGameObjects[i]->draw();

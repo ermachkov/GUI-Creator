@@ -43,6 +43,18 @@ QString Utils::convertToPascalCase(const QString &fileName)
 	return str;
 }
 
+bool Utils::fileExists(const QString &path)
+{
+	// проверяем, что файл существует с точностью до регистра символов
+	if (QFile::exists(path))
+	{
+		QFileInfo fileInfo(path);
+		return fileInfo.dir().entryList().contains(fileInfo.fileName());
+	}
+
+	return false;
+}
+
 QString Utils::insertBackslashes(const QString &text)
 {
 	// вставляем обратный слэш перед одинарными и двойными кавычками, а также перед самим обратным слэшем

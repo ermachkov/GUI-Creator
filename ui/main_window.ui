@@ -36,7 +36,7 @@
      <x>0</x>
      <y>0</y>
      <width>1024</width>
-     <height>21</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="mFileMenu">
@@ -99,7 +99,7 @@
   <widget class="QStatusBar" name="mStatusBar"/>
   <widget class="QToolBar" name="mFileToolBar">
    <property name="windowTitle">
-    <string>Файл</string>
+    <string>&amp;Файл</string>
    </property>
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>
@@ -114,7 +114,7 @@
   </widget>
   <widget class="QToolBar" name="mEditToolBar">
    <property name="windowTitle">
-    <string>Правка</string>
+    <string>&amp;Правка</string>
    </property>
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>
@@ -132,7 +132,7 @@
   </widget>
   <widget class="QToolBar" name="mViewToolBar">
    <property name="windowTitle">
-    <string>Вид</string>
+    <string>&amp;Вид</string>
    </property>
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>
@@ -145,7 +145,7 @@
   </widget>
   <widget class="QToolBar" name="mObjectToolBar">
    <property name="windowTitle">
-    <string>Объект</string>
+    <string>&amp;Объект</string>
    </property>
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>

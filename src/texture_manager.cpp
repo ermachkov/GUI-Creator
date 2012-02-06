@@ -60,9 +60,9 @@ QSharedPointer<Texture> TextureManager::loadTexture(const QString &fileName, boo
 
 	// не нашли в кэше - загружаем текстуру из файла
 	QSharedPointer<Texture> texture;
+	QImage image;
 	QString path = Options::getSingleton().getDataDirectory() + fileName;
-	QImage image(path);
-	if (!image.isNull())
+	if (Utils::fileExists(path) && !(image = QImage(path)).isNull())
 	{
 		// добавляем файл на слежение
 		if (!mWatcher->files().contains(path))
@@ -95,7 +95,7 @@ void TextureManager::timerEvent(QTimerEvent *event)
 			if (it->mTexture == mDefaultTexture)
 			{
 				// если файл текстуры был удален, а потом восстановлен, отправляем текстуру на загрузку
-				if (QFile::exists(path))
+				if (Utils::fileExists(path))
 					emit textureQueued(it.key());
 			}
 			else if (it->mChanged)
@@ -104,7 +104,7 @@ void TextureManager::timerEvent(QTimerEvent *event)
 				if (it->mTimer.hasExpired(250))
 				{
 					it->mChanged = false;
-					if (QFile::exists(path))
+					if (Utils::fileExists(path))
 						emit textureQueued(it.key());
 					else
 						onTextureLoaded(it.key(), QSharedPointer<Texture>());

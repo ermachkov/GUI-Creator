@@ -117,14 +117,17 @@ QStringList Sprite::getMissedTextures() const
 	return mTexture == TextureManager::getSingleton().getDefaultTexture() ? QStringList(mFileName) : QStringList();
 }
 
-void Sprite::changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture)
+bool Sprite::changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture)
 {
 	// заменяем текстуру спрайта, если она совпадает с текущей
 	if (mFileName == fileName)
 	{
 		mTexture = texture;
 		setSize(mTexture->getSize());
+		return true;
 	}
+
+	return false;
 }
 
 void Sprite::draw()

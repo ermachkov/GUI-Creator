@@ -86,7 +86,7 @@ public:
 	virtual QStringList getMissedTextures() const = 0;
 
 	// Заменяет текстуру в объекте
-	virtual void changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture) = 0;
+	virtual bool changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture) = 0;
 
 	// Отрисовывает объект
 	virtual void draw() = 0;

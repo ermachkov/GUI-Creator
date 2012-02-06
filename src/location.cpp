@@ -83,8 +83,8 @@ bool Location::save(const QString &fileName)
 
 	// сохраняем последовательность индексов, ведущую к активному слою
 	QStringList indices;
-	for (BaseLayer *layer = mActiveLayer; layer != mRootLayer; layer = layer->getParent())
-		indices.push_front(QString::number(layer->getParent()->indexOfChildLayer(layer)));
+	for (BaseLayer *layer = mActiveLayer; layer != mRootLayer; layer = layer->getParentLayer())
+		indices.push_front(QString::number(layer->getParentLayer()->indexOfChildLayer(layer)));
 	stream << endl << "activeLayer = {" << indices.join(", ") << "}" << endl;
 
 	// сохраняем счетчики слоев и групп для генерации имен

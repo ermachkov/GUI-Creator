@@ -169,17 +169,19 @@ QStringList LayerGroup::getMissedTextures() const
 	return list;
 }
 
-void LayerGroup::changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture)
+QList<GameObject *> LayerGroup::changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture)
 {
 	// заменяем текстуру во всех дочерних слоях
+	QList<GameObject *> objects;
 	foreach (BaseLayer *layer, mChildLayers)
-		layer->changeTexture(fileName, texture);
+		objects.append(layer->changeTexture(fileName, texture));
+	return objects;
 }
 
-void LayerGroup::draw()
+void LayerGroup::draw(bool ignoreVisibleState)
 {
 	// отрисовываем все дочерние слои от нижнего к верхнему, если группа слоев видима
-	if (mVisibleState == LAYER_VISIBLE)
+	if (ignoreVisibleState || mVisibleState == LAYER_VISIBLE)
 	{
 		for (int i = mChildLayers.size() - 1; i >= 0; --i)
 			mChildLayers[i]->draw();

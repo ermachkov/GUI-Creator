@@ -69,7 +69,7 @@ public:
 	void setThumbnail(const QIcon &thumbnail);
 
 	// Возвращает родительский слой
-	BaseLayer *getParent() const;
+	BaseLayer *getParentLayer() const;
 
 	// Устанавливает родительский слой
 	void setParentLayer(BaseLayer *parent);
@@ -126,10 +126,10 @@ public:
 	virtual QStringList getMissedTextures() const = 0;
 
 	// Заменяет текстуру в слое
-	virtual void changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture) = 0;
+	virtual QList<GameObject *> changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture) = 0;
 
 	// Отрисовывает слой
-	virtual void draw() = 0;
+	virtual void draw(bool ignoreVisibleState = false) = 0;
 
 protected:
 

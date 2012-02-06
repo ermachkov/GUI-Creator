@@ -28,7 +28,7 @@ signals:
 	void layerChanged();
 
 	// Сигнал об изменении слоя в окне редактирования
-	void layerChanged(BaseLayer *);
+	void layerChanged(Location *location, BaseLayer *layer);
 };
 
 #endif // LAYERS_WINDOW_H

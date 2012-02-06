@@ -3,6 +3,7 @@
 
 #include "options.h"
 #include "texture.h"
+#include "utils.h"
 
 // Класс для загрузки текстур в фоновом потоке
 class TextureLoader : public QObject
@@ -24,8 +25,9 @@ public slots:
 	{
 		// загружаем текстуру и отправляем сигнал о завершении загрузки
 		QSharedPointer<Texture> texture;
-		QImage image(Options::getSingleton().getDataDirectory() + fileName);
-		if (!image.isNull())
+		QImage image;
+		QString path = Options::getSingleton().getDataDirectory() + fileName;
+		if (Utils::fileExists(path) && !(image = QImage(path)).isNull())
 		{
 			mSecondaryGLWidget->makeCurrent();
 			texture = QSharedPointer<Texture>(new Texture(image, mPrimaryGLWidget));

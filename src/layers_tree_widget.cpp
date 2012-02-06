@@ -218,14 +218,15 @@ void LayersTreeWidget::onDelete()
 	DEBUG_TREES();
 }
 
-void LayersTreeWidget::onEditorWindowLayerChanged(BaseLayer *layer)
+void LayersTreeWidget::onEditorWindowLayerChanged(Location *location, BaseLayer *layer)
 {
+	// генерируем иконку предпросмотра
 	QIcon icon = createLayerIcon(layer);
+	layer->setThumbnail(icon);
 
-	QTreeWidgetItem *item = findByBaseLayer(layer);
-
-	if (item)
-		item->setIcon(DATA_COLUMN, icon);
+	// устанавливаем иконку для item, если локация текущая
+	if (mCurrentLocation == location)
+		findByBaseLayer(layer)->setIcon(DATA_COLUMN, icon);
 }
 
 void LayersTreeWidget::dragEnterEvent(QDragEnterEvent *event)
@@ -689,10 +690,15 @@ void LayersTreeWidget::createTreeItems(QTreeWidgetItem *item, BaseLayer *base)
 
 	// формирование иконки предпросмотра
 	QIcon icon;
-	if (isLayerGroup(item))
-		icon = mLayerGroupIcon;
+	if (base->getThumbnail().isNull())
+	{
+		icon = isLayerGroup(item) ? mLayerGroupIcon : createLayerIcon(base);
+		base->setThumbnail(icon);
+	}
 	else
-		icon = base->getThumbnail().isNull() ? createLayerIcon(base) : base->getThumbnail();
+	{
+		icon = base->getThumbnail();
+	}
 
 	// установка иконки предпросмотра слоя
 	item->setIcon(DATA_COLUMN, icon);
@@ -905,15 +911,14 @@ QIcon LayersTreeWidget::createLayerIcon(BaseLayer *baseLayer)
 	// настройка смешивания
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	QRectF rect = baseLayer->getBoundingRect();
-
-	float scale = qMin(WIDTH_THUMBNAIL / rect.width(), HEIGHT_THUMBNAIL / rect.height());
 	// центровка с масштабированием
-	glScalef(scale, scale, 1.0f);
-	glTranslatef(-rect.left() + (WIDTH_THUMBNAIL / scale - rect.width()) / 2.0f,
-		-rect.top() + (HEIGHT_THUMBNAIL / scale - rect.height()) / 2.0f, 0.0f);
+	QRectF rect = baseLayer->getBoundingRect();
+	qreal scale = qMin(WIDTH_THUMBNAIL / rect.width(), HEIGHT_THUMBNAIL / rect.height());
+	glScaled(scale, scale, 1.0);
+	glTranslated(-rect.left() + (WIDTH_THUMBNAIL / scale - rect.width()) / 2.0,
+		-rect.top() + (HEIGHT_THUMBNAIL / scale - rect.height()) / 2.0, 0.0);
 
-	baseLayer->draw();
+	baseLayer->draw(true);
 	QImage image = mFrameBuffer->toImage();
 	mFrameBuffer->release();
 

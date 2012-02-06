@@ -27,6 +27,9 @@ public:
 	// Конвертирует правильное имя файла в стиль Pascal
 	static QString convertToPascalCase(const QString &fileName);
 
+	// Проверяет существование файла с чувствительностью к регистру
+	static bool fileExists(const QString &path);
+
 	// Экранирует специальные символы в строке обратными слэшами
 	static QString insertBackslashes(const QString &text);
 

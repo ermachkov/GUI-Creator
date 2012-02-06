@@ -85,7 +85,7 @@ void BaseLayer::setThumbnail(const QIcon &thumbnail)
 	mThumbnail = thumbnail;
 }
 
-BaseLayer *BaseLayer::getParent() const
+BaseLayer *BaseLayer::getParentLayer() const
 {
 	return mParentLayer;
 }
@@ -139,7 +139,7 @@ void BaseLayer::addChildLayer(BaseLayer *layer)
 
 void BaseLayer::insertChildLayer(int index, BaseLayer *layer)
 {
-	if (layer->getParent() == NULL)
+	if (layer->getParentLayer() == NULL)
 	{
 		layer->setParentLayer(this);
 		mChildLayers.insert(index, layer);

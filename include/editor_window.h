@@ -97,7 +97,7 @@ signals:
 	void mouseMoved(const QPointF &pos);
 
 	// Сигнал об изменении слоя
-	void layerChanged(BaseLayer *layer);
+	void layerChanged(Location *location, BaseLayer *layer);
 
 protected:
 
