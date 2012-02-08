@@ -37,7 +37,7 @@ bool Location::load(const QString &fileName)
 	script.popTable();
 
 	// устанавливаем активный слой
-	int length;
+	int length = 0;
 	if (!script.pushTable("activeLayer") || (length = script.getLength()) == 0)
 		return false;
 

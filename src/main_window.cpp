@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "main_window.h"
 #include "editor_window.h"
+#include "font_manager.h"
 #include "layers_window.h"
 #include "options.h"
 #include "sprite_browser.h"
@@ -25,6 +26,7 @@ MainWindow::MainWindow()
 	// создаем синглетоны
 	QSettings settings;
 	new Options(settings);
+	new FontManager();
 	new TextureManager(mPrimaryGLWidget, mSecondaryGLWidget);
 
 	// создаем браузер спрайтов
@@ -149,7 +151,10 @@ MainWindow::~MainWindow()
 	// удаляем объекты редактора в нужном порядке
 	delete mSpriteBrowser;
 	delete mLayersWindow;
+
+	// удаляем синглетоны в последнюю очередь
 	TextureManager::destroy();
+	FontManager::destroy();
 	Options::destroy();
 }
 

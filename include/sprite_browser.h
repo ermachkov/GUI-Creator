@@ -13,13 +13,18 @@ public:
 
 	SpriteBrowser(QWidget *parent = NULL);
 
+protected:
+
+	// Вызывается по срабатыванию таймера
+	virtual void timerEvent(QTimerEvent *event);
+
 private slots:
 
 	// Обработчик двойного щелчка или Enter по элементу
 	void on_mListWidget_itemActivated(QListWidgetItem *item);
 
 	// слот о загруженности иконки - обновление иконки
-	void onThumbnailLoaded(QString absoluteFileName, QImage image, QFileInfo fileInfo);
+	void onThumbnailLoaded(QString absoluteFileName, QImage image);
 
 	// слот об ошибке при загрузке иконки
 	void onThumbnailNotLoaded(QString absoluteFileName);
@@ -35,27 +40,64 @@ private:
 	// Создает и инициализирует все виджеты на плавающем окне
 	void createWidgets();
 
+	// возврат из опций текущей коренной директории
+	QString getRootPath() const;
+
 	// Пересоздание объекта слежения за каталогом
 	void recreateWatcher();
 
 	// Обновление отображения текущего каталога
-	void update();
-
-	// возврат из опций текущей коренной директории
-	QString getRootPath() const;
+	void update(QString oldPath, QString newPath);
 
 private:
 
-	struct IconWithInfo
+	class IconWithInfo
 	{
-		IconWithInfo(const QIcon &icon, qint64 fileSize, const QDateTime &fileDate)
-		: mIcon(icon), mFileSize(fileSize), mFileDate(fileDate)
+	public:
+		//IconWithInfo(const QIcon &icon, qint64 fileSize, const QDateTime &fileDate)
+		//: mIcon(icon), mFileSize(fileSize), mFileDate(fileDate), mChanged(false)
+		IconWithInfo(const QIcon &icon, bool isIconLoaded)
+		: mIcon(icon), mIconLoaded(isIconLoaded), mFileSize(-1), mChanged(false)
 		{
 		}
 
-		QIcon mIcon;
-		qint64 mFileSize;
-		QDateTime mFileDate;
+		// проверка что иконка загружена
+		bool isIconLoaded() const;
+
+		// установка иконки
+		void setIcon(const QIcon &icon, bool isIconLoaded);
+
+		QIcon getIcon() const;
+
+		void setFileSize(qint64 fileSize);
+
+		qint64 getFileSize() const;
+
+		void setFileDate(const QDateTime &fileDate);
+
+		QDateTime getFileDate() const;
+
+		// установка отложеной загрузки
+		// ...
+
+		// установка немедленной загрузки
+		// ...
+
+		// установка флага изменения иконки
+		void setChanged(bool isChanged);
+
+		bool isChanged() const;
+
+		bool isTimerFinished() const;
+
+	private:
+
+		QIcon             mIcon;       // Готовая иконка
+		bool              mIconLoaded; // Флаг о загруженности иконки
+		qint64            mFileSize;   // Размер файла
+		QDateTime         mFileDate;   // Дата изменения файла
+		bool              mChanged;    // Флаг изменения иконки
+		QElapsedTimer     mTimer;      // Таймер для отсчета времени с момента последнего изменения файла
 	};
 
 	// путь относительно корневой директории
@@ -70,8 +112,11 @@ private:
 	QIcon mIconSpriteLoading;
 	QIcon mIconSpriteError;
 
+	// Тип для кэша иконок
+	typedef QMap<QString, IconWithInfo> ThumbnailCache;
+
 	ThumbnailLoader *mThumbnailLoader;           // нить для подгрузки спрайтов в фоне
-	QMap<QString, IconWithInfo> mThumbnailCache; // кеш для хранения загруженых иконок
+	ThumbnailCache mThumbnailCache;              // кеш для хранения загруженых иконок
 };
 
 #endif // SPRITE_BROWSER_H

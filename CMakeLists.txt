@@ -15,6 +15,7 @@ set(PRECOMPILED_HEADER include/pch.h)
 set(SOURCES
 	src/base_layer.cpp
 	src/editor_window.cpp
+	src/font_manager.cpp
 	src/game_object.cpp
 	src/layer.cpp
 	src/layer_group.cpp
@@ -36,6 +37,7 @@ set(HEADERS
 	${PRECOMPILED_HEADER}
 	include/base_layer.h
 	include/editor_window.h
+	include/font_manager.h
 	include/game_object.h
 	include/layer.h
 	include/layer_group.h
@@ -62,6 +64,9 @@ set(FORMS
 set(RESOURCES
 	res/resources.qrc)
 
+# задаем путь для поиска дополнительных модулей CMake
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
 # включаем каталог с заголовочными файлами и каталог сборки CMake, куда помещаются сгенерированные moc файлы
 include_directories("include" ${CMAKE_BINARY_DIR})
 
@@ -75,15 +80,15 @@ foreach(DEPS_DIR ${DEPS_DIRS})
 endforeach()
 
 # ищем Qt
-find_package(Qt4 REQUIRED QtCore QtGui QtOpenGL)
+find_package(Qt4 4.8 REQUIRED QtCore QtGui QtOpenGL)
 include(${QT_USE_FILE})
 qt4_wrap_cpp(MOC_SOURCES ${HEADERS} OPTIONS -nw)
 qt4_wrap_ui(UIC_SOURCES ${FORMS})
 qt4_add_resources(QRC_SOURCES ${RESOURCES})
 
-# ищем OpenGL
-find_package(OpenGL REQUIRED)
-include_directories(${OPENGL_INCLUDE_DIR})
+# ищем FTGL
+find_package(FTGL REQUIRED)
+include_directories(${FTGL_INCLUDE_DIRS})
 
 # ищем Lua 5.1
 find_package(Lua51 REQUIRED)
@@ -165,4 +170,4 @@ source_group("Generated Files" FILES ${MOC_SOURCES} ${UIC_SOURCES} ${QRC_SOURCES
 
 # добавляем исполняемый файл в проект
 add_executable(${PROJECT} WIN32 ${SOURCES} ${HEADERS} ${MOC_SOURCES} ${UIC_SOURCES} ${QRC_SOURCES})
-target_link_libraries(${PROJECT} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${OPENGL_LIBRARIES} ${LUA_LIBRARIES})
+target_link_libraries(${PROJECT} ${QT_LIBRARIES} ${QT_QTMAIN_LIBRARY} ${FTGL_LIBRARIES} ${LUA_LIBRARIES})

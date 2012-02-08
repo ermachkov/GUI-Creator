@@ -48,4 +48,4 @@ private:
 	int         mTableIndex;    // Индекс текущей таблицы в стеке
 };
 
-#endif
+#endif // LUA_SCRIPT_H

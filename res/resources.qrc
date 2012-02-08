@@ -33,5 +33,6 @@
         <file>images/move_up.png</file>
         <file>images/send_to_back.png</file>
         <file>images/default_texture.jpg</file>
+        <file>default_font.ttf</file>
     </qresource>
 </RCC>

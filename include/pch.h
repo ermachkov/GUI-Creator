@@ -10,6 +10,9 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 
+// FTGL
+#include <FTGL/ftgl.h>
+
 // Lua
 #include <lua.hpp>
 

@@ -108,17 +108,12 @@ void ThumbnailLoader::run()
 			// рассчет смещения для создания центровки
 			QPoint topLeft((centredImage.width() - image.width()) / 2, (centredImage.height() - image.height()) / 2);
 			painter.drawImage(topLeft, image);
-			// получение информации о файле
-			QFileInfo fileInfo(absoluteFileName);
-
-//			fileInfo.size();
-//			fileInfo.
 
 			// TODO:
 			// разблокировка загружаемого файла
 			//..
 
-			emit thumbnailLoaded(absoluteFileName, centredImage, fileInfo);
+			emit thumbnailLoaded(absoluteFileName, centredImage);
 		}
 	}
 }

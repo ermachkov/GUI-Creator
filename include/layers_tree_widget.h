@@ -84,6 +84,9 @@ private slots:
 
 private:
 
+	// Максимальное количество вложенных слоев
+	static const int MAX_NESTED_LAYERS = 16;
+
 	// Делегат для запрещения редактирования названия колонок
 	class EditorDelegate : public QItemDelegate
 	{
@@ -96,7 +99,6 @@ private:
 
 		virtual void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const;
 	};
-
 
 	// добавление группы
 	QTreeWidgetItem *insertNewLayerGroup(int index, QTreeWidgetItem *parent);

@@ -14,6 +14,9 @@ EditorWindow::EditorWindow(QWidget *parent, QGLWidget *shareWidget, const QStrin
 	setFocusPolicy(Qt::StrongFocus);
 	setMouseTracking(true);
 
+	// запрещаем очистку фона перед рисованием
+	setAutoFillBackground(false);
+
 	// разрешаем бросание объектов
 	setAcceptDrops(true);
 

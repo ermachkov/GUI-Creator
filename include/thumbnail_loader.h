@@ -16,8 +16,9 @@ public:
 	void clearQueueLoadingFiles();
 
 signals:
+
 	// сигнал об окончании загрузки и преобразования картинки в иконку
-	void thumbnailLoaded(QString absolutePath, QImage image, QFileInfo fileInfo);
+	void thumbnailLoaded(QString absolutePath, QImage image);
 
 	// сигнал об ошибке загрузки картинки для иконки
 	void thumbnailNotLoaded(QString absolutePath);

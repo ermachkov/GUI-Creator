@@ -52,4 +52,4 @@ public:
 	static void drawCircle(const QPointF &center, qreal radius, const QColor &color);
 };
 
-#endif
+#endif // UTILS_H
