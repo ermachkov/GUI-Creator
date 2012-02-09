@@ -84,9 +84,6 @@ private slots:
 
 private:
 
-	// Максимальное количество вложенных слоев
-	static const int MAX_NESTED_LAYERS = 16;
-
 	// Делегат для запрещения редактирования названия колонок
 	class EditorDelegate : public QItemDelegate
 	{

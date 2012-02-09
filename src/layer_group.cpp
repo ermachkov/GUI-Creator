@@ -17,10 +17,10 @@ LayerGroup::LayerGroup(const LayerGroup &group)
 {
 }
 
-bool LayerGroup::load(LuaScript &script)
+bool LayerGroup::load(LuaScript &script, int depth)
 {
 	// загружаем общие свойства слоя
-	if (!BaseLayer::load(script))
+	if (!BaseLayer::load(script, depth))
 		return false;
 
 	// загружаем дочерние слои
@@ -28,11 +28,8 @@ bool LayerGroup::load(LuaScript &script)
 	for (int i = 1; i <= length; ++i)
 	{
 		// заходим в текущую таблицу
-		script.pushTable(i);
-
-		// определяем тип дочернего слоя
 		QString type;
-		if (!script.getString("type", type))
+		if (!script.pushTable(i) || !script.getString("type", type))
 			return false;
 
 		// создаем дочерний слой
@@ -48,7 +45,7 @@ bool LayerGroup::load(LuaScript &script)
 		addChildLayer(layer);
 
 		// загружаем дочерний слой
-		if (!layer->load(script))
+		if (!layer->load(script, depth + 1))
 			return false;
 
 		// выходим из текущей таблицы

@@ -1,42 +1,65 @@
 #ifndef THUMBNAIL_LOADER_H
 #define THUMBNAIL_LOADER_H
 
-class ThumbnailLoader : public QThread
+// Класс для загрузки и создания миниатюр в фоновом потоке
+class ThumbnailLoader : public QObject
 {
 	Q_OBJECT
 
 public:
-	explicit ThumbnailLoader(QObject *parent = NULL);
-	virtual ~ThumbnailLoader();
 
-	// Добавление пути в список для загрузки и старт/пробуждение фонового потока
-	void addFileForLoading(const QString &absoluteFileName);
+	// Конструктор
+	ThumbnailLoader()
+	: mThumbnailCount(0)
+	{
+	}
 
-	// Отчистка списка файлов на загрузку
-	void clearQueueLoadingFiles();
+	// Устанавливает счетчик миниатюр
+	void setThumbnailCount(int count)
+	{
+		mThumbnailCount = count;
+	}
+
+public slots:
+
+	// Обработчик сигнала добавления изображения в очередь на загрузку
+	void onThumbnailQueued(QString absoluteFileName, int count)
+	{
+		// если значения переданного и собственного счетчика совпадают, увеличиваем свой счетчик на единицу и загружаем спрайт
+		if (mThumbnailCount.testAndSetOrdered(count, count + 1))
+		{
+			// загрузка спрайта
+			QImage sourceImage(absoluteFileName);
+			QImage centeredImage;
+			if (!sourceImage.isNull())
+			{
+				// пережатие спрайта
+				QImage scaledImage = sourceImage.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+				// создаем новую иконку и заливаем ее прозрачным черным цветом
+				centeredImage = QImage(64, 64, QImage::Format_ARGB32_Premultiplied);
+				centeredImage.fill(QColor(0, 0, 0, 0));
+
+				// центровка спрайта
+				QPainter painter(&centeredImage);
+				QPoint topLeft((centeredImage.width() - scaledImage.width()) / 2, (centeredImage.height() - scaledImage.height()) / 2);
+				painter.drawImage(topLeft, scaledImage);
+			}
+
+			// посылаем сигнал о завершении загрузки
+			emit thumbnailLoaded(absoluteFileName, centeredImage);
+		}
+	}
 
 signals:
 
-	// сигнал об окончании загрузки и преобразования картинки в иконку
-	void thumbnailLoaded(QString absolutePath, QImage image);
-
-	// сигнал об ошибке загрузки картинки для иконки
-	void thumbnailNotLoaded(QString absolutePath);
-
-protected:
-	virtual void run();
+	// Сигнал о завершении загрузки миниатюры
+	void thumbnailLoaded(QString absoluteFileName, QImage image);
 
 private:
-	// семафор для пробуждения нити
-	QSemaphore mWakeSemaphore;
 
-	// семафор для защиты очереди
-	QSemaphore mQueueSemaphore;
-
-	// очередь на загрузку изображений для иконок
-	QQueue<QString> mQueuePaths;
-
-	QAtomicInt mQuit;
+	// Счетчик загруженных миниатюр
+	QAtomicInt mThumbnailCount;
 };
 
 #endif // THUMBNAIL_LOADER_H

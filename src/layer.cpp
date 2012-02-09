@@ -61,10 +61,10 @@ void Layer::removeGameObject(int index)
 	mGameObjects.takeAt(index)->setParentLayer(NULL);
 }
 
-bool Layer::load(LuaScript &script)
+bool Layer::load(LuaScript &script, int depth)
 {
 	// загружаем общие свойства слоя
-	if (!BaseLayer::load(script))
+	if (!BaseLayer::load(script, depth))
 		return false;
 
 	// загружаем дочерние объекты
@@ -72,11 +72,8 @@ bool Layer::load(LuaScript &script)
 	for (int i = 1; i <= length; ++i)
 	{
 		// заходим в текущую таблицу
-		script.pushTable(i);
-
-		// определяем тип дочернего объекта
 		QString type;
-		if (!script.getString("type", type))
+		if (!script.pushTable(i) || !script.getString("type", type))
 			return false;
 
 		// создаем дочерний объект

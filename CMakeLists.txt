@@ -30,7 +30,6 @@ set(SOURCES
 	src/sprite_browser.cpp
 	src/texture.cpp
 	src/texture_manager.cpp
-	src/thumbnail_loader.cpp
 	src/utils.cpp)
 
 set(HEADERS

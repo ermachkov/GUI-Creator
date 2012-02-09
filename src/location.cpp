@@ -32,7 +32,7 @@ bool Location::load(const QString &fileName)
 
 	// читаем таблицу слоев
 	QString type;
-	if (!script.pushTable("layers") || script.getLength() == 0 || !script.getString("type", type) || type != "LayerGroup" || !mRootLayer->load(script))
+	if (!script.pushTable("layers") || script.getLength() == 0 || !script.getString("type", type) || type != "LayerGroup" || !mRootLayer->load(script, 0))
 		return false;
 	script.popTable();
 

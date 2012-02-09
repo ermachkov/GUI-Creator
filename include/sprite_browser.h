@@ -11,7 +11,16 @@ class SpriteBrowser : public QDockWidget, private Ui::SpriteBrowser
 
 public:
 
+	// Конструктор
 	SpriteBrowser(QWidget *parent = NULL);
+
+	// Деструктор
+	virtual ~SpriteBrowser();
+
+signals:
+
+	// Сигнал добавления спрайта в очередь на загрузку в фоновом потоке
+	void thumbnailQueued(QString absoluteFileName, int count);
 
 protected:
 
@@ -25,9 +34,6 @@ private slots:
 
 	// слот о загруженности иконки - обновление иконки
 	void onThumbnailLoaded(QString absoluteFileName, QImage image);
-
-	// слот об ошибке при загрузке иконки
-	void onThumbnailNotLoaded(QString absoluteFileName);
 
 	// слот об изменении списка файлов внутри текущей директории
 	void onDirectoryChanged(const QString &path);
@@ -100,23 +106,21 @@ private:
 		QElapsedTimer     mTimer;      // Таймер для отсчета времени с момента последнего изменения файла
 	};
 
-	// путь относительно корневой директории
-	QString mRelativePath;
+	// Тип для кэша иконок
+	typedef QMap<QString, IconWithInfo> ThumbnailCache;
 
-	// слежение за текущей директорией
-	QFileSystemWatcher *mWatcher;
+	QString             mRelativePath;          // Путь относительно корневой директории
+	QFileSystemWatcher  *mWatcher;              // Объект слежения за текущей директорией
+	QThread             *mBackgroundThread;     // Фоновый поток
+	ThumbnailLoader     *mThumbnailLoader;      // Загрузчик миниатюр
+	int                 mThumbnailCount;        // Счетчик загруженных миниатюр
+	ThumbnailCache      mThumbnailCache;        // Кэш для хранения загруженных иконок
 
-	// иконки для отображения директорий и файлов
+	// Иконки для отображения директорий и файлов
 	QIcon mIconFolderUp;
 	QIcon mIconFolder;
 	QIcon mIconSpriteLoading;
 	QIcon mIconSpriteError;
-
-	// Тип для кэша иконок
-	typedef QMap<QString, IconWithInfo> ThumbnailCache;
-
-	ThumbnailLoader *mThumbnailLoader;           // нить для подгрузки спрайтов в фоне
-	ThumbnailCache mThumbnailCache;              // кеш для хранения загруженых иконок
 };
 
 #endif // SPRITE_BROWSER_H

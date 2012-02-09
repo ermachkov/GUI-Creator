@@ -18,7 +18,7 @@ public:
 	LayerGroup(const LayerGroup &group);
 
 	// Загружает слой из Lua скрипта
-	virtual bool load(LuaScript &script);
+	virtual bool load(LuaScript &script, int depth);
 
 	// Сохраняет слой в текстовый поток
 	virtual bool save(QTextStream &stream, int indent);

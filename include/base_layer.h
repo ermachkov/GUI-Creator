@@ -10,6 +10,9 @@ class BaseLayer
 {
 public:
 
+	// Максимальное количество вложенных слоев
+	static const int MAX_NESTED_LAYERS = 10;
+
 	// Состояние видимости слоя
 	enum VisibleState
 	{
@@ -99,7 +102,7 @@ public:
 	void removeChildLayer(int index);
 
 	// Загружает слой из Lua скрипта
-	virtual bool load(LuaScript &script);
+	virtual bool load(LuaScript &script, int depth);
 
 	// Сохраняет слой в текстовый поток
 	virtual bool save(QTextStream &stream, int indent);

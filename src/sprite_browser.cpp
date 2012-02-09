@@ -2,25 +2,23 @@
 #include "sprite_browser.h"
 #include "options.h"
 #include "thumbnail_loader.h"
-#include "utils.h"
 
 SpriteBrowser::SpriteBrowser(QWidget *parent)
-: QDockWidget(parent)
+: QDockWidget(parent), mThumbnailCount(0)
 {
 	setupUi(this);
 
 	// запрещаем перетаскивание внутри виджета спрайтов
 	mListWidget->setAcceptDrops(false);
 
-	mThumbnailLoader = new ThumbnailLoader(this);
+	// создаем фоновый поток
+	mBackgroundThread = new QThread(this);
 
-	qRegisterMetaType<QFileInfo>("QFileInfo");
-
-	// связывание сигнала фоновой нити со слотом основной нити
-	connect(mThumbnailLoader, SIGNAL(thumbnailLoaded(QString, QImage)),
-		this, SLOT(onThumbnailLoaded(QString, QImage)));
-	connect(mThumbnailLoader, SIGNAL(thumbnailNotLoaded(QString)),
-		this, SLOT(onThumbnailNotLoaded(QString)));
+	// создаем загрузчик миниатюр и переносим его в фоновый поток
+	mThumbnailLoader = new ThumbnailLoader();
+	connect(this, SIGNAL(thumbnailQueued(QString, int)), mThumbnailLoader, SLOT(onThumbnailQueued(QString, int)));
+	connect(mThumbnailLoader, SIGNAL(thumbnailLoaded(QString, QImage)), this, SLOT(onThumbnailLoaded(QString, QImage)));
+	mThumbnailLoader->moveToThread(mBackgroundThread);
 
 	// создание объекта для слежения за изменениями файлов внутри текущей директории
 	mWatcher = NULL;
@@ -28,8 +26,21 @@ SpriteBrowser::SpriteBrowser(QWidget *parent)
 
 	createWidgets();
 
+	// запускаем фоновый поток
+	mBackgroundThread->start();
+
 	// запускаем таймер для отслеживания изменений файлов
 	startTimer(250);
+}
+
+SpriteBrowser::~SpriteBrowser()
+{
+	// дожидаемся завершения фонового потока
+	mBackgroundThread->quit();
+	mBackgroundThread->wait();
+
+	// удаляем загрузчик миниатюр
+	delete mThumbnailLoader;
 }
 
 void SpriteBrowser::timerEvent(QTimerEvent *event)
@@ -40,12 +51,11 @@ void SpriteBrowser::timerEvent(QTimerEvent *event)
 		{
 			qDebug() << "addFileForLoading:" << it.key();
 
-			// отправка на немедленную подгрузку иконки в фоне
-			mThumbnailLoader->addFileForLoading(it.key());
+			// отправка на подгрузку иконки в фоне
+			emit thumbnailQueued(it.key(), mThumbnailCount++);
 
 			it.value().setChanged(false);
 		}
-
 	}
 }
 
@@ -95,67 +105,40 @@ void SpriteBrowser::on_mListWidget_itemActivated(QListWidgetItem *item)
 	update(oldPath, mRelativePath);
 }
 
-// слот о загруженности иконки - обновление иконки
 void SpriteBrowser::onThumbnailLoaded(QString absoluteFileName, QImage image)
 {
 	qDebug() << "loaded:" << absoluteFileName;
 
-	QFileInfo fileInfo(absoluteFileName);
+	// иконка должна быть в буфере
+	ThumbnailCache::iterator iterTC = mThumbnailCache.find(absoluteFileName);
+	Q_ASSERT(iterTC != mThumbnailCache.end());
 
-	// выделение имени файла
-	QString fileName = fileInfo.fileName();
-	// выделение имени директории
-	QString absolutePath = fileInfo.absolutePath();
-
-	// сравнение текущей директории с путем загруженым
-	if (absolutePath + '/' == getRootPath() + mRelativePath)
+	// проверяем, загружена ли миниатюра или нет
+	if (!image.isNull())
 	{
 		// преобразование QImage в QIcon
-		QIcon icon = QIcon(QPixmap::fromImage(image));
-
-		ThumbnailCache::iterator iterTC = mThumbnailCache.find(absoluteFileName);
-
-		// иконка должна быть в буфере
-		Q_ASSERT(iterTC != mThumbnailCache.end());
-
-		// установка иконки в кеш
-		iterTC.value().setIcon(icon, true);
-		iterTC.value().setChanged(false);
-		iterTC.value().setFileDate(fileInfo.lastModified());
-		iterTC.value().setFileSize(fileInfo.size());
-
-		QList<QListWidgetItem *> items = mListWidget->findItems(fileName, Qt::MatchCaseSensitive);
-		if (items.size() == 1)
-		{
-			// установка только что загруженой иконки
-			items.front()->setIcon(iterTC.value().getIcon());
-		}
+		iterTC.value().setIcon(QIcon(QPixmap::fromImage(image)), true);
 	}
-}
+	else
+	{
+		// установка иконки ошибки
+		iterTC.value().setIcon(mIconSpriteError, false);
+	}
 
-void SpriteBrowser::onThumbnailNotLoaded(QString absoluteFileName)
-{
-	qDebug() << "not loaded:" << absoluteFileName;
-
+	// установка иконки в кеш
 	QFileInfo fileInfo(absoluteFileName);
+	iterTC.value().setFileDate(fileInfo.lastModified());
+	iterTC.value().setFileSize(fileInfo.size());
 
 	// выделение имени файла
 	QString fileName = fileInfo.fileName();
+
 	// выделение имени директории
 	QString absolutePath = fileInfo.absolutePath();
 
 	// сравнение текущей директории с путем загруженым
 	if (absolutePath + '/' == getRootPath() + mRelativePath)
 	{
-		ThumbnailCache::iterator iterTC = mThumbnailCache.find(absoluteFileName);
-
-		// иконка должна быть в буфере
-		Q_ASSERT(iterTC != mThumbnailCache.end());
-
-		// установка иконки в кеш
-		iterTC.value().setIcon(mIconSpriteError, false);
-		iterTC.value().setChanged(false);
-
 		QList<QListWidgetItem *> items = mListWidget->findItems(fileName, Qt::MatchCaseSensitive);
 		if (items.size() == 1)
 		{
@@ -341,7 +324,7 @@ void SpriteBrowser::update(QString oldPath, QString newPath)
 			element.setChanged(false);
 
 		// Отчистка списка файлов на загрузку второго потока
-		mThumbnailLoader->clearQueueLoadingFiles();
+		mThumbnailLoader->setThumbnailCount(mThumbnailCount);
 	}
 	else
 	{
@@ -376,7 +359,7 @@ void SpriteBrowser::update(QString oldPath, QString newPath)
 					|| iterTC.value().getFileDate() != fileInfo.lastModified())
 				{
 					// отправка на немедленную подгрузку иконки в фоне
-					mThumbnailLoader->addFileForLoading(absoluteFileName);
+					emit thumbnailQueued(absoluteFileName, mThumbnailCount++);
 
 					// установка иконки "загружается"
 					iterTC->setIcon(mIconSpriteLoading, false);
@@ -387,7 +370,7 @@ void SpriteBrowser::update(QString oldPath, QString newPath)
 				// иконки нет в кеше
 
 				// отправка на немедленную подгрузку иконки в фоне
-				mThumbnailLoader->addFileForLoading(absoluteFileName);
+				emit thumbnailQueued(absoluteFileName, mThumbnailCount++);
 
 				// добавление в кеше
 				iterTC = mThumbnailCache.insert(absoluteFileName, IconWithInfo(mIconSpriteLoading, false));

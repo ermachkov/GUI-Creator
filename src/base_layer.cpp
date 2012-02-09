@@ -151,8 +151,12 @@ void BaseLayer::removeChildLayer(int index)
 	mChildLayers.takeAt(index)->setParentLayer(NULL);
 }
 
-bool BaseLayer::load(LuaScript &script)
+bool BaseLayer::load(LuaScript &script, int depth)
 {
+	// проверяем уровень вложенности
+	if (depth > MAX_NESTED_LAYERS)
+		return false;
+
 	// загружаем свойства слоя
 	int visibleState, lockState;
 	if (!script.getString("name", mName) || !script.getInt("visible_state", visibleState) || !script.getInt("lock_state", lockState)
