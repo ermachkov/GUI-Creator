@@ -151,8 +151,8 @@ private:
 	// Проверяет имя файла на валидность
 	bool checkFileName(const QString &fileName);
 
-	// Проверяет текущую локацию на наличие отсутствующих текстур
-	void checkMissedTextures();
+	// Проверяет текущую локацию на наличие отсутствующих файлов
+	void checkMissedFiles();
 
 	SpriteBrowser       *mSpriteBrowser;        // Браузер спрайтов
 	LayersWindow        *mLayersWindow;         // Окно слоев

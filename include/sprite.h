@@ -13,7 +13,7 @@ public:
 	Sprite();
 
 	// Конструктор
-	Sprite(const QPointF &position, const QString &fileName, const QSharedPointer<Texture> &texture, Layer *parent = NULL);
+	Sprite(const QString &name, const QPointF &position, const QString &fileName, const QSharedPointer<Texture> &texture, Layer *parent = NULL);
 
 	// Конструктор копирования
 	Sprite(const Sprite &sprite);
@@ -39,8 +39,8 @@ public:
 	// Дублирует объект
 	virtual GameObject *duplicate(Layer *parent = NULL) const;
 
-	// Возвращает список отсутствующих текстур в объекте
-	virtual QStringList getMissedTextures() const;
+	// Возвращает список отсутствующих файлов в объекте
+	virtual QStringList getMissedFiles() const;
 
 	// Заменяет текстуру в объекте
 	virtual bool changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture);

@@ -17,15 +17,6 @@ FontManager::FontManager()
 	mDefaultFont->CharMap(FT_ENCODING_UNICODE);
 }
 
-QStringList FontManager::getAvailableFonts() const
-{
-	// возвращаем список всех ttf-файлов в подкаталоге fonts
-	QStringList fonts = QDir(Options::getSingleton().getDataDirectory() + "fonts/").entryList(QStringList("*.ttf"));
-	for (QStringList::iterator it = fonts.begin(); it != fonts.end(); ++it)
-		it->prepend("fonts/");
-	return fonts;
-}
-
 QSharedPointer<FTFont> FontManager::getDefaultFont() const
 {
 	return mDefaultFont;

@@ -19,6 +19,10 @@ public:
 	// Устанавливает текущую локацию
 	void setCurrentLocation(Location *location);
 
+private slots:
+
+	void onLayerTreeWindowLocationChanged();
+
 signals:
 
 	// Сигнал об изменении локации
@@ -29,6 +33,11 @@ signals:
 
 	// Сигнал об изменении слоя в окне редактирования
 	void layerChanged(Location *location, BaseLayer *layer);
+
+private:
+
+	void setDeleteButtonState();
+
 };
 
 #endif // LAYERS_WINDOW_H

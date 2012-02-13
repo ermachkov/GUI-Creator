@@ -4,6 +4,7 @@
 #include "location.h"
 #include "layer.h"
 #include "layer_group.h"
+#include "utils.h"
 
 // FIXME: в одной строчке с { комментарии не пишут. ИСПРАВИТЬ ВЕЗДЕ!!!
 // FIXME: условия надо полностью писать: topItem->parent() != NULL
@@ -34,6 +35,16 @@ LayersTreeWidget::LayersTreeWidget(QWidget *parent)
 	mLayerLockedIcons[BaseLayer::LAYER_UNLOCKED] = QIcon(":/images/layer_unlocked.png");
 	mLayerLockedIcons[BaseLayer::LAYER_PARTIALLY_UNLOCKED] = QIcon(":/images/layer_partially_locked.png");
 	mLayerLockedIcons[BaseLayer::LAYER_LOCKED] = QIcon(":/images/layer_locked.png");
+
+	// настройка контекстного меню
+	mContextMenu = new QMenu(this);
+
+	mDuplicateAction = mContextMenu->addAction("&Дублирование");
+	mContextMenu->addSeparator();
+	mNewGroupAction = mContextMenu->addAction("Новая &группа");
+	mNewLayerAction = mContextMenu->addAction("Новый &слой");
+	mDeleteAction = mContextMenu->addAction("&Удалить");
+	connect(mContextMenu, SIGNAL(triggered(QAction*)), SLOT(onContextMenuTriggered(QAction*)));
 }
 
 LayersTreeWidget::~LayersTreeWidget()
@@ -42,6 +53,9 @@ LayersTreeWidget::~LayersTreeWidget()
 
 	Q_ASSERT(mFrameBuffer);
 	delete mFrameBuffer;
+
+	Q_ASSERT(mContextMenu);
+	delete mContextMenu;
 }
 
 
@@ -62,9 +76,14 @@ void LayersTreeWidget::setCurrentLocation(Location *location)
 	// восстановление текущего слоя
 	if (baseCurrent != NULL)
 	{
-		Q_ASSERT(findByBaseLayer(baseCurrent) != NULL);
-		setCurrentItem(findByBaseLayer(baseCurrent));
+		Q_ASSERT(findItemByBaseLayer(baseCurrent) != NULL);
+		setCurrentItem(findItemByBaseLayer(baseCurrent));
 	}
+}
+
+Location *LayersTreeWidget::getCurrentLocation() const
+{
+	return mCurrentLocation;
 }
 
 void LayersTreeWidget::setPrimaryGLWidget(QGLWidget *primaryGLWidget)
@@ -98,7 +117,17 @@ void LayersTreeWidget::DEBUG_TREES()
 			|| currentItem->isExpanded() != currentBase->isExpanded()
 			|| currentItem->childCount() != currentBase->getChildLayers().size())
 		{
-			qDebug() << "Error: Trees are not equal";
+			qDebug() << "Error: Trees are not equal:";
+
+			//if (getBaseLayer(currentItem) != currentBase)
+				qDebug() << "-base:" << getBaseLayer(currentItem) << currentBase;
+			//if (currentItem->text(DATA_COLUMN) != currentBase->getName())
+				qDebug() << currentItem->text(DATA_COLUMN) << currentBase->getName();
+			//if (currentItem->isExpanded() != currentBase->isExpanded())
+				qDebug() << "-isExpanded:" << currentItem->isExpanded() << currentBase->isExpanded();
+			//if (currentItem->childCount() != currentBase->getChildLayers().size())
+				qDebug() << "-childCount:" << currentItem->childCount() << currentBase->getChildLayers().size();
+
 			return;
 		}
 
@@ -125,23 +154,27 @@ void LayersTreeWidget::onAddLayerGroup()
 	}
 	else if (isLayerGroup(currentItem()))
 	{	// текущий элемент - группа
+
+		// запрет добавления при превышениии допустимой вложенности
+		if (getLayerDepth(currentItem()) + 1 > BaseLayer::MAX_NESTED_LAYERS)
+		{
+			QMessageBox::warning(this, "", "Превышение допустимого уровня вложенности.");
+			return;
+		}
+
 		// добавление внутрь группы 0-вым элементом
 		insertNewLayerGroup(0, currentItem());
 	}
 	else if (isLayer(currentItem()))
-	{	// текущий элемент - слой
+	{
+		// текущий элемент - слой
 
-		if (currentItem()->parent() == NULL)
-		{	// родительский элемент - корень
-			// добавление в корень перед текущим элементом
-			int index = currentIndex().row();
-			insertNewLayerGroup(index, invisibleRootItem());
-		}
-		else if (isLayerGroup(currentItem()->parent()))
-		{	// родительский элемент - группа
-			int index = currentIndex().row();
-			insertNewLayerGroup(index, currentItem()->parent());
-		}
+		// получение родителя
+		QTreeWidgetItem *currentItemParent = currentItem()->parent() ? currentItem()->parent() : invisibleRootItem();
+		// получение индекса
+		int index = currentIndex().row();
+
+		insertNewLayerGroup(index, currentItemParent);
 	}
 	else
 	{
@@ -149,6 +182,8 @@ void LayersTreeWidget::onAddLayerGroup()
 	}
 
 	emit locationChanged();
+
+	DEBUG_TREES();
 }
 
 void LayersTreeWidget::onAddLayer()
@@ -165,6 +200,13 @@ void LayersTreeWidget::onAddLayer()
 	{
 		// текущий элемент - группа
 
+		// запрет добавления при превышениии допустимой вложенности
+		if (getLayerDepth(currentItem()) + 1 > BaseLayer::MAX_NESTED_LAYERS)
+		{
+			QMessageBox::warning(this, "", "Превышение допустимого уровня вложенности.");
+			return;
+		}
+
 		// добавление внутрь группы 0-вым элементом
 		insertNewLayer(0, currentItem());
 	}
@@ -172,21 +214,9 @@ void LayersTreeWidget::onAddLayer()
 	{
 		// текущий элемент - слой
 
-		if (currentItem()->parent() == NULL)
-		{	// родительский элемент - корень
-			// добавление в корень перед текущим элементом
-			int index = currentIndex().row();
-			insertNewLayer(index, invisibleRootItem());
-		}
-		else if (isLayerGroup(currentItem()->parent()))
-		{	// родительский элемент - группа
-			int index = currentIndex().row();
-			insertNewLayer(index, currentItem()->parent());
-		}
-		else
-		{
-			qDebug() << "Error in LayersWindow::onAddLayer";
-		}
+		QTreeWidgetItem *currentItemParent = currentItem()->parent() ? currentItem()->parent() : invisibleRootItem();
+		int index = currentIndex().row();
+		insertNewLayer(index, currentItemParent);
 	}
 	else
 	{
@@ -194,6 +224,8 @@ void LayersTreeWidget::onAddLayer()
 	}
 
 	emit locationChanged();
+
+	DEBUG_TREES();
 }
 
 void LayersTreeWidget::onDelete()
@@ -226,7 +258,7 @@ void LayersTreeWidget::onEditorWindowLayerChanged(Location *location, BaseLayer 
 
 	// устанавливаем иконку для item, если локация текущая
 	if (mCurrentLocation == location)
-		findByBaseLayer(layer)->setIcon(DATA_COLUMN, icon);
+		findItemByBaseLayer(layer)->setIcon(DATA_COLUMN, icon);
 }
 
 void LayersTreeWidget::dragEnterEvent(QDragEnterEvent *event)
@@ -256,116 +288,97 @@ void LayersTreeWidget::dropEvent(QDropEvent *event)
 
 	Q_ASSERT(listItems.size() == 1);
 
-	// получение QTreeWidgetItem * и BaseLayer * перетаскиваемого элемента
-	QTreeWidgetItem *itemSelected = *listItems.begin();
+	// получение QTreeWidgetItem * перетаскиваемого элемента
+	QTreeWidgetItem *itemSelected = listItems.front();
+	// получение BaseLayer * перетаскиваемого элемента
 	BaseLayer *baseSelected = getBaseLayer(itemSelected);
 
-	// получение родителя QTreeWidgetItem * перетаскиваемого элемента
-	QTreeWidgetItem *itemSelectedParentBefore = itemSelected->parent() ? itemSelected->parent() : invisibleRootItem();
-	// получение индекса перетаскиваемого элемента через QTreeWidgetItem *
-	int indexSelectedBefore = itemSelectedParentBefore->indexOfChild(itemSelected);
-	// получение BaseLayer * родителя перетаскиваемого элемента
-	BaseLayer *baseSelectedParentBefore = getBaseLayer(itemSelectedParentBefore);
+	// подмена event на копирование
+	event->setDropAction(Qt::CopyAction);
 
 	QTreeWidget::dropEvent(event);
 
-	// itemSelected - теперь новый добавленный элемент
-	if (currentDropAction == Qt::CopyAction)
+	// itemAdded - новый добавленный элемент
+	QTreeWidgetItem *itemAdded;
+
+	// поиск нового добавленного элемента QTreeWidgetItem в дереве
+	QList<QTreeWidgetItem *> stackItem;
+	stackItem.push_back(invisibleRootItem());
+
+	while (!stackItem.empty())
 	{
-		// поиск нового добавленного элемента QTreeWidgetItem в дереве
-		QList<QTreeWidgetItem *> stackItem;
-		stackItem.push_back(invisibleRootItem());
+		QTreeWidgetItem *currentItem = stackItem.last();
+		stackItem.pop_back();
 
-		while (!stackItem.empty())
+		// BaseLayer * совпадает, но сам QTreeWidgetItem * не совпадает
+		if (getBaseLayer(currentItem) == baseSelected && currentItem != listItems.front())
 		{
-			QTreeWidgetItem *currentItem = stackItem.last();
-			stackItem.pop_back();
+			// переназначение QTreeWidgetItem * добавленного элемента
+			itemAdded = currentItem;
+			// обнуление BaseLayer у нового элемента
+			setBaseLayer(itemAdded, NULL);
 
-			// BaseLayer * совпадает, но сам QTreeWidgetItem * не совпадает
-			if (getBaseLayer(currentItem) == baseSelected && currentItem != itemSelected)
-			{
-				// переназначение QTreeWidgetItem * добавленного элемента
-				itemSelected = currentItem;
-				// обнуление BaseLayer у нового элемента
-				setBaseLayer(itemSelected, NULL);
-
-				//				//и BaseLayer *
-//				//baseSelected = getBaseLayer(itemSelected);
-				break;
-			}
-
-			for (int i = 0; i < currentItem->childCount(); ++i)
-				stackItem.push_back(currentItem->child(i));
+			break;
 		}
+
+		for (int i = 0; i < currentItem->childCount(); ++i)
+			stackItem.push_back(currentItem->child(i));
 	}
 
 	// получение нового местоположения элемента
-	QTreeWidgetItem *itemSelectedParentAfter = itemSelected->parent() ? itemSelected->parent() : invisibleRootItem();
-	int indexSelectedAfter = itemSelectedParentAfter->indexOfChild(itemSelected);
-	BaseLayer *baseSelectedParentAfter = getBaseLayer(itemSelectedParentAfter);
+	QTreeWidgetItem *itemAddedParent = itemAdded->parent() ? itemAdded->parent() : invisibleRootItem();
+	int indexAdded = itemAddedParent->indexOfChild(itemAdded);
+	BaseLayer *baseAddedParent = getBaseLayer(itemAddedParent);
 
+	// запрет перетаскивания при превышениии допустимой вложенности
+	if (getMaxDepthChilds(itemSelected) + getLayerDepth(itemAdded) > BaseLayer::MAX_NESTED_LAYERS)
+	{
+		QMessageBox::warning(this, "", "Превышение допустимого уровня вложенности.");
+
+		delete itemAdded;
+
+		return;
+	}
 
 	// синхронизация дерева BaseLayer с деревом Item
+
+//	FIXME: !!!
+//	if (создание дубликата только если копирование а не перетаскивание)
+//	{
+		// дублирование дерева BaseLayer с прикреплением к новому родителю
+		BaseLayer *baseAdded = baseSelected->duplicate(baseAddedParent, indexAdded);
+//	}
+
+	if (currentDropAction == Qt::CopyAction)
+	{
+		// модификация имени нового слоя
+		QString newName = generateCopyName(itemAdded->text(DATA_COLUMN));
+		baseAdded->setName(newName);
+	}
+
+	// установка развернутости
+	if (isLayerGroup(itemAddedParent) && itemAddedParent != invisibleRootItem())
+	{
+		// ? 1. установить Expanded для родителя baseAdded (BaseLayer *)
+		baseAddedParent->setExpanded(true);
+		// ? 2. установить Expanded для родителя itemAdded (QTreeWidgetItem *)
+		itemAddedParent->setExpanded(true);
+	}
+
+	// ручное досоздание(воссоздание) дерева
+	createTreeItems(itemAdded, baseAdded);
+
 	if (currentDropAction == Qt::MoveAction)
 	{
-		// отцепление от старого родителя
-		baseSelectedParentBefore->removeChildLayer(indexSelectedBefore);
+		qDebug() << "currentDropAction";
 
-		// добавление
-		baseSelectedParentAfter->insertChildLayer(indexSelectedAfter, baseSelected);
-	}
-	else if (currentDropAction == Qt::CopyAction)
-	{
-		// дублирование дерева BaseLayer с прикреплением к новому родителю
-		BaseLayer *baseAdded = baseSelected->duplicate(baseSelectedParentAfter, indexSelectedAfter);
+		// удаление старой ветки item
+		delete itemSelected;
 
-		// модификация имени нового слоя
-		// oldName - сначала исходное имя, затем базовое
-		QString oldName = itemSelected->text(DATA_COLUMN);
-		// индекс копии
-		int indexAfterCopy = 0;
+		// удаление старой ветки base
+		delete baseSelected;
 
-		QStringList splitName = oldName.split(" ");
-		int index = splitName.lastIndexOf("Copy");
-		if (index == splitName.size() - 1)
-		{
-			// последнее вхождение
-			indexAfterCopy = 1;
-			splitName.removeLast();
-			oldName = splitName.join(" ");
-		}
-		else if (index == splitName.size() - 2)
-		{
-			// предпоследнее вхождение
-			bool isOk;
-			indexAfterCopy = splitName[splitName.size() - 1].toInt(&isOk);
-			if (isOk && indexAfterCopy >= 2)
-			{
-				// справа валидное unsigned int число
-				splitName.removeLast();
-				splitName.removeLast();
-				oldName = splitName.join(" ");
-			}
-		}
-
-		// формирование нового имени
-		QString newName;
-		do
-		{
-			if (indexAfterCopy == 0)
-				newName = oldName + " Copy";
-			else
-				newName = oldName + " Copy " + QString::number(indexAfterCopy + 1);
-
-			++indexAfterCopy;
-		}
-		while (mCurrentLocation->getRootLayer()->findLayerByName(newName));
-
-		itemSelected->setText(DATA_COLUMN, newName);
-		baseAdded->setName(newName);
-
-		// ручное досоздание дерева
-		createTreeItems(itemSelected, baseAdded);
+		qDebug() << "currentDropAction";
 	}
 
 	emit locationChanged();
@@ -376,10 +389,41 @@ void LayersTreeWidget::dropEvent(QDropEvent *event)
 
 void LayersTreeWidget::keyPressEvent(QKeyEvent *event)
 {
+	qDebug() << "LayersTreeWidget::keyPressEvent" << event;
+
+//	qDebug() << "onDelete()...";
+//	qDebug() << mCurrentLocation->getRootLayer()->getNumChildLayers();
+//	qDebug() << mCurrentLocation->getActiveLayer();
+//	qDebug() << mCurrentLocation->getRootLayer()->getChildLayer(0);
+
 	if (event->key() == Qt::Key_Delete)
-		onDelete();
+	{
+		// условие нажатия клавиши "Delete" если один слой или одна активная папка
+		if (mCurrentLocation->getRootLayer()->getNumChildLayers() != 1
+			|| mCurrentLocation->getActiveLayer() != mCurrentLocation->getRootLayer()->getChildLayer(0))
+		{
+			onDelete();
+		}
+
+	}
 
 	QTreeWidget::keyPressEvent(event);
+}
+
+void LayersTreeWidget::contextMenuEvent(QContextMenuEvent *event)
+{
+	// определение попадания по item
+	QTreeWidgetItem *itemClicked = itemAt(event->pos());
+
+	// активация/деактивация пункта контекстного меню "Удалить" если один слой или одна активная папка
+	bool enableDelete = mCurrentLocation->getRootLayer()->getNumChildLayers() != 1
+		|| mCurrentLocation->getActiveLayer() != mCurrentLocation->getRootLayer()->getChildLayer(0);
+	mDeleteAction->setEnabled(enableDelete);
+
+	if (itemClicked != NULL)
+	{
+		mContextMenu->exec(event->globalPos());
+	}
 }
 
 void LayersTreeWidget::onCurrentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous)
@@ -520,6 +564,8 @@ void LayersTreeWidget::onItemChanged(QTreeWidgetItem *item, int column)
 
 void LayersTreeWidget::onItemExpanded(QTreeWidgetItem *item)
 {
+//	qDebug() << "onItemExpanded:" << item;
+
 	BaseLayer *base = getBaseLayer(item);
 
 	if (!base->isExpanded())
@@ -532,6 +578,8 @@ void LayersTreeWidget::onItemExpanded(QTreeWidgetItem *item)
 
 void LayersTreeWidget::onItemCollapsed(QTreeWidgetItem *item)
 {
+//	qDebug() << "onItemCollapsed:" << item;
+
 	BaseLayer *base = getBaseLayer(item);
 
 	if (base->isExpanded())
@@ -540,6 +588,55 @@ void LayersTreeWidget::onItemCollapsed(QTreeWidgetItem *item)
 
 		emit locationChanged();
 	}
+}
+
+void LayersTreeWidget::onContextMenuTriggered(QAction *action)
+{
+	if (action == mDuplicateAction)
+	{
+		// получение QTreeWidgetItem * и BaseLayer * перетаскиваемого элемента через выбранный
+		QList<QTreeWidgetItem *> listItems = selectedItems();
+		Q_ASSERT(listItems.size() == 1);
+		QTreeWidgetItem *itemSelected = *listItems.begin();
+		BaseLayer *baseSelected = getBaseLayer(itemSelected);
+
+		// получение родителя
+		QTreeWidgetItem *itemSelectedParent = itemSelected->parent() ? itemSelected->parent() : invisibleRootItem();
+		BaseLayer *baseSelectedParent = getBaseLayer(itemSelectedParent);
+
+		// получение индекса
+		int indexSelected = itemSelectedParent->indexOfChild(itemSelected);
+
+		// физическое создание элемента - потомка в дереве ГУИ
+		QTreeWidgetItem *itemAdded = new QTreeWidgetItem;
+		itemSelectedParent->insertChild(indexSelected, itemAdded);
+
+		// дублирование дерева BaseLayer с прикреплением к новому родителю
+		BaseLayer *baseAdded = baseSelected->duplicate(baseSelectedParent, indexSelected);
+
+		// модификация имени нового слоя
+		QString newName = generateCopyName(itemSelected->text(DATA_COLUMN));
+		baseAdded->setName(newName);
+
+		// ручное досоздание дерева
+		createTreeItems(itemAdded, baseAdded);
+	}
+	else if (action == mNewGroupAction)
+	{
+		onAddLayerGroup();
+	}
+	else if (action == mNewLayerAction)
+	{
+		onAddLayer();
+	}
+	else if (action == mDeleteAction)
+	{
+		onDelete();
+	}
+	else
+		Q_ASSERT(false);
+
+	DEBUG_TREES();
 }
 
 LayersTreeWidget::EditorDelegate::EditorDelegate(QObject *parent)
@@ -567,6 +664,16 @@ void LayersTreeWidget::EditorDelegate::setModelData(QWidget *editor, QAbstractIt
 		return;
 
 	QItemDelegate::setModelData(editor, model, index);
+}
+
+QSize LayersTreeWidget::EditorDelegate::sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+	QSize size = QItemDelegate::sizeHint(option, index);
+
+	// добавление отступа
+	size.setHeight(size.height() + 2);
+
+	return size;
 }
 
 QTreeWidgetItem *LayersTreeWidget::insertNewLayerGroup(int index, QTreeWidgetItem *parent)
@@ -731,10 +838,54 @@ void LayersTreeWidget::createTreeItems(QTreeWidgetItem *item, BaseLayer *base)
 
 }
 
-QTreeWidgetItem *LayersTreeWidget::findByBaseLayer(BaseLayer *layer)
+// генерация имени копии по исходному имени
+QString LayersTreeWidget::generateCopyName(QString str)
 {
-	// FIXME: я так понял, рекурсию ты ниасилил и штампуешь говнокод в промышленных масштабах :-P
-	// рекурсивная реализация этой функции занимает раза в два меньше места
+	QString oldName = str;
+	// индекс копии
+	int indexAfterCopy = 0;
+
+	QStringList splitName = oldName.split(" ");
+	int index = splitName.lastIndexOf("Copy");
+	if (index == splitName.size() - 1)
+	{
+		// последнее вхождение
+		indexAfterCopy = 1;
+		splitName.removeLast();
+		oldName = splitName.join(" ");
+	}
+	else if (index == splitName.size() - 2)
+	{
+		// предпоследнее вхождение
+		bool isOk;
+		indexAfterCopy = splitName[splitName.size() - 1].toInt(&isOk);
+		if (isOk && indexAfterCopy >= 2)
+		{
+			// справа валидное unsigned int число
+			splitName.removeLast();
+			splitName.removeLast();
+			oldName = splitName.join(" ");
+		}
+	}
+
+	// формирование нового имени
+	QString newName;
+	do
+	{
+		if (indexAfterCopy == 0)
+			newName = oldName + " Copy";
+		else
+			newName = oldName + " Copy " + QString::number(indexAfterCopy + 1);
+
+		++indexAfterCopy;
+	}
+	while (mCurrentLocation->getRootLayer()->findLayerByName(newName));
+
+	return newName;
+}
+/*
+QTreeWidgetItem *LayersTreeWidget::findItemByBaseLayer_GOVNO(BaseLayer *layer) const
+{
 	// обход всего дерева
 	QList<QTreeWidgetItem *> stack;
 	stack.push_back(invisibleRootItem());
@@ -745,22 +896,54 @@ QTreeWidgetItem *LayersTreeWidget::findByBaseLayer(BaseLayer *layer)
 		stack.pop_back();
 
 		if (getBaseLayer(currentItem) == layer)
-
-		{	// указатель совпадает
 			return currentItem;
-		}
 
 		// добавлеине в стек всех потомков текущего элемента
 		for (int i = 0; i < currentItem->childCount(); ++i)
-			stack.push_back(currentItem->child(i));
-			//stack += currentItem->child(i);
+			//stack.push_back(currentItem->child(i));
+			stack += currentItem->child(i);
 	}
 
-	qDebug() << "Warning! findByBaseLayer return NULL";
+	qWarning() << "Warning! findByBaseLayer return NULL";
 	return NULL;
+}
+*/
 
-	// элемент не найден - возврат корневого элемента
-	//return invisibleRootItem();
+QTreeWidgetItem *LayersTreeWidget::findItemByBaseLayer(BaseLayer *layer, QTreeWidgetItem *item) const
+{
+	if (item == NULL)
+		item = invisibleRootItem();
+
+	if (getBaseLayer(item) == layer)
+		return item;
+
+	for (int i = 0; i < item->childCount(); ++i)
+	{
+		QTreeWidgetItem *findItem = findItemByBaseLayer(layer, item->child(i));
+		if (findItem != NULL)
+			return findItem;
+	}
+
+	return NULL;
+}
+
+int LayersTreeWidget::getMaxDepthChilds(QTreeWidgetItem *item, int currentDepth) const
+{
+	int maxDepth = currentDepth;
+	for (int i = 0; i < item->childCount(); ++i)
+		maxDepth = qMax(maxDepth, getMaxDepthChilds(item->child(i), currentDepth + 1));
+	return maxDepth;
+}
+
+int LayersTreeWidget::getLayerDepth(QTreeWidgetItem *item) const
+{
+	if (item == invisibleRootItem())
+		return 0;
+
+	int depth;
+	for (depth = 0; item != NULL; item = item->parent(), ++depth);
+
+	return depth;
 }
 
 bool LayersTreeWidget::hasInvisibleParent(QTreeWidgetItem *item) const
@@ -911,12 +1094,16 @@ QIcon LayersTreeWidget::createLayerIcon(BaseLayer *baseLayer)
 	// настройка смешивания
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	// отрисовка рамки по краю
+	Utils::drawRect(QRectF(0.5, 0.5, WIDTH_THUMBNAIL - 1.0, HEIGHT_THUMBNAIL - 1.0), QColor(0, 0, 0));
+
 	// центровка с масштабированием
 	QRectF rect = baseLayer->getBoundingRect();
-	qreal scale = qMin(WIDTH_THUMBNAIL / rect.width(), HEIGHT_THUMBNAIL / rect.height());
+	qreal scale = qMin((WIDTH_THUMBNAIL - 2) / rect.width(), (HEIGHT_THUMBNAIL - 2) / rect.height());
 	glScaled(scale, scale, 1.0);
-	glTranslated(-rect.left() + (WIDTH_THUMBNAIL / scale - rect.width()) / 2.0,
-		-rect.top() + (HEIGHT_THUMBNAIL / scale - rect.height()) / 2.0, 0.0);
+	// центровка
+	glTranslated(-rect.left() + ((WIDTH_THUMBNAIL) / scale - rect.width()) / 2.0,
+		-rect.top() + ((HEIGHT_THUMBNAIL) / scale - rect.height()) / 2.0, 0.0);
 
 	baseLayer->draw(true);
 	QImage image = mFrameBuffer->toImage();

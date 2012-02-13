@@ -2,6 +2,7 @@
 #define LOCATION_H
 
 class BaseLayer;
+class GameObject;
 class Layer;
 
 // Класс игровой локации
@@ -41,12 +42,22 @@ public:
 	// Создает новую группу слоев
 	BaseLayer *createLayerGroup(BaseLayer *parent = NULL, int index = 0);
 
+	// Создает новый спрайт
+	GameObject *createSprite(const QPointF &pos, const QString &fileName);
+
+	// Создает и загружает игровой объект из бинарного потока
+	GameObject *loadGameObject(QDataStream &stream);
+
+	// Генерирует имя для копии объекта
+	QString generateDuplicateName(const QString &name) const;
+
 private:
 
 	BaseLayer   *mRootLayer;        // Корневой слой
 	BaseLayer   *mActiveLayer;      // Текущий активный слой
-	int         mLayerIndex;        // Текущий индекс слоя для генерации имен "Слой XXX"
-	int         mLayerGroupIndex;   // Текущий индекс группы слоев для генерации имен "Группа XXX"
+	int         mLayerIndex;        // Текущий индекс для генерации имен слоев
+	int         mLayerGroupIndex;   // Текущий индекс для генерации имен групп слоев
+	int         mSpriteIndex;       // Текущий индекс для генерации имен спрайтов
 };
 
 #endif // LOCATION_H

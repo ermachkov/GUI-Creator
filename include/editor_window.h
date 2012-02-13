@@ -76,8 +76,8 @@ public:
 	// Перемещает выделенные объекты вниз
 	void moveDown();
 
-	// Возвращает список отсутствующих текстур в локации
-	QStringList getMissedTextures() const;
+	// Возвращает список отсутствующих файлов в локации
+	QStringList getMissedFiles() const;
 
 	// Заменяет текстуру в локации
 	void changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture);
@@ -208,7 +208,7 @@ private:
 
 	QList<GameObject *> mSelectedObjects;   // Список выделенных объектов, отсортированный по глубине
 	QList<QPointF>      mOriginalPositions; // Список исходных координат объектов
-	QList<QPointF>      mOriginalScales;    // Список исходных масштабов объектов
+	QList<QSizeF>       mOriginalSizes;     // Список исходных размеров объектов
 	QList<qreal>        mOriginalAngles;    // Список исходных углов поворота объектов
 	bool                mHasRotatedObjects; // Флаг наличия повернутых объектов в текущем выделении
 	bool                mFirstTimeSelected; // Флаг выделения объекта в первый раз

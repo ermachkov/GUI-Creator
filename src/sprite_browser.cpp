@@ -257,7 +257,7 @@ void SpriteBrowser::recreateWatcher()
 // Обновление отображения текущего каталога
 void SpriteBrowser::update(QString oldPath, QString newPath)
 {
-	qDebug() << "oldPath:" << oldPath << "newPath" << newPath;
+	qDebug() << "oldPath:" << oldPath << "newPath:" << newPath;
 	qDebug() << "getRootPath:" << getRootPath();
 	qDebug() << "mRelativePath:" << mRelativePath;
 	qDebug() << "--";
@@ -276,6 +276,8 @@ void SpriteBrowser::update(QString oldPath, QString newPath)
 	// установка слежения за текущей директорией если она существует
 	if (QFile::exists(getRootPath() + mRelativePath))
 		mWatcher->addPath(getRootPath() + mRelativePath);
+	else
+		qWarning() << "Warning: Directory not added to Watcher" << getRootPath() + mRelativePath;
 
 	QDir currentDir = QDir(getRootPath() + mRelativePath);
 	// получение только директорий

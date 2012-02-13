@@ -3,9 +3,11 @@
 #include "layer.h"
 #include "layer_group.h"
 #include "lua_script.h"
+#include "sprite.h"
+#include "texture_manager.h"
 
 Location::Location(QObject *parent)
-: QObject(parent), mLayerIndex(1), mLayerGroupIndex(1)
+: QObject(parent), mLayerIndex(1), mLayerGroupIndex(1), mSpriteIndex(1)
 {
 	// создаем корневой слой
 	mRootLayer = new LayerGroup("");
@@ -52,8 +54,8 @@ bool Location::load(const QString &fileName)
 
 	script.popTable();
 
-	// загружаем счетчики слоев и групп для генерации имен
-	if (!script.getInt("layerIndex", mLayerIndex) || !script.getInt("layerGroupIndex", mLayerGroupIndex))
+	// загружаем счетчики для генерации имен
+	if (!script.getInt("layerIndex", mLayerIndex) || !script.getInt("layerGroupIndex", mLayerGroupIndex) || !script.getInt("spriteIndex", mSpriteIndex))
 		return false;
 
 	return true;
@@ -87,9 +89,10 @@ bool Location::save(const QString &fileName)
 		indices.push_front(QString::number(layer->getParentLayer()->indexOfChildLayer(layer)));
 	stream << endl << "activeLayer = {" << indices.join(", ") << "}" << endl;
 
-	// сохраняем счетчики слоев и групп для генерации имен
-	stream << "layerIndex = " << QString::number(mLayerIndex) << endl;
-	stream << "layerGroupIndex = " << QString::number(mLayerGroupIndex) << endl;
+	// сохраняем счетчики для генерации имен
+	stream << "layerIndex = " << mLayerIndex << endl;
+	stream << "layerGroupIndex = " << mLayerGroupIndex << endl;
+	stream << "spriteIndex = " << mSpriteIndex << endl;
 
 	return stream.status() == QTextStream::Ok;
 }
@@ -124,4 +127,70 @@ BaseLayer *Location::createLayer(BaseLayer *parent, int index)
 BaseLayer *Location::createLayerGroup(BaseLayer *parent, int index)
 {
 	return new LayerGroup(QString("Группа %1").arg(mLayerGroupIndex++), parent, index);
+}
+
+GameObject *Location::createSprite(const QPointF &pos, const QString &fileName)
+{
+	// проверяем, что текущий активный слой доступен
+	Layer *layer = getAvailableLayer();
+	if (layer == NULL)
+		return NULL;
+
+	// загружаем текстуру спрайта
+	QSharedPointer<Texture> texture = TextureManager::getSingleton().loadTexture(fileName, false);
+	if (texture.isNull())
+		return NULL;
+
+	// создаем спрайт и добавляем его к активному слою
+	QPointF position(qFloor(pos.x() - texture->getWidth() / 2.0), qFloor(pos.y() - texture->getHeight() / 2.0));
+	return new Sprite(QString("Спрайт %1").arg(mSpriteIndex++), position, fileName, texture, layer);
+}
+
+GameObject *Location::loadGameObject(QDataStream &stream)
+{
+	// читаем тип объекта
+	QString type;
+	stream >> type;
+	if (stream.status() != QDataStream::Ok)
+		return NULL;
+
+	// создаем объект нужного типа
+	GameObject *object;
+	if (type == "Sprite")
+		object = new Sprite();
+	else
+		return NULL;
+
+	// загружаем объект
+	if (!object->load(stream))
+	{
+		delete object;
+		return NULL;
+	}
+
+	return object;
+}
+
+QString Location::generateDuplicateName(const QString &name) const
+{
+	// выделяем базовую часть имени
+	QString baseName = name;
+	int index = 0;
+	QRegExp regexp;
+	if ((regexp = QRegExp("(.*) копия (\\d+)")).exactMatch(name) && regexp.capturedTexts()[2].toInt() >= 2)
+	{
+		baseName = regexp.capturedTexts()[1];
+		index = regexp.capturedTexts()[2].toInt();
+	}
+	else if ((regexp = QRegExp("(.*) копия")).exactMatch(name))
+	{
+		baseName = regexp.capturedTexts()[1];
+		index = 1;
+	}
+
+	// подбираем индекс для нового имени
+	QString newName = name;
+	for (int i = index; mRootLayer->findGameObjectByName(newName) != NULL; ++i)
+		newName = baseName + " копия" + (i > 1 ? " " + QString::number(i) : "");
+	return newName;
 }

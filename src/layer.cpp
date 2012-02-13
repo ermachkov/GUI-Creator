@@ -140,6 +140,15 @@ QList<GameObject *> Layer::findActiveGameObjects() const
 	return mVisibleState == LAYER_VISIBLE && mLockState == LAYER_UNLOCKED ? mGameObjects : QList<GameObject *>();
 }
 
+GameObject *Layer::findGameObjectByName(const QString &name) const
+{
+	// ищем игровой объект в списке дочерних объектов
+	foreach (GameObject *object, mGameObjects)
+		if (object->getName() == name)
+			return object;
+	return NULL;
+}
+
 GameObject *Layer::findGameObjectByPoint(const QPointF &pt) const
 {
 	// ищем объект в списке, если слой видим и не заблокирован
@@ -155,9 +164,8 @@ GameObject *Layer::findGameObjectByPoint(const QPointF &pt) const
 
 QList<GameObject *> Layer::findGameObjectsByRect(const QRectF &rect) const
 {
-	QList<GameObject *> objects;
-
 	// ищем объекты в списке, если слой видим и не заблокирован
+	QList<GameObject *> objects;
 	if (mVisibleState == LAYER_VISIBLE && mLockState == LAYER_UNLOCKED)
 	{
 		foreach (GameObject *object, mGameObjects)
@@ -170,13 +178,11 @@ QList<GameObject *> Layer::findGameObjectsByRect(const QRectF &rect) const
 
 QList<GameObject *> Layer::sortGameObjects(const QList<GameObject *> &objects) const
 {
-	QList<GameObject *> sortedObjects;
-
 	// формируем упорядоченный по глубине список объектов, имеющихся в слое
+	QList<GameObject *> sortedObjects;
 	foreach (GameObject *object, mGameObjects)
 		if (objects.contains(object))
 			sortedObjects.push_back(object);
-
 	return sortedObjects;
 }
 
@@ -189,14 +195,14 @@ BaseLayer *Layer::duplicate(BaseLayer *parent, int index) const
 	return layer;
 }
 
-QStringList Layer::getMissedTextures() const
+QStringList Layer::getMissedFiles() const
 {
-	// получаем список отсутствующих текстур во всех дочерних объектах
-	QStringList list;
+	// получаем список отсутствующих файлов во всех дочерних объектах
+	QStringList missedFiles;
 	foreach (GameObject *object, mGameObjects)
-		list.append(object->getMissedTextures());
-	list.removeDuplicates();
-	return list;
+		missedFiles.append(object->getMissedFiles());
+	missedFiles.removeDuplicates();
+	return missedFiles;
 }
 
 QList<GameObject *> Layer::changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture)

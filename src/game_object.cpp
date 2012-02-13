@@ -2,14 +2,15 @@
 #include "game_object.h"
 #include "layer.h"
 #include "lua_script.h"
+#include "utils.h"
 
 GameObject::GameObject()
 : mParentLayer(NULL)
 {
 }
 
-GameObject::GameObject(const QPointF &position, const QSizeF &size, Layer *parent)
-: mPosition(position), mSize(size), mScale(1.0, 1.0), mRotationAngle(0.0), mRotationCenter(size.width() / 2.0, size.height() / 2.0), mParentLayer(NULL)
+GameObject::GameObject(const QString &name, const QPointF &position, const QSizeF &size, Layer *parent)
+: mName(name), mPosition(position), mSize(size), mRotationAngle(0.0), mRotationCenter(size.width() / 2.0, size.height() / 2.0), mParentLayer(NULL)
 {
 	// добавляем себя в родительский слой и обновляем текущую трансформацию
 	if (parent != NULL)
@@ -18,7 +19,7 @@ GameObject::GameObject(const QPointF &position, const QSizeF &size, Layer *paren
 }
 
 GameObject::GameObject(const GameObject &object)
-: mPosition(object.mPosition), mSize(object.mSize), mScale(object.mScale), mRotationAngle(object.mRotationAngle), mRotationCenter(object.mRotationCenter), mParentLayer(NULL)
+: mName(object.mName), mPosition(object.mPosition), mSize(object.mSize), mRotationAngle(object.mRotationAngle), mRotationCenter(object.mRotationCenter), mParentLayer(NULL)
 {
 	// обновляем текущую трансформацию
 	updateTransform();
@@ -29,6 +30,16 @@ GameObject::~GameObject()
 	// удаляемся из родительского слоя
 	if (mParentLayer != NULL)
 		mParentLayer->removeGameObject(mParentLayer->indexOfGameObject(this));
+}
+
+QString GameObject::getName() const
+{
+	return mName;
+}
+
+void GameObject::setName(const QString &name)
+{
+	mName = name;
 }
 
 QPointF GameObject::getPosition() const
@@ -49,24 +60,10 @@ QSizeF GameObject::getSize() const
 
 void GameObject::setSize(const QSizeF &size)
 {
-	// пересчитываем локальные координаты центра вращения
-	mRotationCenter = QPointF(mRotationCenter.x() * size.width() / mSize.width(), mRotationCenter.y() * size.height() / mSize.height());
-	mSize = size;
-	updateTransform();
-}
-
-QPointF GameObject::getScale() const
-{
-	return mScale;
-}
-
-void GameObject::setScale(const QPointF &scale)
-{
-	// сохраняем масштаб, если он не делает объект меньше 1 пикселя
-	if (qAbs(mSize.width() * scale.x()) >= 1.0)
-		mScale.rx() = scale.x();
-	if (qAbs(mSize.height() * scale.y()) >= 1.0)
-		mScale.ry() = scale.y();
+	// пересчитываем локальные координаты центра вращения и сохраняем новый размер
+	QSizeF newSize(qAbs(size.width()) >= 1.0 ? size.width() : mSize.width(), qAbs(size.height()) >= 1.0 ? size.height() : mSize.height());
+	mRotationCenter = QPointF(mRotationCenter.x() * newSize.width() / mSize.width(), mRotationCenter.y() * newSize.height() / mSize.height());
+	mSize = newSize;
 	updateTransform();
 }
 
@@ -124,7 +121,7 @@ bool GameObject::isContainedInRect(const QRectF &rect) const
 bool GameObject::load(QDataStream &stream)
 {
 	// загружаем свойства объекта из потока
-	stream >> mPosition >> mSize >> mScale >> mRotationAngle >> mRotationCenter;
+	stream >> mName >> mPosition >> mSize >> mRotationAngle >> mRotationCenter;
 	if (stream.status() != QDataStream::Ok)
 		return false;
 
@@ -136,16 +133,16 @@ bool GameObject::load(QDataStream &stream)
 bool GameObject::save(QDataStream &stream)
 {
 	// сохраняем данные в поток
-	stream << mPosition << mSize << mScale << mRotationAngle << mRotationCenter;
+	stream << mName << mPosition << mSize << mRotationAngle << mRotationCenter;
 	return stream.status() == QDataStream::Ok;
 }
 
 bool GameObject::load(LuaScript &script)
 {
 	// загружаем свойства объекта из Lua скрипта
-	if (!script.getReal("pos_x", mPosition.rx()) || !script.getReal("pos_y", mPosition.ry())
+	if (!script.getString("name", mName)
+		|| !script.getReal("pos_x", mPosition.rx()) || !script.getReal("pos_y", mPosition.ry())
 		|| !script.getReal("width", mSize.rwidth()) || !script.getReal("height", mSize.rheight())
-		|| !script.getReal("scale_x", mScale.rx()) || !script.getReal("scale_y", mScale.ry())
 		|| !script.getReal("angle", mRotationAngle)
 		|| !script.getReal("center_x", mRotationCenter.rx()) || !script.getReal("center_y", mRotationCenter.ry()))
 		return false;
@@ -158,9 +155,9 @@ bool GameObject::load(LuaScript &script)
 bool GameObject::save(QTextStream &stream, int indent)
 {
 	// сохраняем свойства объекта в поток
-	stream << "pos_x = " << mPosition.x() << ", pos_y = " << mPosition.y()
+	stream << "name = \"" << Utils::insertBackslashes(mName) << "\""
+		<< ", pos_x = " << mPosition.x() << ", pos_y = " << mPosition.y()
 		<< ", width = " << mSize.width() << ", height = " << mSize.height()
-		<< ", scale_x = " << mScale.x() << ", scale_y = " << mScale.y()
 		<< ", angle = " << mRotationAngle
 		<< ", center_x = " << mRotationCenter.x() << ", center_y = " << mRotationCenter.y();
 	return stream.status() == QTextStream::Ok;
@@ -193,14 +190,13 @@ void GameObject::updateTransform()
 	if (mRotationAngle == 0.0 || mRotationAngle == 90.0 || mRotationAngle == 180.0 || mRotationAngle == 270.0)
 	{
 		mPosition = QPointF(qRound(mPosition.x()), qRound(mPosition.y()));
-		mScale = QPointF(qRound(mSize.width() * mScale.x()) / mSize.width(), qRound(mSize.height() * mScale.y()) / mSize.height());
+		mSize = QSizeF(qRound(mSize.width()), qRound(mSize.height()));
 	}
 
 	// рассчитываем прямую и обратную матрицы трансформации
 	mTransform.reset();
 	mTransform.translate(mPosition.x(), mPosition.y());
 	mTransform.rotate(mRotationAngle);
-	mTransform.scale(mScale.x(), mScale.y());
 	mInvTransform = mTransform.inverted();
 
 	// определяем мировые координаты вершин объекта

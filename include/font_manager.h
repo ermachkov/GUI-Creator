@@ -13,9 +13,6 @@ public:
 	// Конструктор
 	FontManager();
 
-	// Возвращает список с именами доступных шрифтов
-	QStringList getAvailableFonts() const;
-
 	// Возвращает шрифт по умолчанию
 	QSharedPointer<FTFont> getDefaultFont() const;
 

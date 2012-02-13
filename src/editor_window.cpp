@@ -1,9 +1,8 @@
 #include "pch.h"
 #include "editor_window.h"
+#include "game_object.h"
 #include "layer.h"
 #include "location.h"
-#include "sprite.h"
-#include "texture_manager.h"
 #include "utils.h"
 
 EditorWindow::EditorWindow(QWidget *parent, QGLWidget *shareWidget, const QString &fileName)
@@ -155,30 +154,12 @@ void EditorWindow::paste()
 		QList<GameObject *> objects;
 		while (!stream.atEnd())
 		{
-			// читаем тип объекта
-			QString type;
-			stream >> type;
-			if (stream.status() != QDataStream::Ok)
+			GameObject *object = mLocation->loadGameObject(stream);
+			if (object != NULL)
 			{
-				qDeleteAll(objects);
-				return;
+				objects.push_back(object);
 			}
-
-			// создаем объект нужного типа
-			GameObject *object;
-			if (type == "Sprite")
-				object = new Sprite();
 			else
-			{
-				qDeleteAll(objects);
-				return;
-			}
-
-			// добавляем объект в список загруженных
-			objects.push_back(object);
-
-			// загружаем объект
-			if (!object->load(stream))
 			{
 				qDeleteAll(objects);
 				return;
@@ -187,13 +168,16 @@ void EditorWindow::paste()
 
 		// добавляем объекты в активный слой
 		for (int i = objects.size() - 1; i >= 0; --i)
+		{
+			objects[i]->setName(mLocation->generateDuplicateName(objects[i]->getName()));
 			layer->insertGameObject(0, objects[i]);
+		}
 
-		// выделяем вставленные объекты и обновляем курсор мыши
+		// выделяем вставленные объекты
 		selectGameObjects(objects);
-		updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
 
-		// посылаем сигналы об изменении локации и слоев
+		// обновляем курсор мыши и посылаем сигналы об изменении локации и слоев
+		updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
 		emitLayerChangedSignals(getParentLayers());
 	}
 }
@@ -307,22 +291,15 @@ void EditorWindow::moveDown()
 	}
 }
 
-QStringList EditorWindow::getMissedTextures() const
+QStringList EditorWindow::getMissedFiles() const
 {
-	return mLocation->getRootLayer()->getMissedTextures();
+	return mLocation->getRootLayer()->getMissedFiles();
 }
 
 void EditorWindow::changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture)
 {
 	// заменяем текстуры во всех объектах
 	QList<GameObject *> objects = mLocation->getRootLayer()->changeTexture(fileName, texture);
-
-	// обновляем текущее выделение
-	selectGameObjects(mSelectedObjects);
-
-	// обновляем координаты центра вращения
-	if (mRotationMode)
-		mOriginalCenter = mSnappedCenter = mSelectedObjects.size() == 1 ? mSelectedObjects.front()->getRotationCenter() : mOriginalRect.center();
 
 	// формируем список измененных слоев
 	QSet<BaseLayer *> layers;
@@ -709,9 +686,9 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 				mSelectedObjects[i]->setPosition(QPointF((mOriginalPositions[i].x() - pivot.x()) * scale.x() + pivot.x(),
 					(mOriginalPositions[i].y() - pivot.y()) * scale.y() + pivot.y()));
 				if (keepProportions || mOriginalAngles[i] == 0.0 || mOriginalAngles[i] == 180.0)
-					mSelectedObjects[i]->setScale(QPointF(mOriginalScales[i].x() * scale.x(), mOriginalScales[i].y() * scale.y()));
+					mSelectedObjects[i]->setSize(QSizeF(mOriginalSizes[i].width() * scale.x(), mOriginalSizes[i].height() * scale.y()));
 				else
-					mSelectedObjects[i]->setScale(QPointF(mOriginalScales[i].x() * scale.y(), mOriginalScales[i].y() * scale.x()));
+					mSelectedObjects[i]->setSize(QSizeF(mOriginalSizes[i].width() * scale.y(), mOriginalSizes[i].height() * scale.x()));
 			}
 		}
 		else if (mEditorState == STATE_ROTATE)
@@ -866,8 +843,7 @@ void EditorWindow::dragEnterEvent(QDragEnterEvent *event)
 void EditorWindow::dropEvent(QDropEvent *event)
 {
 	// проверяем, что текущий активный слой доступен
-	Layer *layer = mLocation->getAvailableLayer();
-	if (layer == NULL)
+	if (mLocation->getAvailableLayer() == NULL)
 		return;
 
 	// проверяем, что перетаскивается элемент из QListWidget/QTreeWidget
@@ -881,40 +857,41 @@ void EditorWindow::dropEvent(QDropEvent *event)
 	QDataStream stream(data);
 	stream >> row >> col >> roles;
 
-	// создаем нужный игровой объект в окне редактора
-	QPointF pos = windowToWorld(event->pos());
+	// выделяем и проверяем имя файла
+	QString fileName;
 	QString str = roles.value(Qt::UserRole).toString();
 	if (str.startsWith("sprite://"))
+		fileName = str.mid(9);
+	else
+		return;
+
+	if (!Utils::isFileNameValid(fileName))
 	{
-		// выделяем и проверяем имя файла
-		QString fileName = str.mid(9);
-		if (Utils::isFileNameValid(fileName))
-		{
-			// загружаем текстуру спрайта
-			QSharedPointer<Texture> texture = TextureManager::getSingleton().loadTexture(fileName, false);
-			if (texture.isNull())
-			{
-				QMessageBox::critical(this, "", "Ошибка загрузки файла " + fileName);
-				return;
-			}
-
-			// создаем спрайт и добавляем его к активному слою
-			QPointF spritePos(qFloor(pos.x() - texture->getWidth() / 2.0), qFloor(pos.y() - texture->getHeight() / 2.0));
-			Sprite *sprite = new Sprite(spritePos, fileName, texture, layer);
-			selectGameObject(sprite);
-
-			// обновляем курсор мыши
-			updateMouseCursor(pos);
-
-			// посылаем сигналы об изменении локации и слоев
-			emitLayerChangedSignals(getParentLayers());
-		}
-		else
-		{
-			QMessageBox::warning(this, "", "Неверный путь к файлу " + fileName + "\nПереименуйте файлы и папки так, чтобы они "
-				"начинались с буквы и состояли только из маленьких латинских букв, цифр и знаков подчеркивания");
-		}
+		QMessageBox::warning(this, "", "Неверный путь к файлу " + fileName + "\nПереименуйте файлы и папки так, чтобы они "
+			"начинались с буквы и состояли только из маленьких латинских букв, цифр и знаков подчеркивания");
+		return;
 	}
+
+	// создаем нужный игровой объект в окне редактора
+	GameObject *object;
+	QPointF pos = windowToWorld(event->pos());
+	if (str.startsWith("sprite://"))
+		object = mLocation->createSprite(pos, fileName);
+	else
+		return;
+
+	if (object == NULL)
+	{
+		QMessageBox::critical(this, "", "Ошибка загрузки файла " + fileName);
+		return;
+	}
+
+	// выделяем созданный объект
+	selectGameObject(object);
+
+	// обновляем курсор мыши и посылаем сигналы об изменении локации и слоев
+	updateMouseCursor(pos);
+	emitLayerChangedSignals(getParentLayers());
 
 	// принимаем перетаскивание
 	event->acceptProposedAction();
@@ -978,7 +955,7 @@ void EditorWindow::selectGameObjects(const QList<GameObject *> &objects)
 	if (!objects.empty())
 	{
 		mOriginalPositions.clear();
-		mOriginalScales.clear();
+		mOriginalSizes.clear();
 		mOriginalAngles.clear();
 		mOriginalRect = objects.front()->getBoundingRect();
 		mHasRotatedObjects = false;
@@ -988,7 +965,7 @@ void EditorWindow::selectGameObjects(const QList<GameObject *> &objects)
 			if (angle != 0.0 && angle != 90.0 && angle != 180.0 && angle != 270.0)
 				mHasRotatedObjects = true;
 			mOriginalPositions.push_back(object->getPosition());
-			mOriginalScales.push_back(object->getScale());
+			mOriginalSizes.push_back(object->getSize());
 			mOriginalAngles.push_back(angle);
 			mOriginalRect |= object->getBoundingRect();
 		}

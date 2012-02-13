@@ -14,13 +14,19 @@ public:
 	GameObject();
 
 	// Конструктор
-	GameObject(const QPointF &position, const QSizeF &size, Layer *parent = NULL);
+	GameObject(const QString &name, const QPointF &position, const QSizeF &size, Layer *parent = NULL);
 
 	// Конструктор копирования
 	GameObject(const GameObject &object);
 
 	// Деструктор
 	virtual ~GameObject();
+
+	// Возвращает имя объекта
+	QString getName() const;
+
+	// Устанавливает имя объекта
+	void setName(const QString &name);
 
 	// Возвращает координаты объекта
 	QPointF getPosition() const;
@@ -33,12 +39,6 @@ public:
 
 	// Устанавливает размеры объекта
 	void setSize(const QSizeF &size);
-
-	// Возвращает масштаб объекта
-	QPointF getScale() const;
-
-	// Устанавливает масштаб объекта
-	void setScale(const QPointF &scale);
 
 	// Возвращает угол поворота объекта в градусах
 	qreal getRotationAngle() const;
@@ -82,8 +82,8 @@ public:
 	// Дублирует объект
 	virtual GameObject *duplicate(Layer *parent = NULL) const = 0;
 
-	// Возвращает список отсутствующих текстур в объекте
-	virtual QStringList getMissedTextures() const = 0;
+	// Возвращает список отсутствующих файлов в объекте
+	virtual QStringList getMissedFiles() const = 0;
 
 	// Заменяет текстуру в объекте
 	virtual bool changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture) = 0;
@@ -102,9 +102,9 @@ protected:
 	// Обновляет текущую трансформацию объекта
 	void updateTransform();
 
+	QString     mName;              // Имя (текстовое описание) объекта
 	QPointF     mPosition;          // Мировые координаты объекта
-	QSizeF      mSize;              // Размеры объекта
-	QPointF     mScale;             // Масштаб объекта
+	QSizeF      mSize;              // Размеры объекта в пикселях
 	qreal       mRotationAngle;     // Угол поворота объекта в градусах по часовой стрелке
 	QPointF     mRotationCenter;    // Центр вращения в локальных координатах
 	Layer       *mParentLayer;      // Указатель на родительский слой

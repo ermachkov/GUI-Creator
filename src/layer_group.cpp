@@ -94,9 +94,8 @@ QRectF LayerGroup::getBoundingRect() const
 
 QList<GameObject *> LayerGroup::findActiveGameObjects() const
 {
-	QList<GameObject *> objects;
-
 	// получаем список объектов в дочерних слоях от верхнего к нижнему, если группа слоев видима и не заблокирована
+	QList<GameObject *> objects;
 	if (mVisibleState == LAYER_VISIBLE && mLockState == LAYER_UNLOCKED)
 	{
 		foreach (BaseLayer *layer, mChildLayers)
@@ -104,6 +103,19 @@ QList<GameObject *> LayerGroup::findActiveGameObjects() const
 	}
 
 	return objects;
+}
+
+GameObject *LayerGroup::findGameObjectByName(const QString &name) const
+{
+	// ищем игровой объект в списке дочерних слоев
+	foreach (BaseLayer *layer, mChildLayers)
+	{
+		GameObject *object = layer->findGameObjectByName(name);
+		if (object != NULL)
+			return object;
+	}
+
+	return NULL;
 }
 
 GameObject *LayerGroup::findGameObjectByPoint(const QPointF &pt) const
@@ -124,9 +136,8 @@ GameObject *LayerGroup::findGameObjectByPoint(const QPointF &pt) const
 
 QList<GameObject *> LayerGroup::findGameObjectsByRect(const QRectF &rect) const
 {
-	QList<GameObject *> objects;
-
 	// ищем объекты в дочерних слоях от верхнего к нижнему, если группа слоев видима и не заблокирована
+	QList<GameObject *> objects;
 	if (mVisibleState == LAYER_VISIBLE && mLockState == LAYER_UNLOCKED)
 	{
 		foreach (BaseLayer *layer, mChildLayers)
@@ -138,9 +149,8 @@ QList<GameObject *> LayerGroup::findGameObjectsByRect(const QRectF &rect) const
 
 QList<GameObject *> LayerGroup::sortGameObjects(const QList<GameObject *> &objects) const
 {
-	QList<GameObject *> sortedObjects;
-
 	// формируем упорядоченный по глубине список объектов, имеющихся в дочерних слоях
+	QList<GameObject *> sortedObjects;
 	foreach (BaseLayer *layer, mChildLayers)
 		sortedObjects.append(layer->sortGameObjects(objects));
 
@@ -156,14 +166,14 @@ BaseLayer *LayerGroup::duplicate(BaseLayer *parent, int index) const
 	return group;
 }
 
-QStringList LayerGroup::getMissedTextures() const
+QStringList LayerGroup::getMissedFiles() const
 {
-	// получаем список отсутствующих текстур во всех дочерних слоях
-	QStringList list;
+	// получаем список отсутствующих файлов во всех дочерних слоях
+	QStringList missedFiles;
 	foreach (BaseLayer *layer, mChildLayers)
-		list.append(layer->getMissedTextures());
-	list.removeDuplicates();
-	return list;
+		missedFiles.append(layer->getMissedFiles());
+	missedFiles.removeDuplicates();
+	return missedFiles;
 }
 
 QList<GameObject *> LayerGroup::changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture)

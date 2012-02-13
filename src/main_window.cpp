@@ -248,8 +248,8 @@ void MainWindow::on_mOpenAction_triggered()
 	// обновляем список последних файлов
 	updateRecentFilesActions(fileName);
 
-	// проверяем локацию на наличие отсутствующих текстур
-	checkMissedTextures();
+	// проверяем локацию на наличие отсутствующих файлов
+	checkMissedFiles();
 }
 
 bool MainWindow::on_mSaveAction_triggered()
@@ -638,22 +638,22 @@ bool MainWindow::checkFileName(const QString &fileName)
 	return true;
 }
 
-void MainWindow::checkMissedTextures()
+void MainWindow::checkMissedFiles()
 {
-	// получаем список отсутствующих текстур
-	QStringList list = getEditorWindow()->getMissedTextures();
-	if (!list.empty())
+	// получаем список отсутствующих файлов
+	QStringList missedFiles = getEditorWindow()->getMissedFiles();
+	if (!missedFiles.empty())
 	{
-		// сортируем список и сокращаем его до 5 текстур максимум
-		list.sort();
-		if (list.size() > 5)
+		// сортируем список и сокращаем его до 5 элементов максимум
+		missedFiles.sort();
+		if (missedFiles.size() > 5)
 		{
-			list = list.mid(0, 5);
-			list.push_back("...");
+			missedFiles = missedFiles.mid(0, 5);
+			missedFiles.push_back("...");
 		}
 
-		// выдаем предупреждение об отсутствии текстур
-		QMessageBox::warning(this, "", "Не найдены следующие файлы, возможно они были удалены или перемещены:\n" + list.join("\n"));
+		// выдаем предупреждение об отсутствии файлов
+		QMessageBox::warning(this, "", "Не найдены следующие файлы, возможно они были удалены или перемещены:\n" + missedFiles.join("\n"));
 	}
 }
 

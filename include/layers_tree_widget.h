@@ -1,6 +1,8 @@
 #ifndef LAYERS_TREE_WIDGET_H
 #define LAYERS_TREE_WIDGET_H
 
+// FIXME: заюзать MAX_NESTED_LAYERS для ограничения количества вложеных слоёв
+
 #include "base_layer.h"
 
 class Location;
@@ -28,6 +30,8 @@ public:
 
 	// пересоздание содержимого окна слоев
 	void setCurrentLocation(Location *location);
+
+	Location *getCurrentLocation() const;
 
 	void setPrimaryGLWidget(QGLWidget *primaryGLWidget);
 
@@ -67,6 +71,9 @@ protected:
 	// обработчик нажатия клавиши клавиатуры
 	virtual void keyPressEvent(QKeyEvent *event);
 
+	// обработчик вызова контекстного меню
+	virtual void contextMenuEvent(QContextMenuEvent *event);
+
 private slots:
 
 	// обработчик смены текущего активного элемента
@@ -82,7 +89,13 @@ private slots:
 	void onItemExpanded(QTreeWidgetItem *item);
 	void onItemCollapsed(QTreeWidgetItem *item);
 
+	// обработчик выбора пункта контекстного ингю
+	void onContextMenuTriggered(QAction *action);
+
 private:
+
+	static const int WIDTH_THUMBNAIL = 32;
+	static const int HEIGHT_THUMBNAIL = 32;
 
 	// Делегат для запрещения редактирования названия колонок
 	class EditorDelegate : public QItemDelegate
@@ -92,9 +105,14 @@ private:
 
 		EditorDelegate(QObject *parent = NULL);
 
+		// запрещение редактирования такста некоторых колонок
 		virtual QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const;
 
+		// для запрещения введения пустой строки при изменении имя элемента
 		virtual void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const;
+
+		// для переопределения вертикального расстояния между элементами
+		virtual QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const;
 	};
 
 	// добавление группы
@@ -106,8 +124,18 @@ private:
 	// создание части дерева QTreeWidgetItem по дереву BaseLayer
 	void createTreeItems(QTreeWidgetItem *item, BaseLayer *base);
 
+	// генерация имени копии по исходному имени
+	QString generateCopyName(QString str);
+
 	// поиск GUI слоя по BaseLayer * слоя
-	QTreeWidgetItem *findByBaseLayer(BaseLayer *layer);
+	//QTreeWidgetItem *findItemByBaseLayer(BaseLayer *layer) const;
+	QTreeWidgetItem *findItemByBaseLayer(BaseLayer *layer, QTreeWidgetItem *item = NULL) const;
+
+	// определение максимальной глубины(вложенности) потомков относительно элемента
+	int getMaxDepthChilds(QTreeWidgetItem *item, int currentDepth = 0) const;
+
+	// определение глубины(вложенности) (вверх) элемента
+	int getLayerDepth(QTreeWidgetItem *item) const;
 
 	// поиск невидимой группы в родителях
 	bool hasInvisibleParent(QTreeWidgetItem *item) const;
@@ -148,16 +176,15 @@ private:
 	// указатель на игровую локацию
 	Location *mCurrentLocation;
 
-	//В общем придумал - в MainWindow передаешь mPrimaryGLWidget в конструктор
-	//LayersWindow, а тот в свою очередь передает его в LayersTreeWidget
-	//через метод setGLWidget, который его собственно и сохраняет.
-
 	QGLWidget *mPrimaryGLWidget;
 
-	static const int WIDTH_THUMBNAIL = 32;
-	static const int HEIGHT_THUMBNAIL = 32;
-
 	QGLFramebufferObject *mFrameBuffer;
+
+	QMenu *mContextMenu;
+	QAction *mDuplicateAction;
+	QAction *mNewGroupAction;
+	QAction *mNewLayerAction;
+	QAction *mDeleteAction;
 };
 
 #endif // LAYERS_TREE_WIDGET_H

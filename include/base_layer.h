@@ -113,6 +113,9 @@ public:
 	// Ищет все активные игровые объекты
 	virtual QList<GameObject *> findActiveGameObjects() const = 0;
 
+	// Рекурсивно ищет игровой объект по заданному имени
+	virtual GameObject *findGameObjectByName(const QString &name) const = 0;
+
 	// Ищет игровой объект, содержащий заданную точку
 	virtual GameObject *findGameObjectByPoint(const QPointF &pt) const = 0;
 
@@ -125,8 +128,8 @@ public:
 	// Дублирует слой
 	virtual BaseLayer *duplicate(BaseLayer *parent = NULL, int index = 0) const = 0;
 
-	// Возвращает список отсутствующих текстур в слое
-	virtual QStringList getMissedTextures() const = 0;
+	// Возвращает список отсутствующих файлов в слое
+	virtual QStringList getMissedFiles() const = 0;
 
 	// Заменяет текстуру в слое
 	virtual QList<GameObject *> changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture) = 0;

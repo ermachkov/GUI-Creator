@@ -9,8 +9,8 @@ Sprite::Sprite()
 {
 }
 
-Sprite::Sprite(const QPointF &position, const QString &fileName, const QSharedPointer<Texture> &texture, Layer *parent)
-: GameObject(position, texture->getSize(), parent), mFileName(fileName), mTexture(texture), mColor(Qt::white)
+Sprite::Sprite(const QString &name, const QPointF &position, const QString &fileName, const QSharedPointer<Texture> &texture, Layer *parent)
+: GameObject(name, position, texture->getSize(), parent), mFileName(fileName), mTexture(texture), mColor(Qt::white)
 {
 }
 
@@ -42,12 +42,7 @@ bool Sprite::load(QDataStream &stream)
 
 	// загружаем текстуру спрайта
 	mTexture = TextureManager::getSingleton().loadTexture(mFileName);
-	if (mTexture.isNull())
-		return false;
-
-	// устанавливаем фактический размер текстуры
-	setSize(mTexture->getSize());
-	return true;
+	return !mTexture.isNull();
 }
 
 bool Sprite::save(QDataStream &stream)
@@ -80,12 +75,7 @@ bool Sprite::load(LuaScript &script)
 
 	// загружаем текстуру спрайта
 	mTexture = TextureManager::getSingleton().loadTexture(mFileName);
-	if (mTexture.isNull())
-		return false;
-
-	// устанавливаем фактический размер текстуры
-	setSize(mTexture->getSize());
-	return true;
+	return !mTexture.isNull();
 }
 
 bool Sprite::save(QTextStream &stream, int indent)
@@ -111,7 +101,7 @@ GameObject *Sprite::duplicate(Layer *parent) const
 	return sprite;
 }
 
-QStringList Sprite::getMissedTextures() const
+QStringList Sprite::getMissedFiles() const
 {
 	// возвращаем имя текстуры, если она дефолтная
 	return mTexture == TextureManager::getSingleton().getDefaultTexture() ? QStringList(mFileName) : QStringList();
@@ -123,7 +113,6 @@ bool Sprite::changeTexture(const QString &fileName, const QSharedPointer<Texture
 	if (mFileName == fileName)
 	{
 		mTexture = texture;
-		setSize(mTexture->getSize());
 		return true;
 	}
 
@@ -138,7 +127,7 @@ void Sprite::draw()
 	// задаем новую трансформацию и цвет
 	glTranslated(mPosition.x(), mPosition.y(), 0.0);
 	glRotated(mRotationAngle, 0.0, 0.0, 1.0);
-	glScaled(mScale.x(), mScale.y(), 1.0);
+	glScaled(mSize.width() / mTexture->getWidth(), mSize.height() / mTexture->getHeight(), 1.0);
 	glColor4d(mColor.redF(), mColor.greenF(), mColor.blueF(), mColor.alphaF());
 
 	// рисуем квад с текстурой спрайта
