@@ -9,14 +9,44 @@ Sprite::Sprite()
 {
 }
 
-Sprite::Sprite(const QString &name, const QPointF &position, const QString &fileName, const QSharedPointer<Texture> &texture, Layer *parent)
-: GameObject(name, position, texture->getSize(), parent), mFileName(fileName), mTexture(texture), mColor(Qt::white)
+Sprite::Sprite(const QString &name, const QPointF &pos, const QString &fileName, Layer *parent)
+: GameObject(name, parent), mFileName(fileName), mColor(Qt::white)
 {
+	// загружаем текстуру спрайта
+	mTexture = TextureManager::getSingleton().loadTexture(mFileName);
+
+	// задаем начальную позицию и размер спрайта
+	if (!mTexture.isNull())
+	{
+		mSize = mTexture->getSize();
+		mPosition = QPointF(qFloor(pos.x() - mSize.width() / 2.0), qFloor(pos.y() - mSize.height() / 2.0));
+		mRotationCenter = QPointF(mSize.width() / 2.0, mSize.height() / 2.0);
+	}
+
+	// обновляем текущую трансформацию
+	updateTransform();
 }
 
 Sprite::Sprite(const Sprite &sprite)
 : GameObject(sprite), mFileName(sprite.mFileName), mTexture(sprite.mTexture), mColor(sprite.mColor)
 {
+}
+
+Sprite::~Sprite()
+{
+	// устанавливаем текущий контекст OpenGL для корректного удаления текстуры спрайта
+	TextureManager::getSingleton().makeCurrent();
+}
+
+QString Sprite::getFileName() const
+{
+	return mFileName;
+}
+
+void Sprite::setFileName(const QString &fileName)
+{
+	mFileName = fileName;
+	mTexture = TextureManager::getSingleton().loadTexture(mFileName);
 }
 
 QColor Sprite::getColor() const

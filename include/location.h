@@ -45,6 +45,9 @@ public:
 	// Создает новый спрайт
 	GameObject *createSprite(const QPointF &pos, const QString &fileName);
 
+	// Создает новую надпись
+	GameObject *createLabel(const QPointF &pos, const QString &fileName, int size);
+
 	// Создает и загружает игровой объект из бинарного потока
 	GameObject *loadGameObject(QDataStream &stream);
 
@@ -58,6 +61,7 @@ private:
 	int         mLayerIndex;        // Текущий индекс для генерации имен слоев
 	int         mLayerGroupIndex;   // Текущий индекс для генерации имен групп слоев
 	int         mSpriteIndex;       // Текущий индекс для генерации имен спрайтов
+	int         mLabelIndex;        // Текущий индекс для генерации имен надписей
 };
 
 #endif // LOCATION_H

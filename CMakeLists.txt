@@ -15,8 +15,10 @@ set(PRECOMPILED_HEADER include/pch.h)
 set(SOURCES
 	src/base_layer.cpp
 	src/editor_window.cpp
+	src/font_browser.cpp
 	src/font_manager.cpp
 	src/game_object.cpp
+	src/label.cpp
 	src/layer.cpp
 	src/layer_group.cpp
 	src/layers_tree_widget.cpp
@@ -36,8 +38,10 @@ set(HEADERS
 	${PRECOMPILED_HEADER}
 	include/base_layer.h
 	include/editor_window.h
+	include/font_browser.h
 	include/font_manager.h
 	include/game_object.h
+	include/label.h
 	include/layer.h
 	include/layer_group.h
 	include/layers_tree_widget.h
@@ -56,6 +60,7 @@ set(HEADERS
 	include/utils.h)
 
 set(FORMS
+        ui/font_browser.ui
 	ui/layers_window.ui
 	ui/main_window.ui
 	ui/sprite_browser.ui)

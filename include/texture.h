@@ -7,7 +7,7 @@ class Texture
 public:
 
 	// Конструктор
-	Texture(const QImage &image, QGLWidget *widget);
+	Texture(const QImage &image);
 
 	// Деструктор
 	~Texture();
@@ -29,9 +29,8 @@ public:
 
 private:
 
-	QGLWidget   *mGLWidget; // OpenGL виджет, используемый при удалении текстуры
-	GLuint      mHandle;    // Идентификатор текстуры
-	QSize       mSize;      // Размеры текстуры
+	GLuint  mHandle;    // Идентификатор текстуры
+	QSize   mSize;      // Размеры текстуры
 };
 
 #endif // TEXTURE_H

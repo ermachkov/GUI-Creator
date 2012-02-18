@@ -1,8 +1,6 @@
 #ifndef LAYERS_TREE_WIDGET_H
 #define LAYERS_TREE_WIDGET_H
 
-// FIXME: заюзать MAX_NESTED_LAYERS для ограничения количества вложеных слоёв
-
 #include "base_layer.h"
 
 class Location;
@@ -125,7 +123,7 @@ private:
 	void createTreeItems(QTreeWidgetItem *item, BaseLayer *base);
 
 	// генерация имени копии по исходному имени
-	QString generateCopyName(QString str);
+	QString generateCopyName(const QString &name);
 
 	// поиск GUI слоя по BaseLayer * слоя
 	//QTreeWidgetItem *findItemByBaseLayer(BaseLayer *layer) const;

@@ -1,13 +1,13 @@
 #include "pch.h"
 #include "location.h"
+#include "label.h"
 #include "layer.h"
 #include "layer_group.h"
 #include "lua_script.h"
 #include "sprite.h"
-#include "texture_manager.h"
 
 Location::Location(QObject *parent)
-: QObject(parent), mLayerIndex(1), mLayerGroupIndex(1), mSpriteIndex(1)
+: QObject(parent), mLayerIndex(1), mLayerGroupIndex(1), mSpriteIndex(1), mLabelIndex(1)
 {
 	// создаем корневой слой
 	mRootLayer = new LayerGroup("");
@@ -55,7 +55,8 @@ bool Location::load(const QString &fileName)
 	script.popTable();
 
 	// загружаем счетчики для генерации имен
-	if (!script.getInt("layerIndex", mLayerIndex) || !script.getInt("layerGroupIndex", mLayerGroupIndex) || !script.getInt("spriteIndex", mSpriteIndex))
+	if (!script.getInt("layerIndex", mLayerIndex) || !script.getInt("layerGroupIndex", mLayerGroupIndex)
+		|| !script.getInt("spriteIndex", mSpriteIndex) || !script.getInt("labelIndex", mLabelIndex))
 		return false;
 
 	return true;
@@ -93,6 +94,7 @@ bool Location::save(const QString &fileName)
 	stream << "layerIndex = " << mLayerIndex << endl;
 	stream << "layerGroupIndex = " << mLayerGroupIndex << endl;
 	stream << "spriteIndex = " << mSpriteIndex << endl;
+	stream << "labelIndex = " << mLabelIndex << endl;
 
 	return stream.status() == QTextStream::Ok;
 }
@@ -131,19 +133,12 @@ BaseLayer *Location::createLayerGroup(BaseLayer *parent, int index)
 
 GameObject *Location::createSprite(const QPointF &pos, const QString &fileName)
 {
-	// проверяем, что текущий активный слой доступен
-	Layer *layer = getAvailableLayer();
-	if (layer == NULL)
-		return NULL;
+	return new Sprite(QString("Спрайт %1").arg(mSpriteIndex++), pos, fileName, getAvailableLayer());
+}
 
-	// загружаем текстуру спрайта
-	QSharedPointer<Texture> texture = TextureManager::getSingleton().loadTexture(fileName, false);
-	if (texture.isNull())
-		return NULL;
-
-	// создаем спрайт и добавляем его к активному слою
-	QPointF position(qFloor(pos.x() - texture->getWidth() / 2.0), qFloor(pos.y() - texture->getHeight() / 2.0));
-	return new Sprite(QString("Спрайт %1").arg(mSpriteIndex++), position, fileName, texture, layer);
+GameObject *Location::createLabel(const QPointF &pos, const QString &fileName, int size)
+{
+	return new Label(QString("Текст %1").arg(mLabelIndex++), pos, fileName, size, getAvailableLayer());
 }
 
 GameObject *Location::loadGameObject(QDataStream &stream)
@@ -158,6 +153,8 @@ GameObject *Location::loadGameObject(QDataStream &stream)
 	GameObject *object;
 	if (type == "Sprite")
 		object = new Sprite();
+	else if (type == "Label")
+		object = new Label();
 	else
 		return NULL;
 

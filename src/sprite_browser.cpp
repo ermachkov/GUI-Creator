@@ -24,7 +24,21 @@ SpriteBrowser::SpriteBrowser(QWidget *parent)
 	mWatcher = NULL;
 	recreateWatcher();
 
-	createWidgets();
+	// Создает и инициализирует все виджеты на плавающем окне
+	// TODO: добавить проверку на существование директории
+	// "Cannot find: " + rootPath
+
+	// обнуление пути относительно корневой директории
+	mRelativePath = "";
+
+	// загрузка иконок для списка спрайтов
+	mIconFolderUp = QIcon(":/images/folder_up.png");
+	mIconFolder = QIcon(":/images/folder.png");
+	mIconSpriteLoading = QIcon(":/images/sprite_loading.png");
+	mIconSpriteError = QIcon(":/images/sprite_error.png");
+
+	// считывание каталога спрайтов и заполнение списка спрайтов
+	update("/", mRelativePath);
 
 	// запускаем фоновый поток
 	mBackgroundThread->start();
@@ -218,23 +232,6 @@ void SpriteBrowser::onFileChanged(const QString &absoluteFileName)
 	}
 }
 
-// Создает и инициализирует все виджеты на плавающем окне
-void SpriteBrowser::createWidgets()
-{
-	// TODO: добавить проверку на существование директории
-	// "Cannot find: " + rootPath
-
-	// обнуление пути относительно корневой директории
-	mRelativePath = "";
-
-	mIconFolderUp = QIcon(":/images/folder_up.png");
-	mIconFolder = QIcon(":/images/folder.png");
-	mIconSpriteLoading = QIcon(":/images/sprite_loading.png");
-	mIconSpriteError = QIcon(":/images/sprite_error.png");
-
-	update("/", mRelativePath);
-}
-
 QString SpriteBrowser::getRootPath() const
 {
 	return Options::getSingleton().getDataDirectory() + "sprites/";
@@ -263,7 +260,7 @@ void SpriteBrowser::update(QString oldPath, QString newPath)
 	qDebug() << "--";
 
 	// всплывающая подсказка с полным путем
-	setToolTip(getRootPath() + mRelativePath);
+	mListWidget->setToolTip(getRootPath() + mRelativePath);
 
 	// отчистка поля ГУИ иконок
 	mListWidget->clear();
@@ -421,7 +418,7 @@ void SpriteBrowser::update(QString oldPath, QString newPath)
 		// сохраняем относительный путь к файлу в UserRole для поддержки перетаскивания
 		item->setData(Qt::UserRole, "sprite://sprites/" + mRelativePath + fileName);
 
-		// всплывающая подсказка с полным именем
+		// всплывающая подсказка с несокращенным именем
 		item->setToolTip(fileName);
 
 		// устанавливаем слежку на файлом

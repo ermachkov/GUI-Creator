@@ -5,7 +5,9 @@
 #include "location.h"
 #include "utils.h"
 
+
 EditorWindow::EditorWindow(QWidget *parent, QGLWidget *shareWidget, const QString &fileName)
+// FIXME: будь человеком ограничь длинну строки хотя бы сотней
 : QGLWidget(shareWidget->format(), parent, shareWidget), mFileName(fileName), mChanged(false), mSaved(false), mEditorState(STATE_IDLE),
   mCameraPos(0.0, 0.0), mZoom(1.0), mRotationMode(false)
 {
@@ -836,7 +838,7 @@ void EditorWindow::dragEnterEvent(QDragEnterEvent *event)
 
 	// проверяем строку в UserRole
 	QString str = roles.value(Qt::UserRole).toString();
-	if (str.startsWith("sprite://"))
+	if (str.startsWith("sprite://") || str.startsWith("label://"))
 		event->acceptProposedAction();
 }
 
@@ -862,6 +864,8 @@ void EditorWindow::dropEvent(QDropEvent *event)
 	QString str = roles.value(Qt::UserRole).toString();
 	if (str.startsWith("sprite://"))
 		fileName = str.mid(9);
+	else if (str.startsWith("label://"))
+		fileName = str.mid(8);
 	else
 		return;
 
@@ -877,14 +881,10 @@ void EditorWindow::dropEvent(QDropEvent *event)
 	QPointF pos = windowToWorld(event->pos());
 	if (str.startsWith("sprite://"))
 		object = mLocation->createSprite(pos, fileName);
+	else if (str.startsWith("label://"))
+		object = mLocation->createLabel(pos, fileName, roles.value(Qt::UserRole + 1).toInt() != 0 ? roles.value(Qt::UserRole + 1).toInt() : 32);
 	else
 		return;
-
-	if (object == NULL)
-	{
-		QMessageBox::critical(this, "", "Ошибка загрузки файла " + fileName);
-		return;
-	}
 
 	// выделяем созданный объект
 	selectGameObject(object);

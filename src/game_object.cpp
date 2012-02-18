@@ -9,13 +9,12 @@ GameObject::GameObject()
 {
 }
 
-GameObject::GameObject(const QString &name, const QPointF &position, const QSizeF &size, Layer *parent)
-: mName(name), mPosition(position), mSize(size), mRotationAngle(0.0), mRotationCenter(size.width() / 2.0, size.height() / 2.0), mParentLayer(NULL)
+GameObject::GameObject(const QString &name, Layer *parent)
+: mName(name), mRotationAngle(0.0), mParentLayer(NULL)
 {
-	// добавляем себя в родительский слой и обновляем текущую трансформацию
+	// добавляем себя в родительский слой
 	if (parent != NULL)
 		parent->insertGameObject(0, this);
-	updateTransform();
 }
 
 GameObject::GameObject(const GameObject &object)

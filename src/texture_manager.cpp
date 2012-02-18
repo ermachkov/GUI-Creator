@@ -11,7 +11,7 @@ TextureManager::TextureManager(QGLWidget *primaryGLWidget, QGLWidget *secondaryG
 	mBackgroundThread = new QThread(this);
 
 	// создаем загрузчик текстур и переносим его в фоновый поток
-	mTextureLoader = new TextureLoader(primaryGLWidget, secondaryGLWidget);
+	mTextureLoader = new TextureLoader(secondaryGLWidget);
 	qRegisterMetaType<QSharedPointer<Texture> >("QSharedPointer<Texture>");
 	connect(this, SIGNAL(textureQueued(QString)), mTextureLoader, SLOT(onTextureQueued(QString)));
 	connect(mTextureLoader, SIGNAL(textureLoaded(QString, QSharedPointer<Texture>)), this, SLOT(onTextureLoaded(QString, QSharedPointer<Texture>)));
@@ -23,7 +23,7 @@ TextureManager::TextureManager(QGLWidget *primaryGLWidget, QGLWidget *secondaryG
 
 	// загружаем текстуру по умолчанию
 	mPrimaryGLWidget->makeCurrent();
-	mDefaultTexture = QSharedPointer<Texture>(new Texture(QImage(":/images/default_texture.jpg"), mPrimaryGLWidget));
+	mDefaultTexture = QSharedPointer<Texture>(new Texture(QImage(":/images/default_texture.jpg")));
 
 	// запускаем фоновый поток
 	mBackgroundThread->start();
@@ -70,7 +70,7 @@ QSharedPointer<Texture> TextureManager::loadTexture(const QString &fileName, boo
 
 		// создаем текстуру и добавляем ее в кэш
 		mPrimaryGLWidget->makeCurrent();
-		texture = QSharedPointer<Texture>(new Texture(image, mPrimaryGLWidget));
+		texture = QSharedPointer<Texture>(new Texture(image));
 		mTextureCache.insert(fileName, texture);
 	}
 	else if (useDefaultTexture)
@@ -81,6 +81,11 @@ QSharedPointer<Texture> TextureManager::loadTexture(const QString &fileName, boo
 	}
 
 	return texture;
+}
+
+void TextureManager::makeCurrent()
+{
+	mPrimaryGLWidget->makeCurrent();
 }
 
 void TextureManager::timerEvent(QTimerEvent *event)

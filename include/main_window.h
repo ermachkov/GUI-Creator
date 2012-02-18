@@ -4,6 +4,7 @@
 #include "ui_main_window.h"
 
 class EditorWindow;
+class FontBrowser;
 class LayersWindow;
 class SpriteBrowser;
 class Texture;
@@ -155,6 +156,7 @@ private:
 	void checkMissedFiles();
 
 	SpriteBrowser       *mSpriteBrowser;        // Браузер спрайтов
+	FontBrowser         *mFontBrowser;          // Браузер шрифтов
 	LayersWindow        *mLayersWindow;         // Окно слоев
 	int                 mUntitledIndex;         // Текущий номер для новых файлов
 

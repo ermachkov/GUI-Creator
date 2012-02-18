@@ -43,9 +43,6 @@ private slots:
 
 private:
 
-	// Создает и инициализирует все виджеты на плавающем окне
-	void createWidgets();
-
 	// возврат из опций текущей коренной директории
 	QString getRootPath() const;
 

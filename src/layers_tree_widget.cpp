@@ -6,7 +6,6 @@
 #include "layer_group.h"
 #include "utils.h"
 
-// FIXME: в одной строчке с { комментарии не пишут. ИСПРАВИТЬ ВЕЗДЕ!!!
 // FIXME: условия надо полностью писать: topItem->parent() != NULL
 // в любом другом языке сразу ошибка компила вывалится, потому что в if выражения должны быть только типа bool, а ему всякие указатели пихают
 
@@ -147,13 +146,16 @@ void LayersTreeWidget::DEBUG_TREES()
 void LayersTreeWidget::onAddLayerGroup()
 {
 	if (currentItem() == NULL)
-	{	// текущий элемент - корень
+	{
+		// текущий элемент - корень
+
 		// добавление в корень нулевым элементом
 		int index = 0;
 		insertNewLayerGroup(index, invisibleRootItem());
 	}
 	else if (isLayerGroup(currentItem()))
-	{	// текущий элемент - группа
+	{
+		// текущий элемент - группа
 
 		// запрет добавления при превышениии допустимой вложенности
 		if (getLayerDepth(currentItem()) + 1 > BaseLayer::MAX_NESTED_LAYERS)
@@ -268,6 +270,9 @@ void LayersTreeWidget::dragEnterEvent(QDragEnterEvent *event)
 		return;
 
 	QTreeWidget::dragEnterEvent(event);
+
+	// отладочное сравнение деревьев
+	DEBUG_TREES();
 }
 
 void LayersTreeWidget::dropEvent(QDropEvent *event)
@@ -290,8 +295,14 @@ void LayersTreeWidget::dropEvent(QDropEvent *event)
 
 	// получение QTreeWidgetItem * перетаскиваемого элемента
 	QTreeWidgetItem *itemSelected = listItems.front();
+	// получение родителя
+	QTreeWidgetItem *itemSelectedParent = itemSelected->parent() ? itemSelected->parent() : invisibleRootItem();
 	// получение BaseLayer * перетаскиваемого элемента
 	BaseLayer *baseSelected = getBaseLayer(itemSelected);
+	// получение родителя
+	BaseLayer *baseSelectedParent = getBaseLayer(itemSelectedParent);
+	// получение индекса перетаскиваемого элемента
+	int indexSelected = itemSelectedParent->indexOfChild(itemSelected);
 
 	// подмена event на копирование
 	event->setDropAction(Qt::CopyAction);
@@ -304,15 +315,15 @@ void LayersTreeWidget::dropEvent(QDropEvent *event)
 	// поиск нового добавленного элемента QTreeWidgetItem в дереве
 	QList<QTreeWidgetItem *> stackItem;
 	stackItem.push_back(invisibleRootItem());
-
 	while (!stackItem.empty())
 	{
 		QTreeWidgetItem *currentItem = stackItem.last();
 		stackItem.pop_back();
 
-		// BaseLayer * совпадает, но сам QTreeWidgetItem * не совпадает
 		if (getBaseLayer(currentItem) == baseSelected && currentItem != listItems.front())
 		{
+			// BaseLayer * совпадает, но сам QTreeWidgetItem * не совпадает
+
 			// переназначение QTreeWidgetItem * добавленного элемента
 			itemAdded = currentItem;
 			// обнуление BaseLayer у нового элемента
@@ -342,12 +353,27 @@ void LayersTreeWidget::dropEvent(QDropEvent *event)
 
 	// синхронизация дерева BaseLayer с деревом Item
 
-//	FIXME: !!!
-//	if (создание дубликата только если копирование а не перетаскивание)
-//	{
+	// создание дубликата только если копирование а не перетаскивание
+	BaseLayer *baseAdded;
+	if (currentDropAction == Qt::CopyAction)
+	{
 		// дублирование дерева BaseLayer с прикреплением к новому родителю
-		BaseLayer *baseAdded = baseSelected->duplicate(baseAddedParent, indexAdded);
-//	}
+		baseAdded = baseSelected->duplicate(baseAddedParent, indexAdded);
+	}
+	else if (currentDropAction == Qt::MoveAction)
+	{
+		// отцепление от родителя
+		baseSelectedParent->removeChildLayer(indexSelected);
+
+		// родители совпадают и предшедствующее удаление сместило индекс - добавление с учетом порядка следования
+		if (itemAddedParent == itemSelectedParent && indexAdded > indexSelected)
+			indexAdded = indexAdded - 1;
+
+		baseAddedParent->insertChildLayer(indexAdded, baseSelected);
+
+		baseAdded = baseSelected;
+		baseSelected = NULL;
+	}
 
 	if (currentDropAction == Qt::CopyAction)
 	{
@@ -370,15 +396,8 @@ void LayersTreeWidget::dropEvent(QDropEvent *event)
 
 	if (currentDropAction == Qt::MoveAction)
 	{
-		qDebug() << "currentDropAction";
-
 		// удаление старой ветки item
 		delete itemSelected;
-
-		// удаление старой ветки base
-		delete baseSelected;
-
-		qDebug() << "currentDropAction";
 	}
 
 	emit locationChanged();
@@ -389,13 +408,6 @@ void LayersTreeWidget::dropEvent(QDropEvent *event)
 
 void LayersTreeWidget::keyPressEvent(QKeyEvent *event)
 {
-	qDebug() << "LayersTreeWidget::keyPressEvent" << event;
-
-//	qDebug() << "onDelete()...";
-//	qDebug() << mCurrentLocation->getRootLayer()->getNumChildLayers();
-//	qDebug() << mCurrentLocation->getActiveLayer();
-//	qDebug() << mCurrentLocation->getRootLayer()->getChildLayer(0);
-
 	if (event->key() == Qt::Key_Delete)
 	{
 		// условие нажатия клавиши "Delete" если один слой или одна активная папка
@@ -408,6 +420,9 @@ void LayersTreeWidget::keyPressEvent(QKeyEvent *event)
 	}
 
 	QTreeWidget::keyPressEvent(event);
+
+	// отладочное сравнение деревьев
+	DEBUG_TREES();
 }
 
 void LayersTreeWidget::contextMenuEvent(QContextMenuEvent *event)
@@ -428,12 +443,6 @@ void LayersTreeWidget::contextMenuEvent(QContextMenuEvent *event)
 
 void LayersTreeWidget::onCurrentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous)
 {
-    // FIXME: Мммм.. А че мешало написать getBaseLayer так, чтобы он
-    // возвращал NULL, если передано NULL?
-	// if (currentLocation != NULL)
-	//     currentLocation->setActiveLayer(getBaseLayer(current));
-	// 2 строчки вместо 12
-
 	if (current != NULL && getBaseLayer(current) != mCurrentLocation->getActiveLayer())
 	{
 		// есть выделенный item и текущие слои не совпадают
@@ -558,14 +567,13 @@ void LayersTreeWidget::onItemChanged(QTreeWidgetItem *item, int column)
 		getBaseLayer(item)->setName(item->text(DATA_COLUMN));
 
 		emit locationChanged();
-	}
 
+		DEBUG_TREES();
+	}
 }
 
 void LayersTreeWidget::onItemExpanded(QTreeWidgetItem *item)
 {
-//	qDebug() << "onItemExpanded:" << item;
-
 	BaseLayer *base = getBaseLayer(item);
 
 	if (!base->isExpanded())
@@ -578,8 +586,6 @@ void LayersTreeWidget::onItemExpanded(QTreeWidgetItem *item)
 
 void LayersTreeWidget::onItemCollapsed(QTreeWidgetItem *item)
 {
-//	qDebug() << "onItemCollapsed:" << item;
-
 	BaseLayer *base = getBaseLayer(item);
 
 	if (base->isExpanded())
@@ -706,21 +712,29 @@ QTreeWidgetItem *LayersTreeWidget::insertNewLayerGroup(int index, QTreeWidgetIte
 
 	// добавление "галочки" видимости
 	if (hasInvisibleParent(newItem))
-	{	// есть невидимый родитель
+	{
+		// есть невидимый родитель
+
 		setVisibleState(newItem, BaseLayer::LAYER_PARTIALLY_VISIBLE);
 	}
 	else
-	{	// нет невидимого родителя
+	{
+		// нет невидимого родителя
+
 		setVisibleState(newItem, BaseLayer::LAYER_VISIBLE);
 	}
 
 	// добавление "галочки" замочка
 	if (hasLockedParent(newItem))
-	{	// есть заблокированный родитель
+	{
+		// есть заблокированный родитель
+
 		setLockState(newItem, BaseLayer::LAYER_PARTIALLY_UNLOCKED);
 	}
 	else
-	{	// нет заблокированного родителя
+	{
+		// нет заблокированного родителя
+
 		setLockState(newItem, BaseLayer::LAYER_UNLOCKED);
 	}
 
@@ -838,76 +852,31 @@ void LayersTreeWidget::createTreeItems(QTreeWidgetItem *item, BaseLayer *base)
 
 }
 
-// генерация имени копии по исходному имени
-QString LayersTreeWidget::generateCopyName(QString str)
+QString LayersTreeWidget::generateCopyName(const QString &name)
 {
-	QString oldName = str;
-	// индекс копии
-	int indexAfterCopy = 0;
-
-	QStringList splitName = oldName.split(" ");
-	int index = splitName.lastIndexOf("Copy");
-	if (index == splitName.size() - 1)
+	// выделяем базовую часть имени
+	QString baseName = name;
+	int index = 0;
+	QRegExp regexp;
+	if ((regexp = QRegExp("(.*) копия (\\d+)")).exactMatch(name) && regexp.capturedTexts()[2].toInt() >= 2)
 	{
-		// последнее вхождение
-		indexAfterCopy = 1;
-		splitName.removeLast();
-		oldName = splitName.join(" ");
+		baseName = regexp.capturedTexts()[1];
+		index = regexp.capturedTexts()[2].toInt();
 	}
-	else if (index == splitName.size() - 2)
+	else if ((regexp = QRegExp("(.*) копия")).exactMatch(name))
 	{
-		// предпоследнее вхождение
-		bool isOk;
-		indexAfterCopy = splitName[splitName.size() - 1].toInt(&isOk);
-		if (isOk && indexAfterCopy >= 2)
-		{
-			// справа валидное unsigned int число
-			splitName.removeLast();
-			splitName.removeLast();
-			oldName = splitName.join(" ");
-		}
+		baseName = regexp.capturedTexts()[1];
+		index = 1;
 	}
 
-	// формирование нового имени
-	QString newName;
-	do
-	{
-		if (indexAfterCopy == 0)
-			newName = oldName + " Copy";
-		else
-			newName = oldName + " Copy " + QString::number(indexAfterCopy + 1);
-
-		++indexAfterCopy;
-	}
-	while (mCurrentLocation->getRootLayer()->findLayerByName(newName));
+	// подбираем индекс для нового имени
+	QString newName = name;
+	//for (int i = index; mRootLayer->findGameObjectByName(newName) != NULL; ++i)
+	for (int i = index; mCurrentLocation->getRootLayer()->findLayerByName(newName) != NULL; ++i)
+		newName = baseName + " копия" + (i > 1 ? " " + QString::number(i) : "");
 
 	return newName;
 }
-/*
-QTreeWidgetItem *LayersTreeWidget::findItemByBaseLayer_GOVNO(BaseLayer *layer) const
-{
-	// обход всего дерева
-	QList<QTreeWidgetItem *> stack;
-	stack.push_back(invisibleRootItem());
-	while (!stack.empty())
-	{
-		QTreeWidgetItem *currentItem = stack.last();
-		// удаление последнего элемента стека
-		stack.pop_back();
-
-		if (getBaseLayer(currentItem) == layer)
-			return currentItem;
-
-		// добавлеине в стек всех потомков текущего элемента
-		for (int i = 0; i < currentItem->childCount(); ++i)
-			//stack.push_back(currentItem->child(i));
-			stack += currentItem->child(i);
-	}
-
-	qWarning() << "Warning! findByBaseLayer return NULL";
-	return NULL;
-}
-*/
 
 QTreeWidgetItem *LayersTreeWidget::findItemByBaseLayer(BaseLayer *layer, QTreeWidgetItem *item) const
 {

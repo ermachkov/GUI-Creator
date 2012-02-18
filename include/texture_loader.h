@@ -13,8 +13,8 @@ class TextureLoader : public QObject
 public:
 
 	// Конструктор
-	TextureLoader(QGLWidget *primaryGLWidget, QGLWidget *secondaryGLWidget)
-	: mPrimaryGLWidget(primaryGLWidget), mSecondaryGLWidget(secondaryGLWidget)
+	TextureLoader(QGLWidget *secondaryGLWidget)
+	: mSecondaryGLWidget(secondaryGLWidget)
 	{
 	}
 
@@ -30,7 +30,7 @@ public slots:
 		if (Utils::fileExists(path) && !(image = QImage(path)).isNull())
 		{
 			mSecondaryGLWidget->makeCurrent();
-			texture = QSharedPointer<Texture>(new Texture(image, mPrimaryGLWidget));
+			texture = QSharedPointer<Texture>(new Texture(image));
 			mSecondaryGLWidget->doneCurrent();
 		}
 		emit textureLoaded(fileName, texture);
@@ -43,8 +43,8 @@ signals:
 
 private:
 
-	QGLWidget   *mPrimaryGLWidget;   // OpenGL виджет для загрузки текстур в главном потоке
-	QGLWidget   *mSecondaryGLWidget; // OpenGL виджет для загрузки текстур в фоновом потоке
+	// OpenGL виджет для загрузки текстур в фоновом потоке
+	QGLWidget *mSecondaryGLWidget;
 };
 
 #endif // TEXTURE_LOADER_H

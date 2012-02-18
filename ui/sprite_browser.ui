@@ -23,9 +23,6 @@
    <layout class="QVBoxLayout" name="mDockWidgetLayout">
     <item>
      <widget class="QListWidget" name="mListWidget">
-      <property name="enabled">
-       <bool>true</bool>
-      </property>
       <property name="iconSize">
        <size>
         <width>64</width>

@@ -5,15 +5,18 @@
 
 template<> FontManager *Singleton<FontManager>::mSingleton = NULL;
 
-FontManager::FontManager()
+FontManager::FontManager(QGLWidget *primaryGLWidget)
+: mPrimaryGLWidget(primaryGLWidget)
 {
 	// загружаем шрифт по умолчанию
 	QFile file(":/default_font.ttf");
 	file.open(QIODevice::ReadOnly);
-	QByteArray buf = file.readAll();
+	mDefaultFontBuffer = file.readAll();
 
-	mDefaultFont = QSharedPointer<FTFont>(new FTTextureFont(reinterpret_cast<unsigned char *>(buf.data()), buf.size()));
-	mDefaultFont->FaceSize(16);
+	mPrimaryGLWidget->makeCurrent();
+	mDefaultFont = QSharedPointer<FTFont>(new FTTextureFont(reinterpret_cast<unsigned char *>(mDefaultFontBuffer.data()), mDefaultFontBuffer.size()));
+	mDefaultFont->GlyphLoadFlags(FT_LOAD_DEFAULT);
+	mDefaultFont->FaceSize(32);
 	mDefaultFont->CharMap(FT_ENCODING_UNICODE);
 }
 
@@ -38,9 +41,11 @@ QSharedPointer<FTFont> FontManager::loadFont(const QString &fileName, int size, 
 	// не нашли в кэше - загружаем шрифт из файла
 	QSharedPointer<FTFont> font;
 	QString path = Options::getSingleton().getDataDirectory() + fileName;
-	if (Utils::fileExists(path) && (font = QSharedPointer<FTFont>(new FTTextureFont(path.toAscii().data())))->Error() == 0)
+	mPrimaryGLWidget->makeCurrent();
+	if (Utils::fileExists(path) && (font = QSharedPointer<FTFont>(new FTTextureFont(path.toStdString().c_str())))->Error() == 0)
 	{
 		// настраиваем загруженный шрифт и добавляем его в кэш
+		font->GlyphLoadFlags(FT_LOAD_DEFAULT);
 		font->FaceSize(size);
 		font->CharMap(FT_ENCODING_UNICODE);
 		mFontCache.push_back(FontInfo(fileName, size, font));
@@ -53,4 +58,9 @@ QSharedPointer<FTFont> FontManager::loadFont(const QString &fileName, int size, 
 	}
 
 	return font;
+}
+
+void FontManager::makeCurrent()
+{
+	mPrimaryGLWidget->makeCurrent();
 }

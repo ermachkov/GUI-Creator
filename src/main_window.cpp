@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "main_window.h"
 #include "editor_window.h"
+#include "font_browser.h"
 #include "font_manager.h"
 #include "layers_window.h"
 #include "options.h"
@@ -26,12 +27,20 @@ MainWindow::MainWindow()
 	// создаем синглетоны
 	QSettings settings;
 	new Options(settings);
-	new FontManager();
+	new FontManager(mPrimaryGLWidget);
 	new TextureManager(mPrimaryGLWidget, mSecondaryGLWidget);
 
 	// создаем браузер спрайтов
 	mSpriteBrowser = new SpriteBrowser(this);
 	addDockWidget(Qt::RightDockWidgetArea, mSpriteBrowser);
+
+	// создаем браузер шрифтов
+	mFontBrowser = new FontBrowser(this);
+	addDockWidget(Qt::RightDockWidgetArea, mFontBrowser);
+
+	// FIXME:
+	// наложение плавающих окон друг на друга
+	tabifyDockWidget(mSpriteBrowser, mFontBrowser);
 
 	// создаем окно слоев
 	mLayersWindow = new LayersWindow(mPrimaryGLWidget, this);
@@ -150,6 +159,7 @@ MainWindow::~MainWindow()
 {
 	// удаляем объекты редактора в нужном порядке
 	delete mSpriteBrowser;
+	delete mFontBrowser;
 	delete mLayersWindow;
 
 	// удаляем синглетоны в последнюю очередь

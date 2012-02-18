@@ -25,6 +25,9 @@ public:
 	// Загружает текстуру и возвращает указатель на нее
 	QSharedPointer<Texture> loadTexture(const QString &fileName, bool useDefaultTexture = true);
 
+	// Устанавливает текущий контекст OpenGL
+	void makeCurrent();
+
 signals:
 
 	// Сигнал изменения текстуры

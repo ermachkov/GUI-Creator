@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "layer.h"
+#include "label.h"
 #include "lua_script.h"
 #include "sprite.h"
 
@@ -80,6 +81,8 @@ bool Layer::load(LuaScript &script, int depth)
 		GameObject *object;
 		if (type == "Sprite")
 			object = new Sprite();
+		else if (type == "Label")
+			object = new Label();
 		else
 			return false;
 

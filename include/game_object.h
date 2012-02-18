@@ -14,7 +14,7 @@ public:
 	GameObject();
 
 	// Конструктор
-	GameObject(const QString &name, const QPointF &position, const QSizeF &size, Layer *parent = NULL);
+	GameObject(const QString &name, Layer *parent = NULL);
 
 	// Конструктор копирования
 	GameObject(const GameObject &object);

@@ -31,7 +31,7 @@ bool LuaScript::load(const QString &fileName)
 	luaL_openlibs(mLuaState);
 
 	// загружаем и выполняем скрипт
-	if (luaL_loadbuffer(mLuaState, buf.data(), buf.size(), fileName.toAscii().data()) != 0 || lua_pcall(mLuaState, 0, 0, 0) != 0)
+	if (luaL_loadbuffer(mLuaState, buf.data(), buf.size(), fileName.toStdString().c_str()) != 0 || lua_pcall(mLuaState, 0, 0, 0) != 0)
 	{
 		qDebug() << lua_tostring(mLuaState, -1);
 		lua_pop(mLuaState, 1);
@@ -44,7 +44,7 @@ bool LuaScript::load(const QString &fileName)
 bool LuaScript::getString(const QString &name, QString &value) const
 {
 	// читаем значение строковой переменной
-	lua_getfield(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -1, name.toAscii().data());
+	lua_getfield(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -1, name.toStdString().c_str());
 	if (lua_isstring(mLuaState, -1) != 0)
 	{
 		value = lua_tostring(mLuaState, -1);
@@ -60,7 +60,7 @@ bool LuaScript::getString(const QString &name, QString &value) const
 bool LuaScript::getInt(const QString &name, int &value) const
 {
 	// читаем значение целочисленной переменной
-	lua_getfield(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -1, name.toAscii().data());
+	lua_getfield(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -1, name.toStdString().c_str());
 	if (lua_isnumber(mLuaState, -1) != 0)
 	{
 		value = lua_tointeger(mLuaState, -1);
@@ -93,7 +93,7 @@ bool LuaScript::getInt(int index, int &value) const
 bool LuaScript::getReal(const QString &name, qreal &value) const
 {
 	// читаем значение вещественной переменной
-	lua_getfield(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -1, name.toAscii().data());
+	lua_getfield(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -1, name.toStdString().c_str());
 	if (lua_isnumber(mLuaState, -1) != 0)
 	{
 		value = lua_tonumber(mLuaState, -1);
@@ -109,7 +109,7 @@ bool LuaScript::getReal(const QString &name, qreal &value) const
 bool LuaScript::getBool(const QString &name, bool &value) const
 {
 	// читаем значение булевской переменной
-	lua_getfield(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -1, name.toAscii().data());
+	lua_getfield(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -1, name.toStdString().c_str());
 	if (lua_isboolean(mLuaState, -1) != 0)
 	{
 		value = lua_toboolean(mLuaState, -1);
@@ -130,7 +130,7 @@ int LuaScript::getLength() const
 bool LuaScript::pushTable(const QString &name)
 {
 	// помещаем таблицу в стек
-	lua_getfield(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -1, name.toAscii().data());
+	lua_getfield(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -1, name.toStdString().c_str());
 	if (lua_istable(mLuaState, -1) != 0)
 	{
 		++mTableIndex;

@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "texture.h"
 
-Texture::Texture(const QImage &image, QGLWidget *widget)
-: mGLWidget(widget), mHandle(0), mSize(image.size())
+Texture::Texture(const QImage &image)
+: mHandle(0), mSize(image.size())
 {
 	// конвертируем изображение в формат, подходящий для OpenGL
 	QImage GLImage = QGLWidget::convertToGLFormat(image);
@@ -22,10 +22,7 @@ Texture::Texture(const QImage &image, QGLWidget *widget)
 Texture::~Texture()
 {
 	if (mHandle != 0)
-	{
-		mGLWidget->makeCurrent();
 		glDeleteTextures(1, &mHandle);
-	}
 }
 
 GLuint Texture::getHandle() const

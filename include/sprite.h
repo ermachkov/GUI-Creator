@@ -13,10 +13,19 @@ public:
 	Sprite();
 
 	// Конструктор
-	Sprite(const QString &name, const QPointF &position, const QString &fileName, const QSharedPointer<Texture> &texture, Layer *parent = NULL);
+	Sprite(const QString &name, const QPointF &pos, const QString &fileName, Layer *parent = NULL);
 
 	// Конструктор копирования
 	Sprite(const Sprite &sprite);
+
+	// Деструктор
+	virtual ~Sprite();
+
+	// Возвращает имя файла с текстурой
+	QString getFileName() const;
+
+	// Устанавливает имя файла с текстурой
+	void setFileName(const QString &fileName);
 
 	// Возвращает цвет спрайта
 	QColor getColor() const;
