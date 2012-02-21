@@ -9,8 +9,8 @@ GameObject::GameObject()
 {
 }
 
-GameObject::GameObject(const QString &name, Layer *parent)
-: mName(name), mRotationAngle(0.0), mParentLayer(NULL)
+GameObject::GameObject(const QString &name, int id, Layer *parent)
+: mName(name), mObjectID(id), mRotationAngle(0.0), mParentLayer(NULL)
 {
 	// добавляем себя в родительский слой
 	if (parent != NULL)
@@ -18,7 +18,8 @@ GameObject::GameObject(const QString &name, Layer *parent)
 }
 
 GameObject::GameObject(const GameObject &object)
-: mName(object.mName), mPosition(object.mPosition), mSize(object.mSize), mRotationAngle(object.mRotationAngle), mRotationCenter(object.mRotationCenter), mParentLayer(NULL)
+: mName(object.mName), mObjectID(object.mObjectID), mPosition(object.mPosition), mSize(object.mSize),
+  mRotationAngle(object.mRotationAngle), mRotationCenter(object.mRotationCenter), mParentLayer(NULL)
 {
 	// обновляем текущую трансформацию
 	updateTransform();
@@ -39,6 +40,16 @@ QString GameObject::getName() const
 void GameObject::setName(const QString &name)
 {
 	mName = name;
+}
+
+int GameObject::getObjectID() const
+{
+	return mObjectID;
+}
+
+void GameObject::setObjectID(int id)
+{
+	mObjectID = id;
 }
 
 QPointF GameObject::getPosition() const
@@ -73,10 +84,7 @@ qreal GameObject::getRotationAngle() const
 
 void GameObject::setRotationAngle(qreal angle)
 {
-	// приводим угол к диапазону [0; 360) градусов
-	mRotationAngle = fmod(angle, 360.0);
-	if (mRotationAngle < 0.0)
-		mRotationAngle += 360.0;
+	mRotationAngle = angle;
 	updateTransform();
 }
 
@@ -120,7 +128,7 @@ bool GameObject::isContainedInRect(const QRectF &rect) const
 bool GameObject::load(QDataStream &stream)
 {
 	// загружаем свойства объекта из потока
-	stream >> mName >> mPosition >> mSize >> mRotationAngle >> mRotationCenter;
+	stream >> mName >> mObjectID >> mPosition >> mSize >> mRotationAngle >> mRotationCenter;
 	if (stream.status() != QDataStream::Ok)
 		return false;
 
@@ -132,14 +140,14 @@ bool GameObject::load(QDataStream &stream)
 bool GameObject::save(QDataStream &stream)
 {
 	// сохраняем данные в поток
-	stream << mName << mPosition << mSize << mRotationAngle << mRotationCenter;
+	stream << mName << mObjectID << mPosition << mSize << mRotationAngle << mRotationCenter;
 	return stream.status() == QDataStream::Ok;
 }
 
 bool GameObject::load(LuaScript &script)
 {
 	// загружаем свойства объекта из Lua скрипта
-	if (!script.getString("name", mName)
+	if (!script.getString("name", mName) || !script.getInt("id", mObjectID)
 		|| !script.getReal("pos_x", mPosition.rx()) || !script.getReal("pos_y", mPosition.ry())
 		|| !script.getReal("width", mSize.rwidth()) || !script.getReal("height", mSize.rheight())
 		|| !script.getReal("angle", mRotationAngle)
@@ -154,7 +162,7 @@ bool GameObject::load(LuaScript &script)
 bool GameObject::save(QTextStream &stream, int indent)
 {
 	// сохраняем свойства объекта в поток
-	stream << "name = \"" << Utils::insertBackslashes(mName) << "\""
+	stream << "name = \"" << Utils::insertBackslashes(mName) << "\", id = " << mObjectID
 		<< ", pos_x = " << mPosition.x() << ", pos_y = " << mPosition.y()
 		<< ", width = " << mSize.width() << ", height = " << mSize.height()
 		<< ", angle = " << mRotationAngle
@@ -174,18 +182,7 @@ QPointF GameObject::worldToLocal(const QPointF &pt) const
 
 void GameObject::updateTransform()
 {
-	// проверяем угол поворота на 0/90/180/270 градусов
-	const qreal EPS = 0.1;
-	if (qAbs(mRotationAngle) <= EPS)
-		mRotationAngle = 0.0;
-	else if (qAbs(mRotationAngle - 90.0) <= EPS)
-		mRotationAngle = 90.0;
-	else if (qAbs(mRotationAngle - 180.0) <= EPS)
-		mRotationAngle = 180.0;
-	else if (qAbs(mRotationAngle - 270.0) <= EPS)
-		mRotationAngle = 270.0;
-
-	// для неповернутых спрайтов округляем координаты и размер до целочисленных значений
+	// для объектов, повернутых на 0/90/180/270 градусов, округляем координаты и размер до целочисленных значений
 	if (mRotationAngle == 0.0 || mRotationAngle == 90.0 || mRotationAngle == 180.0 || mRotationAngle == 270.0)
 	{
 		mPosition = QPointF(qRound(mPosition.x()), qRound(mPosition.y()));

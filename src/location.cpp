@@ -7,7 +7,7 @@
 #include "sprite.h"
 
 Location::Location(QObject *parent)
-: QObject(parent), mLayerIndex(1), mLayerGroupIndex(1), mSpriteIndex(1), mLabelIndex(1)
+: QObject(parent), mObjectIndex(1), mLayerIndex(1), mLayerGroupIndex(1), mSpriteIndex(1), mLabelIndex(1)
 {
 	// создаем корневой слой
 	mRootLayer = new LayerGroup("");
@@ -55,7 +55,7 @@ bool Location::load(const QString &fileName)
 	script.popTable();
 
 	// загружаем счетчики для генерации имен
-	if (!script.getInt("layerIndex", mLayerIndex) || !script.getInt("layerGroupIndex", mLayerGroupIndex)
+	if (!script.getInt("objectIndex", mObjectIndex) || !script.getInt("layerIndex", mLayerIndex) || !script.getInt("layerGroupIndex", mLayerGroupIndex)
 		|| !script.getInt("spriteIndex", mSpriteIndex) || !script.getInt("labelIndex", mLabelIndex))
 		return false;
 
@@ -91,6 +91,7 @@ bool Location::save(const QString &fileName)
 	stream << endl << "activeLayer = {" << indices.join(", ") << "}" << endl;
 
 	// сохраняем счетчики для генерации имен
+	stream << endl << "objectIndex = " << mObjectIndex << endl;
 	stream << "layerIndex = " << mLayerIndex << endl;
 	stream << "layerGroupIndex = " << mLayerGroupIndex << endl;
 	stream << "spriteIndex = " << mSpriteIndex << endl;
@@ -133,12 +134,12 @@ BaseLayer *Location::createLayerGroup(BaseLayer *parent, int index)
 
 GameObject *Location::createSprite(const QPointF &pos, const QString &fileName)
 {
-	return new Sprite(QString("Спрайт %1").arg(mSpriteIndex++), pos, fileName, getAvailableLayer());
+	return new Sprite(QString("Спрайт %1").arg(mSpriteIndex++), mObjectIndex++, pos, fileName, getAvailableLayer());
 }
 
 GameObject *Location::createLabel(const QPointF &pos, const QString &fileName, int size)
 {
-	return new Label(QString("Текст %1").arg(mLabelIndex++), pos, fileName, size, getAvailableLayer());
+	return new Label(QString("Текст %1").arg(mLabelIndex++), mObjectIndex++, pos, fileName, size, getAvailableLayer());
 }
 
 GameObject *Location::loadGameObject(QDataStream &stream)
@@ -190,4 +191,9 @@ QString Location::generateDuplicateName(const QString &name) const
 	for (int i = index; mRootLayer->findGameObjectByName(newName) != NULL; ++i)
 		newName = baseName + " копия" + (i > 1 ? " " + QString::number(i) : "");
 	return newName;
+}
+
+int Location::generateDuplicateObjectID()
+{
+	return mObjectIndex++;
 }

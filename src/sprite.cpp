@@ -9,8 +9,8 @@ Sprite::Sprite()
 {
 }
 
-Sprite::Sprite(const QString &name, const QPointF &pos, const QString &fileName, Layer *parent)
-: GameObject(name, parent), mFileName(fileName), mColor(Qt::white)
+Sprite::Sprite(const QString &name, int id, const QPointF &pos, const QString &fileName, Layer *parent)
+: GameObject(name, id, parent), mFileName(fileName), mColor(Qt::white)
 {
 	// загружаем текстуру спрайта
 	mTexture = TextureManager::getSingleton().loadTexture(mFileName);

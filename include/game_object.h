@@ -14,7 +14,7 @@ public:
 	GameObject();
 
 	// Конструктор
-	GameObject(const QString &name, Layer *parent = NULL);
+	GameObject(const QString &name, int id, Layer *parent = NULL);
 
 	// Конструктор копирования
 	GameObject(const GameObject &object);
@@ -27,6 +27,12 @@ public:
 
 	// Устанавливает имя объекта
 	void setName(const QString &name);
+
+	// Возвращает идентификатор объекта
+	int getObjectID() const;
+
+	// Устанавливает идентификатор объекта
+	void setObjectID(int id);
 
 	// Возвращает координаты объекта
 	QPointF getPosition() const;
@@ -103,6 +109,7 @@ protected:
 	void updateTransform();
 
 	QString     mName;              // Имя (текстовое описание) объекта
+	int         mObjectID;          // Идентификатор объекта
 	QPointF     mPosition;          // Мировые координаты объекта
 	QSizeF      mSize;              // Размеры объекта в пикселях
 	qreal       mRotationAngle;     // Угол поворота объекта в градусах по часовой стрелке

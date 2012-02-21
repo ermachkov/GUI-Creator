@@ -38,9 +38,14 @@ MainWindow::MainWindow()
 	mFontBrowser = new FontBrowser(this);
 	addDockWidget(Qt::RightDockWidgetArea, mFontBrowser);
 
-	// FIXME:
 	// наложение плавающих окон друг на друга
 	tabifyDockWidget(mSpriteBrowser, mFontBrowser);
+
+	// установка нулевого индекса для всех таббаров
+	QList<QTabBar *> tabBars = findChildren<QTabBar *>();
+	foreach (QTabBar *tabBar, tabBars)
+		if (tabBar->count())
+			tabBar->setCurrentIndex(0);
 
 	// создаем окно слоев
 	mLayersWindow = new LayersWindow(mPrimaryGLWidget, this);

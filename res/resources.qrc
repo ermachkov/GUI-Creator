@@ -34,5 +34,6 @@
         <file>images/send_to_back.png</file>
         <file>images/default_texture.jpg</file>
         <file>default_font.ttf</file>
+        <file>images/draw_text.png</file>
     </qresource>
 </RCC>

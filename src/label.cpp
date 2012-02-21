@@ -9,8 +9,9 @@ Label::Label()
 {
 }
 
-Label::Label(const QString &name, const QPointF &pos, const QString &fileName, int size, Layer *parent)
-: GameObject(name, parent), mText(name), mFileName(fileName), mFontSize(size), mAlignment(FTGL::ALIGN_LEFT), mColor(Qt::white)
+Label::Label(const QString &name, int id, const QPointF &pos, const QString &fileName, int size, Layer *parent)
+: GameObject(name, id, parent), mText(name), mFileName(fileName), mFontSize(size), mAlignment(FTGL::ALIGN_LEFT),
+  mVertAlignment(VERT_ALIGN_TOP), mColor(Qt::white)
 {
 	// загружаем шрифт
 	mFont = FontManager::getSingleton().loadFont(mFileName, mFontSize);
@@ -29,7 +30,7 @@ Label::Label(const QString &name, const QPointF &pos, const QString &fileName, i
 
 Label::Label(const Label &label)
 : GameObject(label), mText(label.mText), mFileName(label.mFileName), mFontSize(label.mFontSize), mFont(label.mFont),
-  mAlignment(label.mAlignment), mColor(label.mColor)
+  mAlignment(label.mAlignment), mVertAlignment(label.mVertAlignment), mColor(label.mColor)
 {
 }
 
@@ -81,6 +82,16 @@ void Label::setAlignment(FTGL::TextAlignment alignment)
 	mAlignment = alignment;
 }
 
+Label::VertAlignment Label::getVertAlignment() const
+{
+	return mVertAlignment;
+}
+
+void Label::setVertAlignment(VertAlignment alignment)
+{
+	mVertAlignment = alignment;
+}
+
 QColor Label::getColor() const
 {
 	return mColor;
@@ -98,11 +109,12 @@ bool Label::load(QDataStream &stream)
 		return false;
 
 	// загружаем данные надписи
-	int alignment;
-	stream >> mText >> mFileName >> mFontSize >> alignment >> mColor;
+	int alignment, vertAlignment;
+	stream >> mText >> mFileName >> mFontSize >> alignment >> vertAlignment >> mColor;
 	if (stream.status() != QDataStream::Ok)
 		return false;
 	mAlignment = static_cast<FTGL::TextAlignment>(alignment);
+	mVertAlignment = static_cast<VertAlignment>(vertAlignment);
 
 	// загружаем шрифт надписи
 	mFont = FontManager::getSingleton().loadFont(mFileName, mFontSize);
@@ -121,7 +133,7 @@ bool Label::save(QDataStream &stream)
 		return false;
 
 	// сохраняем данные надписи
-	stream << mText << mFileName << mFontSize << mAlignment << mColor;
+	stream << mText << mFileName << mFontSize << mAlignment << mVertAlignment << mColor;
 	return stream.status() == QDataStream::Ok;
 }
 
@@ -132,11 +144,12 @@ bool Label::load(LuaScript &script)
 		return false;
 
 	// загружаем данные надписи
-	int alignment, color;
+	int alignment, vertAlignment, color;
 	if (!script.getString("text", mText) || !script.getString("font", mFileName) || !script.getInt("size", mFontSize)
-		|| !script.getInt("alignment", alignment) || !script.getInt("color", color))
+		|| !script.getInt("alignment", alignment) || !script.getInt("vert_alignment", vertAlignment) || !script.getInt("color", color))
 		return false;
 	mAlignment = static_cast<FTGL::TextAlignment>(alignment);
+	mVertAlignment = static_cast<VertAlignment>(vertAlignment);
 	mColor = QColor::fromRgba(color);
 
 	// загружаем шрифт надписи
@@ -154,8 +167,9 @@ bool Label::save(QTextStream &stream, int indent)
 		return false;
 
 	// сохраняем свойства надписи
-	stream << ", text = \"" << Utils::insertBackslashes(mText) << "\", font = \"" << Utils::insertBackslashes(mFileName) << "\", size = "
-		<< mFontSize << ", alignment = " << mAlignment << ", color = 0x" << hex << mColor.rgba() << dec << "}";
+	stream << ", text = \"" << Utils::insertBackslashes(mText) << "\", font = \"" << Utils::insertBackslashes(mFileName)
+		<< "\", size = " << mFontSize << ", alignment = " << mAlignment << ", vert_alignment = " << mVertAlignment
+		<< ", color = 0x" << hex << mColor.rgba() << dec << "}";
 	return stream.status() == QTextStream::Ok;
 }
 

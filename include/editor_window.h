@@ -101,14 +101,8 @@ signals:
 
 protected:
 
-	// Вызывается при создании контекста OpenGL
-	virtual void initializeGL();
-
 	// Вызывается при перерисовке окна
-	virtual void paintGL();
-
-	// Вызывается при изменении размеров окнаa
-	virtual void resizeGL(int width, int height);
+	virtual void paintEvent(QPaintEvent *event);
 
 	// Обработчик нажатия кнопки мышки
 	virtual void mousePressEvent(QMouseEvent *event);
@@ -192,7 +186,7 @@ private:
 	SelectionMarker findSelectionMarker(const QPointF &pos) const;
 
 	// Рисует маркер выделения
-	void drawSelectionMarker(qreal x, qreal y);
+	void drawSelectionMarker(qreal x, qreal y, QPainter &painter);
 
 	Location            *mLocation;         // Игровая локация
 	QString             mFileName;          // Имя файла локации

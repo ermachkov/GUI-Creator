@@ -13,7 +13,7 @@ public:
 	Sprite();
 
 	// Конструктор
-	Sprite(const QString &name, const QPointF &pos, const QString &fileName, Layer *parent = NULL);
+	Sprite(const QString &name, int id, const QPointF &pos, const QString &fileName, Layer *parent = NULL);
 
 	// Конструктор копирования
 	Sprite(const Sprite &sprite);

@@ -1048,13 +1048,13 @@ QIcon LayersTreeWidget::createLayerIcon(BaseLayer *baseLayer)
 
 	// устанавливаем систему координат с началом координат в левом верхнем углу
 	glViewport(0, 0, WIDTH_THUMBNAIL, HEIGHT_THUMBNAIL);
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluOrtho2D(0.0, WIDTH_THUMBNAIL, HEIGHT_THUMBNAIL, 0.0);
+
+	// устанавливаем матрицу вида
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
 
 	// настройка текстурирования
 	glEnable(GL_TEXTURE_2D);
@@ -1063,18 +1063,20 @@ QIcon LayersTreeWidget::createLayerIcon(BaseLayer *baseLayer)
 	// настройка смешивания
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	// отрисовка рамки по краю
-	Utils::drawRect(QRectF(0.5, 0.5, WIDTH_THUMBNAIL - 1.0, HEIGHT_THUMBNAIL - 1.0), QColor(0, 0, 0));
-
 	// центровка с масштабированием
 	QRectF rect = baseLayer->getBoundingRect();
-	qreal scale = qMin((WIDTH_THUMBNAIL - 2) / rect.width(), (HEIGHT_THUMBNAIL - 2) / rect.height());
+	qreal scale = qMin((WIDTH_THUMBNAIL - 2.0) / rect.width(), (HEIGHT_THUMBNAIL - 2.0) / rect.height());
+	glTranslated((WIDTH_THUMBNAIL - rect.width() * scale) / 2.0, (HEIGHT_THUMBNAIL - rect.height() * scale) / 2.0, 0.0);
 	glScaled(scale, scale, 1.0);
-	// центровка
-	glTranslated(-rect.left() + ((WIDTH_THUMBNAIL) / scale - rect.width()) / 2.0,
-		-rect.top() + ((HEIGHT_THUMBNAIL) / scale - rect.height()) / 2.0, 0.0);
-
+	glTranslated(-rect.left(), -rect.top(), 0.0);
 	baseLayer->draw(true);
+
+	// отрисовка рамки по краю
+	QPainter painter(mFrameBuffer);
+	painter.setPen(QColor(0, 0, 0));
+	painter.drawRect(QRectF(0.5, 0.5, WIDTH_THUMBNAIL - 1.0, HEIGHT_THUMBNAIL - 1.0));
+	painter.end();
+
 	QImage image = mFrameBuffer->toImage();
 	mFrameBuffer->release();
 

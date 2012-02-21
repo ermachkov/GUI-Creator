@@ -7,9 +7,8 @@
 
 
 EditorWindow::EditorWindow(QWidget *parent, QGLWidget *shareWidget, const QString &fileName)
-// FIXME: будь человеком ограничь длинну строки хотя бы сотней
-: QGLWidget(shareWidget->format(), parent, shareWidget), mFileName(fileName), mChanged(false), mSaved(false), mEditorState(STATE_IDLE),
-  mCameraPos(0.0, 0.0), mZoom(1.0), mRotationMode(false)
+: QGLWidget(shareWidget->format(), parent, shareWidget), mFileName(fileName), mChanged(false), mSaved(false),
+  mEditorState(STATE_IDLE), mCameraPos(0.0, 0.0), mZoom(1.0), mRotationMode(false)
 {
 	// разрешаем события клавиатуры и перемещения мыши
 	setFocusPolicy(Qt::StrongFocus);
@@ -168,10 +167,11 @@ void EditorWindow::paste()
 			}
 		}
 
-		// добавляем объекты в активный слой
+		// генерируем новые имена и ID для созданных объектов и добавляем их в активный слой
 		for (int i = objects.size() - 1; i >= 0; --i)
 		{
 			objects[i]->setName(mLocation->generateDuplicateName(objects[i]->getName()));
+			objects[i]->setObjectID(mLocation->generateDuplicateObjectID());
 			layer->insertGameObject(0, objects[i]);
 		}
 
@@ -313,18 +313,20 @@ void EditorWindow::changeTexture(const QString &fileName, const QSharedPointer<T
 		emit layerChanged(mLocation, layer);
 }
 
-void EditorWindow::initializeGL()
-{
-	qglClearColor(QColor(33, 40, 48));
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-}
-
-void EditorWindow::paintGL()
+void EditorWindow::paintEvent(QPaintEvent *event)
 {
 	// очищаем окно
+	qglClearColor(QColor(33, 40, 48));
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	// установка позиции камеры и зума
+	// устанавливаем стандартную систему координат (0, 0, width, height) с началом координат в левом верхнем углу
+	glViewport(0, 0, width(), height());
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluOrtho2D(0.0, width(), height(), 0.0);
+
+	// устанавливаем камеру
+	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glScaled(mZoom, mZoom, 1.0);
 	glTranslated(-mCameraPos.x(), -mCameraPos.y(), 0.0);
@@ -344,6 +346,8 @@ void EditorWindow::paintGL()
 	int bottom = static_cast<int>(visibleRect.bottom() / cellSize);
 
 	// начинаем рисовать линии
+	glPushMatrix();
+	glTranslated(0.5 / mZoom, 0.5 / mZoom, 0.0);
 	glBegin(GL_LINES);
 
 	// отрисовка вспомогательных линий
@@ -392,41 +396,46 @@ void EditorWindow::paintGL()
 
 	// заканчиваем рисовать линии
 	glEnd();
+	glPopMatrix();
 
 	// рисуем локацию
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	mLocation->getRootLayer()->draw();
 	glDisable(GL_TEXTURE_2D);
 	glDisable(GL_BLEND);
 
-	// сбрасываем матрицу трансформации для рисования в оконных координатах
-	glLoadIdentity();
+	// создаем painter для дополнительного рисования
+	QPainter painter(this);
 
 	// рисуем прямоугольник выделения
 	if (!mSelectedObjects.empty())
 	{
 		// рисуем прямоугольники выделения объектов
+		painter.setPen(QColor(0, 127, 255));
 		foreach (GameObject *object, mSelectedObjects)
 		{
 			QRectF rect = worldRectToWindow(object->getBoundingRect());
-			Utils::drawRect(rect.adjusted(0.5, 0.5, -0.5, -0.5), QColor(0, 127, 255));
+			painter.drawRect(rect.adjusted(0.5, 0.5, -0.5, -0.5));
 		}
 
 		// рисуем общий прямоугольник выделения
 		QRectF rect = worldRectToWindow(mSnappedRect);
-		Utils::drawRect(rect.adjusted(0.5, 0.5, -0.5, -0.5), QColor(0, 127, 255));
+		painter.drawRect(rect.adjusted(0.5, 0.5, -0.5, -0.5));
 
 		// рисуем маркеры выделения
-		QPointF center(qFloor(rect.center().x()), qFloor(rect.center().y()));
-		drawSelectionMarker(rect.left(), rect.top());
-		drawSelectionMarker(rect.left(), center.y());
-		drawSelectionMarker(rect.left(), rect.bottom() - 1.0);
-		drawSelectionMarker(center.x(), rect.bottom() - 1.0);
-		drawSelectionMarker(rect.right() - 1.0, rect.bottom() - 1.0);
-		drawSelectionMarker(rect.right() - 1.0, center.y());
-		drawSelectionMarker(rect.right() - 1.0, rect.top());
-		drawSelectionMarker(center.x(), rect.top());
+		QPointF center(qFloor(rect.center().x()) + 0.5, qFloor(rect.center().y()) + 0.5);
+		painter.setPen(QColor(100, 100, 100));
+		painter.setBrush(QBrush(QColor(0, 127, 255)));
+		drawSelectionMarker(rect.left() + 0.5, rect.top() + 0.5, painter);
+		drawSelectionMarker(rect.left() + 0.5, center.y(), painter);
+		drawSelectionMarker(rect.left() + 0.5, rect.bottom() - 0.5, painter);
+		drawSelectionMarker(center.x(), rect.bottom() - 0.5, painter);
+		drawSelectionMarker(rect.right() - 0.5, rect.bottom() - 0.5, painter);
+		drawSelectionMarker(rect.right() - 0.5, center.y(), painter);
+		drawSelectionMarker(rect.right() - 0.5, rect.top() + 0.5, painter);
+		drawSelectionMarker(center.x(), rect.top() + 0.5, painter);
 
 		// рисуем центр вращения
 		if (mRotationMode)
@@ -434,31 +443,20 @@ void EditorWindow::paintGL()
 			QPointF center = worldToWindow(mSnappedCenter);
 			qreal x = qFloor(center.x()) + 0.5, y = qFloor(center.y()) + 0.5;
 			qreal offset = qFloor(CENTER_SIZE / 2.0);
-			QColor color(0, 127, 255);
-			Utils::drawLine(QPointF(x - offset, y), QPointF(x + offset, y), color);
-			Utils::drawLine(QPointF(x, y - offset), QPointF(x, y + offset), color);
+			painter.setPen(QColor(0, 127, 255));
+			painter.drawLine(QPointF(x - offset, y), QPointF(x + offset, y));
+			painter.drawLine(QPointF(x, y - offset), QPointF(x, y + offset));
 		}
 	}
 
 	// рисуем рамку выделения
 	if (mEditorState == STATE_SELECT && !mSelectionRect.isNull())
 	{
-		glEnable(GL_BLEND);
 		QRectF rect = worldRectToWindow(mSelectionRect.normalized());
-		Utils::fillRect(rect, QColor(0, 100, 255, 60));
-		Utils::drawRect(rect.adjusted(0.5, 0.5, -0.5, -0.5), QColor(0, 127, 255));
-		glDisable(GL_BLEND);
+		painter.setPen(QColor(0, 127, 255));
+		painter.setBrush(QBrush(QColor(0, 100, 255, 60)));
+		painter.drawRect(rect.adjusted(0.5, 0.5, -0.5, -0.5));
 	}
-}
-
-void EditorWindow::resizeGL(int width, int height)
-{
-	// устанавливаем стандартную систему координат (0, 0, width, height) с началом координат в левом верхнем углу
-	glViewport(0, 0, width, height);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluOrtho2D(0.0, width, height, 0.0);
-	glMatrixMode(GL_MODELVIEW);
 }
 
 void EditorWindow::mousePressEvent(QMouseEvent *event)
@@ -713,10 +711,28 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 			// поворачиваем все выделенные объекты вокруг центра вращения
 			for (int i = 0; i < mSelectedObjects.size(); ++i)
 			{
+				// определяем абсолютный угол поворота в градусах и приводим его к диапазону [0; 360)
+				qreal absAngle = fmod(mOriginalAngles[i] + Utils::radToDeg(angle), 360.0);
+				if (absAngle < 0.0)
+					absAngle += 360.0;
+
+				// привязываем абсолютный угол поворота к 0/90/180/270 градусам
+				const qreal ANGLE_EPS = 0.5;
+				if (qAbs(absAngle) < ANGLE_EPS || qAbs(absAngle - 360.0) < ANGLE_EPS)
+					absAngle = 0.0;
+				else if (qAbs(absAngle - 90.0) < ANGLE_EPS)
+					absAngle = 90.0;
+				else if (qAbs(absAngle - 180.0) < ANGLE_EPS)
+					absAngle = 180.0;
+				else if (qAbs(absAngle - 270.0) < ANGLE_EPS)
+					absAngle = 270.0;
+
+				// поворачиваем объект на привязанный угол
+				qreal newAngle = Utils::degToRad(absAngle - mOriginalAngles[i]);
 				QPointF pt = mOriginalPositions[i] - mOriginalCenter;
-				mSelectedObjects[i]->setPosition(QPointF(pt.x() * qCos(angle) - pt.y() * qSin(angle) + mOriginalCenter.x(),
-					pt.x() * qSin(angle) + pt.y() * qCos(angle) + mOriginalCenter.y()));
-				mSelectedObjects[i]->setRotationAngle(mOriginalAngles[i] + Utils::radToDeg(angle));
+				mSelectedObjects[i]->setPosition(QPointF(pt.x() * qCos(newAngle) - pt.y() * qSin(newAngle) + mOriginalCenter.x(),
+					pt.x() * qSin(newAngle) + pt.y() * qCos(newAngle) + mOriginalCenter.y()));
+				mSelectedObjects[i]->setRotationAngle(absAngle);
 			}
 		}
 		else if (mEditorState == STATE_MOVE_CENTER)
@@ -1076,23 +1092,12 @@ EditorWindow::SelectionMarker EditorWindow::findSelectionMarker(const QPointF &p
 	return MARKER_NONE;
 }
 
-void EditorWindow::drawSelectionMarker(qreal x, qreal y)
+void EditorWindow::drawSelectionMarker(qreal x, qreal y, QPainter &painter)
 {
 	// рисуем круглый или прямоугольный маркер выделения
-	QColor fillColor(0, 127, 255);
-	QColor frameColor(100, 100, 100);
+	qreal offset = qFloor(MARKER_SIZE / 2.0);
 	if (mRotationMode)
-	{
-		QPointF center(x + 0.5, y + 0.5);
-		qreal radius = MARKER_SIZE / 2.0;
-		Utils::fillCircle(center, radius, fillColor);
-		Utils::drawCircle(center, radius, frameColor);
-	}
+		painter.drawEllipse(QPointF(x, y), offset, offset);
 	else
-	{
-		qreal offset = qFloor(MARKER_SIZE / 2.0);
-		QRectF rect(x - offset, y - offset, MARKER_SIZE, MARKER_SIZE);
-		Utils::fillRect(rect, fillColor);
-		Utils::drawRect(rect.adjusted(0.5, 0.5, -0.5, -0.5), frameColor);
-	}
+		painter.drawRect(QRectF(x - offset, y - offset, MARKER_SIZE - 1.0, MARKER_SIZE - 1.0));
 }

@@ -54,10 +54,15 @@ public:
 	// Генерирует имя для копии объекта
 	QString generateDuplicateName(const QString &name) const;
 
+	// Генерирует идентификатор для копии объекта
+	int generateDuplicateObjectID();
+
 private:
 
 	BaseLayer   *mRootLayer;        // Корневой слой
 	BaseLayer   *mActiveLayer;      // Текущий активный слой
+
+	int         mObjectIndex;       // Текущий индекс для генерации уникальных идентификаторов объектов
 	int         mLayerIndex;        // Текущий индекс для генерации имен слоев
 	int         mLayerGroupIndex;   // Текущий индекс для генерации имен групп слоев
 	int         mSpriteIndex;       // Текущий индекс для генерации имен спрайтов

@@ -35,21 +35,6 @@ public:
 
 	// Удаляет обратные слэши из строки
 	static QString stripBackslashes(const QString &text);
-
-	// Рисует линию с указанными координатами
-	static void drawLine(const QPointF &pt1, const QPointF &pt2, const QColor &color);
-
-	// Рисует закрашенный прямоугольник
-	static void fillRect(const QRectF &rect, const QColor &color);
-
-	// Рисует прямоугольную рамку
-	static void drawRect(const QRectF &rect, const QColor &color);
-
-	// Рисует закрашенный круг
-	static void fillCircle(const QPointF &center, qreal radius, const QColor &color);
-
-	// Рисует окружность
-	static void drawCircle(const QPointF &center, qreal radius, const QColor &color);
 };
 
 #endif // UTILS_H

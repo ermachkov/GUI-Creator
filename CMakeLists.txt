@@ -60,7 +60,7 @@ set(HEADERS
 	include/utils.h)
 
 set(FORMS
-        ui/font_browser.ui
+	ui/font_browser.ui
 	ui/layers_window.ui
 	ui/main_window.ui
 	ui/sprite_browser.ui)

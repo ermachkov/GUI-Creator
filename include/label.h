@@ -8,11 +8,19 @@ class Label : public GameObject
 {
 public:
 
+	// Тип для вертикального выравнивания текста
+	enum VertAlignment
+	{
+		VERT_ALIGN_TOP,
+		VERT_ALIGN_CENTER,
+		VERT_ALIGN_BOTTOM
+	};
+
 	// Конструктор
 	Label();
 
 	// Конструктор
-	Label(const QString &name, const QPointF &pos, const QString &fileName, int size, Layer *parent = NULL);
+	Label(const QString &name, int id, const QPointF &pos, const QString &fileName, int size, Layer *parent = NULL);
 
 	// Конструктор копирования
 	Label(const Label &label);
@@ -38,11 +46,17 @@ public:
 	// Устанавливает размер шрифта в пунктах
 	void setFontSize(int size);
 
-	// Возвращает выравнивание текста
+	// Возвращает горизонтальное выравнивание текста
 	FTGL::TextAlignment getAlignment() const;
 
-	// Устанавливает выравнивание текста
+	// Устанавливает горизонтальное выравнивание текста
 	void setAlignment(FTGL::TextAlignment alignment);
+
+	// Возвращает вертикальное выравнивание текста
+	VertAlignment getVertAlignment() const;
+
+	// Устанавливает вертикальное выравнивание текста
+	void setVertAlignment(VertAlignment alignment);
 
 	// Возвращает цвет текста
 	QColor getColor() const;
@@ -76,12 +90,13 @@ public:
 
 private:
 
-	QString                 mText;      // Текст надписи
-	QString                 mFileName;  // Имя файла со шрифтом
-	int                     mFontSize;  // Размер шрифта в пунктах
-	QSharedPointer<FTFont>  mFont;      // Шрифт надписи
-	FTGL::TextAlignment     mAlignment; // Выравнивание текста
-	QColor                  mColor;     // Цвет текста
+	QString                 mText;          // Текст надписи
+	QString                 mFileName;      // Имя файла со шрифтом
+	int                     mFontSize;      // Размер шрифта в пунктах
+	QSharedPointer<FTFont>  mFont;          // Шрифт надписи
+	FTGL::TextAlignment     mAlignment;     // Горизонтальное выравнивание текста
+	VertAlignment           mVertAlignment; // Вертикальное выравнивание текста
+	QColor                  mColor;         // Цвет текста
 };
 
 #endif // LABEL_H
