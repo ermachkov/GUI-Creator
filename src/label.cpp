@@ -19,7 +19,7 @@ Label::Label(const QString &name, int id, const QPointF &pos, const QString &fil
 	// задаем начальную позицию и размер надписи
 	if (!mFont.isNull())
 	{
-		mSize = QSizeF(mFont->Advance(mText.toStdWString().c_str()), mFont->LineHeight());
+		mSize = QSizeF(mFont->Advance(Utils::toStdWString(mText).c_str()), mFont->LineHeight());
 		mPosition = QPointF(qFloor(pos.x() - mSize.width() / 2.0), qFloor(pos.y() - mSize.height() / 2.0));
 		mRotationCenter = QPointF(mSize.width() / 2.0, mSize.height() / 2.0);
 	}
@@ -210,7 +210,7 @@ void Label::draw()
 	layout.SetFont(mFont.data());
 	layout.SetLineLength(qAbs(mSize.width()));
 	layout.SetAlignment(mAlignment);
-	layout.Render(mText.toStdWString().c_str());
+	layout.Render(Utils::toStdWString(mText).c_str());
 
 	// восстанавливаем матрицу трансформации
 	glPopMatrix();

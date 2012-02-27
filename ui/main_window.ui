@@ -36,7 +36,7 @@
      <x>0</x>
      <y>0</y>
      <width>1024</width>
-     <height>25</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="mFileMenu">
@@ -326,9 +326,6 @@
    </property>
   </action>
   <action name="mOptionsAction">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
    <property name="text">
     <string>&amp;Настройки...</string>
    </property>

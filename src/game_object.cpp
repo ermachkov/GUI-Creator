@@ -182,13 +182,6 @@ QPointF GameObject::worldToLocal(const QPointF &pt) const
 
 void GameObject::updateTransform()
 {
-	// для объектов, повернутых на 0/90/180/270 градусов, округляем координаты и размер до целочисленных значений
-	if (mRotationAngle == 0.0 || mRotationAngle == 90.0 || mRotationAngle == 180.0 || mRotationAngle == 270.0)
-	{
-		mPosition = QPointF(qRound(mPosition.x()), qRound(mPosition.y()));
-		mSize = QSizeF(qRound(mSize.width()), qRound(mSize.height()));
-	}
-
 	// рассчитываем прямую и обратную матрицы трансформации
 	mTransform.reset();
 	mTransform.translate(mPosition.x(), mPosition.y());

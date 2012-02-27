@@ -127,8 +127,10 @@ protected:
 
 private:
 
-	static const int MARKER_SIZE = 9;   // Размер маркера выделения в пикселях
-	static const int CENTER_SIZE = 13;  // Размер перекрестья центра вращения в пикселях
+	static const int MIN_GRID_SPACING = 8;      // Минимальный шаг сетки в пикселях
+	static const int GRID_SPACING_COEFF = 4;    // Множитель динамического изменения шага сетки
+	static const int MARKER_SIZE = 9;           // Размер маркера выделения в пикселях
+	static const int CENTER_SIZE = 13;          // Размер перекрестья центра вращения в пикселях
 
 	// Состояния редактирования
 	enum EditorState
@@ -163,6 +165,15 @@ private:
 
 	// Конвертирует мировые координаты прямоугольника в оконные с округлением
 	QRectF worldRectToWindow(const QRectF &rect) const;
+
+	// Привязывает координату X к сетке/направляющим
+	qreal snapXCoord(qreal x);
+
+	// Привязывает координату Y к сетке/направляющим
+	qreal snapYCoord(qreal y);
+
+	// Привязывает точку к сетке/направляющим
+	QPointF snapPoint(const QPointF &pt);
 
 	// Определяет вектор перемещения
 	QPointF getTranslationVector(const QPointF &start, const QPointF &end, bool shift) const;

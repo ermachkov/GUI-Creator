@@ -28,6 +28,7 @@ set(SOURCES
 	src/main.cpp
 	src/main_window.cpp
 	src/options.cpp
+	src/options_dialog.cpp
 	src/sprite.cpp
 	src/sprite_browser.cpp
 	src/texture.cpp
@@ -50,6 +51,7 @@ set(HEADERS
 	include/lua_script.h
 	include/main_window.h
 	include/options.h
+	include/options_dialog.h
 	include/singleton.h
 	include/sprite.h
 	include/sprite_browser.h
@@ -63,6 +65,7 @@ set(FORMS
 	ui/font_browser.ui
 	ui/layers_window.ui
 	ui/main_window.ui
+	ui/options_dialog.ui
 	ui/sprite_browser.ui)
 
 set(RESOURCES
@@ -103,6 +106,11 @@ if(MSVC)
 	add_definitions("/W3")
 elseif(CMAKE_COMPILER_IS_GNUCXX)
 	add_definitions("-Wall -Winvalid-pch")
+endif()
+
+# определяем макрос для статической линковки FTGL
+if(MSVC)
+	add_definitions("/D FTGL_LIBRARY_STATIC")
 endif()
 
 # подключаем прекомпилированный заголовок

@@ -5,6 +5,7 @@
 #include "font_manager.h"
 #include "layers_window.h"
 #include "options.h"
+#include "options_dialog.h"
 #include "sprite_browser.h"
 #include "texture_manager.h"
 #include "utils.h"
@@ -38,18 +39,18 @@ MainWindow::MainWindow()
 	mFontBrowser = new FontBrowser(this);
 	addDockWidget(Qt::RightDockWidgetArea, mFontBrowser);
 
+	// создаем окно слоев
+	mLayersWindow = new LayersWindow(mPrimaryGLWidget, this);
+	addDockWidget(Qt::RightDockWidgetArea, mLayersWindow);
+
 	// наложение плавающих окон друг на друга
 	tabifyDockWidget(mSpriteBrowser, mFontBrowser);
 
 	// установка нулевого индекса для всех таббаров
 	QList<QTabBar *> tabBars = findChildren<QTabBar *>();
 	foreach (QTabBar *tabBar, tabBars)
-		if (tabBar->count())
+		if (tabBar->count() != 0)
 			tabBar->setCurrentIndex(0);
-
-	// создаем окно слоев
-	mLayersWindow = new LayersWindow(mPrimaryGLWidget, this);
-	addDockWidget(Qt::RightDockWidgetArea, mLayersWindow);
 
 	// добавляем в меню Файл пункты для последних файлов
 	for (int i = 0; i < 5; ++i)
@@ -148,9 +149,9 @@ MainWindow::MainWindow()
 	connect(QApplication::clipboard(), SIGNAL(dataChanged()), this, SLOT(onClipboardDataChanged()));
 
 	// загружаем состояние главного окна и панелей
-	settings.beginGroup("/Window");
-	restoreGeometry(settings.value("/Geometry").toByteArray());
-	restoreState(settings.value("/State").toByteArray());
+	settings.beginGroup("Window");
+	restoreGeometry(settings.value("Geometry").toByteArray());
+	restoreState(settings.value("State").toByteArray());
 	settings.endGroup();
 
 	// создаем новый документ
@@ -203,9 +204,9 @@ void MainWindow::closeEvent(QCloseEvent *event)
 		Options::getSingleton().save(settings);
 
 		// сохраняем состояние главного окна и панелей
-		settings.beginGroup("/Window");
-		settings.setValue("/Geometry", saveGeometry());
-		settings.setValue("/State", saveState());
+		settings.beginGroup("Window");
+		settings.setValue("Geometry", saveGeometry());
+		settings.setValue("State", saveState());
 		settings.endGroup();
 	}
 	else
@@ -342,6 +343,12 @@ void MainWindow::on_mPasteAction_triggered()
 void MainWindow::on_mDeleteAction_triggered()
 {
 	getEditorWindow()->clear();
+}
+
+void MainWindow::on_mOptionsAction_triggered()
+{
+	OptionsDialog dialog(this);
+	dialog.exec();
 }
 
 void MainWindow::on_mSelectAllAction_triggered()

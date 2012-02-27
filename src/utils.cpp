@@ -76,3 +76,12 @@ QString Utils::stripBackslashes(const QString &text)
 		str += text[i] == '\\' && i < text.size() - 1 && (text[i + 1] == '\'' || text[i + 1] == '\"' || text[i + 1] == '\\') ? text[++i] : text[i];
 	return str;
 }
+
+std::wstring Utils::toStdWString(const QString &str)
+{
+#ifdef _MSC_VER
+	return std::wstring(reinterpret_cast<const wchar_t *>(str.utf16()));
+#else
+	return str.toStdWString();
+#endif
+}

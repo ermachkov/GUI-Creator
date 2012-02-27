@@ -68,6 +68,9 @@ private slots:
 	// Обработчик пункта меню Правка-Удалить
 	void on_mDeleteAction_triggered();
 
+	// Обработчик пункта меню Правка-Настройки
+	void on_mOptionsAction_triggered();
+
 	// Обработчик пункта меню Правка-Выделить все
 	void on_mSelectAllAction_triggered();
 

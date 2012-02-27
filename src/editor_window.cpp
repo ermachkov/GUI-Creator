@@ -3,8 +3,8 @@
 #include "game_object.h"
 #include "layer.h"
 #include "location.h"
+#include "options.h"
 #include "utils.h"
-
 
 EditorWindow::EditorWindow(QWidget *parent, QGLWidget *shareWidget, const QString &fileName)
 : QGLWidget(shareWidget->format(), parent, shareWidget), mFileName(fileName), mChanged(false), mSaved(false),
@@ -331,72 +331,102 @@ void EditorWindow::paintEvent(QPaintEvent *event)
 	glScaled(mZoom, mZoom, 1.0);
 	glTranslated(-mCameraPos.x(), -mCameraPos.y(), 0.0);
 
-	// определяем шаг сетки, который должен быть не меньше 8 пикселей
-	int cellSize = 16;
-	while (cellSize * mZoom < 8.0)
-		cellSize *= 4;
-
 	// определение видимой области
 	QRectF visibleRect(mCameraPos.x(), mCameraPos.y(), width() / mZoom, height() / mZoom);
 
-	// определение номеров линий для отрисовки
-	int left = static_cast<int>(visibleRect.left() / cellSize);
-	int top = static_cast<int>(visibleRect.top() / cellSize);
-	int right = static_cast<int>(visibleRect.right() / cellSize);
-	int bottom = static_cast<int>(visibleRect.bottom() / cellSize);
+	// рисуем сетку
+	Options &options = Options::getSingleton();
+	if (options.isShowGrid())
+	{
+		// подбираем подходящий шаг сетки
+		int gridSpacing = options.getGridSpacing();
+		while (gridSpacing * mZoom < MIN_GRID_SPACING)
+			gridSpacing *= GRID_SPACING_COEFF;
 
-	// начинаем рисовать линии
-	glPushMatrix();
-	glTranslated(0.5 / mZoom, 0.5 / mZoom, 0.0);
-	glBegin(GL_LINES);
+		// определение номеров линий для отрисовки
+		int left = static_cast<int>(visibleRect.left() / gridSpacing);
+		int top = static_cast<int>(visibleRect.top() / gridSpacing);
+		int right = static_cast<int>(visibleRect.right() / gridSpacing);
+		int bottom = static_cast<int>(visibleRect.bottom() / gridSpacing);
 
-	// отрисовка вспомогательных линий
-	qglColor(QColor(39, 45, 56));
+		// устанавливаем сдвиг в 0.5 пикселя
+		glPushMatrix();
+		glTranslated(0.5 / mZoom, 0.5 / mZoom, 0.0);
 
-	for (int i = left; i <= right; ++i)
-		if (i % 5 != 0)
+		// рисуем сетку из линий или точек
+		int interval = options.getMajorLinesInterval();
+		if (!options.isShowDots())
 		{
-			glVertex2d(i * cellSize, visibleRect.top());
-			glVertex2d(i * cellSize, visibleRect.bottom());
+			glBegin(GL_LINES);
+
+			// рисуем вспомогательные линии
+			qglColor(QColor(39, 45, 56));
+			for (int i = left; i <= right; ++i)
+				if (i % interval != 0)
+				{
+					glVertex2d(i * gridSpacing, visibleRect.top());
+					glVertex2d(i * gridSpacing, visibleRect.bottom());
+				}
+
+			for (int i = top; i <= bottom; ++i)
+				if (i % interval != 0)
+				{
+					glVertex2d(visibleRect.left(), i * gridSpacing);
+					glVertex2d(visibleRect.right(), i * gridSpacing);
+				}
+
+			// рисуем основные линии
+			qglColor(QColor(51, 57, 73));
+			for (int i = left; i <= right; ++i)
+				if (i % interval == 0)
+				{
+					glVertex2d(i * gridSpacing, visibleRect.top());
+					glVertex2d(i * gridSpacing, visibleRect.bottom());
+				}
+
+			for (int i = top; i <= bottom; ++i)
+				if (i % interval == 0)
+				{
+					glVertex2d(visibleRect.left(), i * gridSpacing);
+					glVertex2d(visibleRect.right(), i * gridSpacing);
+				}
+
+			glEnd();
+		}
+		else
+		{
+			glBegin(GL_POINTS);
+
+			// рисуем вспомогательные точки
+			qglColor(QColor(51, 57, 73));
+			for (int i = left; i <= right; ++i)
+				for (int j = top; j <= bottom; ++j)
+					if (i % interval != 0 && j % interval != 0)
+						glVertex2d(i * gridSpacing, j * gridSpacing);
+
+			// рисуем основные точки
+			qglColor(QColor(77, 86, 110));
+			for (int i = left; i <= right; ++i)
+				for (int j = top; j <= bottom; ++j)
+					if (i % interval == 0 || j % interval == 0)
+						glVertex2d(i * gridSpacing, j * gridSpacing);
+
+			glEnd();
 		}
 
-	for (int i = top; i <= bottom; ++i)
-		if (i % 5 != 0)
-		{
-			glVertex2d(visibleRect.left(), i * cellSize);
-			glVertex2d(visibleRect.right(), i * cellSize);
-		}
+		// рисуем оси координат
+		glBegin(GL_LINES);
+		qglColor(QColor(109, 36, 38));
+		glVertex2d(visibleRect.left(), 0.0);
+		glVertex2d(visibleRect.right(), 0.0);
+		qglColor(QColor(35, 110, 38));
+		glVertex2d(0.0, visibleRect.top());
+		glVertex2d(0.0, visibleRect.bottom());
+		glEnd();
 
-	// отрисовка основных линий
-	qglColor(QColor(51, 57, 73));
-
-	for (int i = left; i <= right; ++i)
-		if (i % 5 == 0)
-		{
-			glVertex2d(i * cellSize, visibleRect.top());
-			glVertex2d(i * cellSize, visibleRect.bottom());
-		}
-
-	for (int i = top; i <= bottom; ++i)
-		if (i % 5 == 0)
-		{
-			glVertex2d(visibleRect.left(), i * cellSize);
-			glVertex2d(visibleRect.right(), i * cellSize);
-		}
-
-	// рисуем ось X
-	qglColor(QColor(109, 36, 38));
-	glVertex2d(visibleRect.left(), 0.0);
-	glVertex2d(visibleRect.right(), 0.0);
-
-	// рисуем ось Y
-	qglColor(QColor(35, 110, 38));
-	glVertex2d(0.0, visibleRect.top());
-	glVertex2d(0.0, visibleRect.bottom());
-
-	// заканчиваем рисовать линии
-	glEnd();
-	glPopMatrix();
+		// восстанавливаем матрицу трансформации
+		glPopMatrix();
+	}
 
 	// рисуем локацию
 	glEnable(GL_TEXTURE_2D);
@@ -937,6 +967,57 @@ QRectF EditorWindow::worldRectToWindow(const QRectF &rect) const
 	return QRectF(topLeft, bottomRight);
 }
 
+qreal EditorWindow::snapXCoord(qreal x)
+{
+	Options &options = Options::getSingleton();
+	qreal snappedX = qRound(x);
+
+	// привязываем координату к сетке
+	if (options.isSnapToGrid())
+	{
+		// подбираем подходящий шаг сетки
+		int gridSpacing = options.getGridSpacing();
+		if (options.isSnapToVisibleLines())
+		{
+			while (gridSpacing * mZoom < MIN_GRID_SPACING)
+				gridSpacing *= GRID_SPACING_COEFF;
+		}
+
+		// округляем координату до выбранного шага сетки
+		snappedX = qFloor((x + gridSpacing / 2.0) / gridSpacing) * gridSpacing;
+	}
+
+	return snappedX;
+}
+
+qreal EditorWindow::snapYCoord(qreal y)
+{
+	Options &options = Options::getSingleton();
+	qreal snappedY = qRound(y);
+
+	// привязываем координату к сетке
+	if (options.isSnapToGrid())
+	{
+		// подбираем подходящий шаг сетки
+		int gridSpacing = options.getGridSpacing();
+		if (options.isSnapToVisibleLines())
+		{
+			while (gridSpacing * mZoom < MIN_GRID_SPACING)
+				gridSpacing *= GRID_SPACING_COEFF;
+		}
+
+		// округляем координату до выбранного шага сетки
+		snappedY = qFloor((y + gridSpacing / 2.0) / gridSpacing) * gridSpacing;
+	}
+
+	return snappedY;
+}
+
+QPointF EditorWindow::snapPoint(const QPointF &pt)
+{
+	return QPointF(snapXCoord(pt.x()), snapYCoord(pt.y()));
+}
+
 QPointF EditorWindow::getTranslationVector(const QPointF &start, const QPointF &end, bool shift) const
 {
 	if (shift)
@@ -944,6 +1025,10 @@ QPointF EditorWindow::getTranslationVector(const QPointF &start, const QPointF &
 		// определяем угол между исходным вектором и осью OX в радианах
 		QVector2D vector(end - start);
 		qreal angle = qAcos(vector.normalized().x());
+		if (QString::number(angle) == "nan" || qAbs(angle) < 0.001)
+			angle = 0.0;
+
+		// приводим угол к диапазону [-PI; PI]
 		if (vector.y() < 0.0)
 			angle = -angle;
 

@@ -35,6 +35,9 @@ public:
 
 	// Удаляет обратные слэши из строки
 	static QString stripBackslashes(const QString &text);
+
+	// Преобразует QString в std::wstring
+	static std::wstring toStdWString(const QString &str);
 };
 
 #endif // UTILS_H
