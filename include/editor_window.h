@@ -175,8 +175,8 @@ private:
 	// Привязывает точку к сетке/направляющим
 	QPointF snapPoint(const QPointF &pt);
 
-	// Определяет вектор перемещения
-	QPointF getTranslationVector(const QPointF &start, const QPointF &end, bool shift) const;
+	// Определяет конечную точку при перемещении игрового объекта
+	QPointF getEndPoint(const QPointF &start, const QPointF &end, bool shift);
 
 	// Выделяет игровой объект
 	void selectGameObject(GameObject *object);
@@ -220,7 +220,6 @@ private:
 	SelectionMarker     mSelectionMarker;   // Текущий маркер выделения
 	QRectF              mOriginalRect;      // Исходный ограничивающий прямоугольник выделенных объектов
 	QRectF              mSnappedRect;       // Текущий ограничивающий прямоугольник, привязанный к сетке
-	QRectF              mMoveRect;          // Ограничивающий прямоугольник, используемый при перемещении объектов
 	QRectF              mSelectionRect;     // Рамка выделения
 
 	bool                mRotationMode;      // Текущий режим поворота

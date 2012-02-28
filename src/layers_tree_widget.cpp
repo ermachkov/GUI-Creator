@@ -117,15 +117,10 @@ void LayersTreeWidget::DEBUG_TREES()
 			|| currentItem->childCount() != currentBase->getChildLayers().size())
 		{
 			qDebug() << "Error: Trees are not equal:";
-
-			//if (getBaseLayer(currentItem) != currentBase)
-				qDebug() << "-base:" << getBaseLayer(currentItem) << currentBase;
-			//if (currentItem->text(DATA_COLUMN) != currentBase->getName())
-				qDebug() << currentItem->text(DATA_COLUMN) << currentBase->getName();
-			//if (currentItem->isExpanded() != currentBase->isExpanded())
-				qDebug() << "-isExpanded:" << currentItem->isExpanded() << currentBase->isExpanded();
-			//if (currentItem->childCount() != currentBase->getChildLayers().size())
-				qDebug() << "-childCount:" << currentItem->childCount() << currentBase->getChildLayers().size();
+			qDebug() << "-base:" << getBaseLayer(currentItem) << currentBase;
+			qDebug() << "-text:" << currentItem->text(DATA_COLUMN) << currentBase->getName();
+			qDebug() << "-isExpanded:" << currentItem->isExpanded() << currentBase->isExpanded();
+			qDebug() << "-childCount:" << currentItem->childCount() << currentBase->getChildLayers().size();
 
 			return;
 		}
@@ -871,7 +866,6 @@ QString LayersTreeWidget::generateCopyName(const QString &name)
 
 	// подбираем индекс для нового имени
 	QString newName = name;
-	//for (int i = index; mRootLayer->findGameObjectByName(newName) != NULL; ++i)
 	for (int i = index; mCurrentLocation->getRootLayer()->findLayerByName(newName) != NULL; ++i)
 		newName = baseName + " копия" + (i > 1 ? " " + QString::number(i) : "");
 

@@ -92,13 +92,13 @@ private slots:
 
 private:
 
+	// ширина и высота иконки предпросмотра
 	static const int WIDTH_THUMBNAIL = 32;
 	static const int HEIGHT_THUMBNAIL = 32;
 
 	// Делегат для запрещения редактирования названия колонок
 	class EditorDelegate : public QItemDelegate
 	{
-
 	public:
 
 		EditorDelegate(QObject *parent = NULL);
@@ -126,7 +126,6 @@ private:
 	QString generateCopyName(const QString &name);
 
 	// поиск GUI слоя по BaseLayer * слоя
-	//QTreeWidgetItem *findItemByBaseLayer(BaseLayer *layer) const;
 	QTreeWidgetItem *findItemByBaseLayer(BaseLayer *layer, QTreeWidgetItem *item = NULL) const;
 
 	// определение максимальной глубины(вложенности) потомков относительно элемента
@@ -162,27 +161,20 @@ private:
 	// формирование иконки предпросмотра
 	QIcon createLayerIcon(BaseLayer *baseLayer);
 
-	// иконки для группы в окне слоёв
-	QIcon mLayerGroupIcon;
+	QIcon                  mLayerGroupIcon;       // иконки для группы в окне слоёв
+	QIcon                  mLayerVisibleIcons[3]; // иконки для видимости
+	QIcon                  mLayerLockedIcons[3];  // иконки для блокировки слоя
 
-	// иконки для видимости
-	QIcon mLayerVisibleIcons[3];
+	Location              *mCurrentLocation;      // указатель на игровую локацию
 
-	// иконки для блокировки слоя
-	QIcon mLayerLockedIcons[3];
+	QGLWidget             *mPrimaryGLWidget;      // указатель на OpenGL виджет
+	QGLFramebufferObject  *mFrameBuffer;          // фреймбуфер для отрисовки иконки предпросмотра спрайта
 
-	// указатель на игровую локацию
-	Location *mCurrentLocation;
-
-	QGLWidget *mPrimaryGLWidget;
-
-	QGLFramebufferObject *mFrameBuffer;
-
-	QMenu *mContextMenu;
-	QAction *mDuplicateAction;
-	QAction *mNewGroupAction;
-	QAction *mNewLayerAction;
-	QAction *mDeleteAction;
+	QMenu                 *mContextMenu;          // контекстное меню
+	QAction               *mDuplicateAction;      // - пункт меню "Дублировать"
+	QAction               *mNewGroupAction;       // - пункт меню "Новая группа"
+	QAction               *mNewLayerAction;       // - пункт меню "Новый слой"
+	QAction               *mDeleteAction;         // - пункт меню "Удалить"
 };
 
 #endif // LAYERS_TREE_WIDGET_H

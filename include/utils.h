@@ -9,6 +9,9 @@ public:
 	// Число Пи
 	static const qreal PI;
 
+	// Погрешность расчетов
+	static const qreal EPS;
+
 	// Переводит угол из радианов в градусы
 	static qreal radToDeg(qreal angle);
 

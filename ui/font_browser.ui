@@ -39,20 +39,11 @@
     </item>
     <item>
      <widget class="QListWidget" name="mPreviewListWidget">
-      <property name="iconSize">
-       <size>
-        <width>256</width>
-        <height>256</height>
-       </size>
-      </property>
       <property name="movement">
        <enum>QListView::Free</enum>
       </property>
       <property name="resizeMode">
        <enum>QListView::Adjust</enum>
-      </property>
-      <property name="uniformItemSizes">
-       <bool>true</bool>
       </property>
      </widget>
     </item>

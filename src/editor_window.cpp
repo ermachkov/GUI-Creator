@@ -640,8 +640,9 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 		else if (mEditorState == STATE_MOVE)
 		{
 			// определяем вектор перемещения
-			mMoveRect.translate(delta);
-			QPointF offset = getTranslationVector(mOriginalRect.topLeft(), mMoveRect.topLeft(), (event->modifiers() & Qt::ShiftModifier) != 0);
+			QPointF start = mOriginalRect.topLeft(), end = start + QPointF(mLastPos - mFirstPos) / mZoom;
+			bool shift = (event->modifiers() & Qt::ShiftModifier) != 0;
+			QPointF offset = getEndPoint(start, end, shift) - start;
 
 			// перемещаем все выделенные объекты
 			for (int i = 0; i < mSelectedObjects.size(); ++i)
@@ -663,7 +664,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 
 			case MARKER_CENTER_LEFT:
 				pivot = QPointF(mOriginalRect.right(), mOriginalRect.center().y());
-				scale.rx() = (pivot.x() - pos.x()) / mOriginalRect.width();
+				scale.rx() = (pivot.x() - snapXCoord(pos.x())) / mOriginalRect.width();
 				scale.ry() = keepProportions ? scale.x() : 1.0;
 				break;
 
@@ -676,7 +677,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 
 			case MARKER_BOTTOM_CENTER:
 				pivot = QPointF(mOriginalRect.center().x(), mOriginalRect.top());
-				scale.ry() = (pos.y() - pivot.y()) / mOriginalRect.height();
+				scale.ry() = (snapYCoord(pos.y()) - pivot.y()) / mOriginalRect.height();
 				scale.rx() = keepProportions ? scale.y() : 1.0;
 				break;
 
@@ -689,7 +690,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 
 			case MARKER_CENTER_RIGHT:
 				pivot = QPointF(mOriginalRect.left(), mOriginalRect.center().y());
-				scale.rx() = (pos.x() - pivot.x()) / mOriginalRect.width();
+				scale.rx() = (snapXCoord(pos.x()) - pivot.x()) / mOriginalRect.width();
 				scale.ry() = keepProportions ? scale.x() : 1.0;
 				break;
 
@@ -702,7 +703,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 
 			case MARKER_TOP_CENTER:
 				pivot = QPointF(mOriginalRect.center().x(), mOriginalRect.bottom());
-				scale.ry() = (pivot.y() - pos.y()) / mOriginalRect.height();
+				scale.ry() = (pivot.y() - snapYCoord(pos.y())) / mOriginalRect.height();
 				scale.rx() = keepProportions ? scale.y() : 1.0;
 				break;
 
@@ -726,7 +727,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 			// определяем текущий угол поворота в радианах относительно начального вектора
 			QVector2D currVector = QVector2D(pos - mOriginalCenter).normalized();
 			qreal angle = qAcos(QVector2D::dotProduct(currVector, mRotationVector));
-			if (QString::number(angle) == "nan" || qAbs(angle) < 0.001)
+			if (QString::number(angle) == "nan" || qAbs(angle) < Utils::EPS)
 				angle = 0.0;
 
 			// приводим угол к диапазону [-PI; PI]
@@ -768,8 +769,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 		else if (mEditorState == STATE_MOVE_CENTER)
 		{
 			// перемещаем центр вращения
-			QPointF offset = getTranslationVector(mOriginalCenter, pos, (event->modifiers() & Qt::ShiftModifier) != 0);
-			mSnappedCenter = mOriginalCenter + offset;
+			mSnappedCenter = getEndPoint(mOriginalCenter, pos, (event->modifiers() & Qt::ShiftModifier) != 0);
 			if (mSelectedObjects.size() == 1)
 				mSelectedObjects.front()->setRotationCenter(mSnappedCenter);
 		}
@@ -1018,29 +1018,39 @@ QPointF EditorWindow::snapPoint(const QPointF &pt)
 	return QPointF(snapXCoord(pt.x()), snapYCoord(pt.y()));
 }
 
-QPointF EditorWindow::getTranslationVector(const QPointF &start, const QPointF &end, bool shift) const
+QPointF EditorWindow::getEndPoint(const QPointF &start, const QPointF &end, bool shift)
 {
 	if (shift)
 	{
 		// определяем угол между исходным вектором и осью OX в радианах
 		QVector2D vector(end - start);
 		qreal angle = qAcos(vector.normalized().x());
-		if (QString::number(angle) == "nan" || qAbs(angle) < 0.001)
+		if (QString::number(angle) == "nan" || qAbs(angle) < Utils::EPS)
 			angle = 0.0;
 
 		// приводим угол к диапазону [-PI; PI]
 		if (vector.y() < 0.0)
 			angle = -angle;
 
-		// округляем угол до величины, кратной 45 градусам и получаем ось перемещения
+		// округляем угол до величины, кратной 45 градусам
 		angle = qFloor((angle + Utils::PI / 8.0) / (Utils::PI / 4.0)) * (Utils::PI / 4.0);
-		QVector2D axis(qCos(angle), qSin(angle));
 
-		// возвращаем проекцию исходного вектора на ось перемещения
-		return (QVector2D::dotProduct(vector, axis) * axis).toPointF();
+		// получаем ось перемещения и проецируем на нее исходный вектор
+		QVector2D axis(qCos(angle), qSin(angle));
+		QPointF pos = start + (QVector2D::dotProduct(vector, axis) * axis).toPointF();
+
+		// привязываем конечную точку к сетке/направляющим
+		if (qAbs(axis.x()) < Utils::EPS)
+			pos = QPointF(qRound(pos.x()), snapYCoord(pos.y()));
+		else if (qAbs(axis.y()) < Utils::EPS)
+			pos = QPointF(snapXCoord(pos.x()), qRound(pos.y()));
+		else
+			pos = QPointF(qRound(pos.x()), qRound(pos.y()));
+
+		return pos;
 	}
 
-	return end - start;
+	return snapPoint(end);
 }
 
 void EditorWindow::selectGameObject(GameObject *object)
@@ -1070,7 +1080,7 @@ void EditorWindow::selectGameObjects(const QList<GameObject *> &objects)
 			mOriginalAngles.push_back(angle);
 			mOriginalRect |= object->getBoundingRect();
 		}
-		mSnappedRect = mMoveRect = mOriginalRect;
+		mSnappedRect = mOriginalRect;
 	}
 
 	// проверяем на изменение выделения

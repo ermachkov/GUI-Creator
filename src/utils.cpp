@@ -2,6 +2,7 @@
 #include "utils.h"
 
 const qreal Utils::PI = 3.14159265358979323846;
+const qreal Utils::EPS = 0.0001;
 
 qreal Utils::radToDeg(qreal angle)
 {

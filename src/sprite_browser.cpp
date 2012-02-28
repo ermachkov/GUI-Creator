@@ -63,8 +63,6 @@ void SpriteBrowser::timerEvent(QTimerEvent *event)
 	{
 		if (it.value().isChanged() && it.value().isTimerFinished())
 		{
-			qDebug() << "addFileForLoading:" << it.key();
-
 			// отправка на подгрузку иконки в фоне
 			emit thumbnailQueued(it.key(), mThumbnailCount++);
 
@@ -75,8 +73,6 @@ void SpriteBrowser::timerEvent(QTimerEvent *event)
 
 void SpriteBrowser::on_mListWidget_itemActivated(QListWidgetItem *item)
 {
-	// qDebug() << "on_mListWidget_itemActivated" << item->text();
-
 	// определение - файл или каталог
 	QFileInfo info(getRootPath() + mRelativePath + item->text());
 	if (info.isFile())
@@ -121,7 +117,7 @@ void SpriteBrowser::on_mListWidget_itemActivated(QListWidgetItem *item)
 
 void SpriteBrowser::onThumbnailLoaded(QString absoluteFileName, QImage image)
 {
-	qDebug() << "loaded:" << absoluteFileName;
+	// qDebug() << "loaded:" << absoluteFileName;
 
 	// иконка должна быть в буфере
 	ThumbnailCache::iterator iterTC = mThumbnailCache.find(absoluteFileName);
@@ -315,8 +311,7 @@ void SpriteBrowser::update(QString oldPath, QString newPath)
 
 	if (oldPath != newPath)
 	{
-		// каталог изменился
-		qDebug() << "Dir was changed";
+		// путь к каталогу изменился
 
 		// у всех в кеше снять измененность
 		foreach (IconWithInfo element, mThumbnailCache)
@@ -324,11 +319,6 @@ void SpriteBrowser::update(QString oldPath, QString newPath)
 
 		// Отчистка списка файлов на загрузку второго потока
 		mThumbnailLoader->setThumbnailCount(mThumbnailCount);
-	}
-	else
-	{
-		// каталог не изменился
-		qDebug() << "Dir was't changed";
 	}
 
 	foreach (const QString &fileName, listEntries)
