@@ -176,7 +176,10 @@ private:
 	QPointF snapPoint(const QPointF &pt);
 
 	// Определяет конечную точку при перемещении игрового объекта
-	QPointF getEndPoint(const QPointF &start, const QPointF &end, bool shift);
+	QPointF calcEndPoint(const QPointF &start, const QPointF &end, bool shift);
+
+	// Определяет масштаб при изменении размеров игрового объекта
+	QPointF calcScale(const QPointF &pos, const QPointF &pivot, qreal sx, qreal sy, bool keepProportions);
 
 	// Выделяет игровой объект
 	void selectGameObject(GameObject *object);

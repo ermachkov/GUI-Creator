@@ -642,7 +642,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 			// определяем вектор перемещения
 			QPointF start = mOriginalRect.topLeft(), end = start + QPointF(mLastPos - mFirstPos) / mZoom;
 			bool shift = (event->modifiers() & Qt::ShiftModifier) != 0;
-			QPointF offset = getEndPoint(start, end, shift) - start;
+			QPointF offset = calcEndPoint(start, end, shift) - start;
 
 			// перемещаем все выделенные объекты
 			for (int i = 0; i < mSelectedObjects.size(); ++i)
@@ -657,9 +657,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 			{
 			case MARKER_TOP_LEFT:
 				pivot = mOriginalRect.bottomRight();
-				scale = QPointF((pivot.x() - pos.x()) / mOriginalRect.width(), (pivot.y() - pos.y()) / mOriginalRect.height());
-				if (keepProportions)
-					scale.rx() = scale.ry() = qMin(scale.x(), scale.y());
+				scale = calcScale(pos, pivot, -1.0, -1.0, keepProportions);
 				break;
 
 			case MARKER_CENTER_LEFT:
@@ -670,9 +668,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 
 			case MARKER_BOTTOM_LEFT:
 				pivot = mOriginalRect.topRight();
-				scale = QPointF((pivot.x() - pos.x()) / mOriginalRect.width(), (pos.y() - pivot.y()) / mOriginalRect.height());
-				if (keepProportions)
-					scale.rx() = scale.ry() = qMin(scale.x(), scale.y());
+				scale = calcScale(pos, pivot, -1.0, 1.0, keepProportions);
 				break;
 
 			case MARKER_BOTTOM_CENTER:
@@ -683,9 +679,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 
 			case MARKER_BOTTOM_RIGHT:
 				pivot = mOriginalRect.topLeft();
-				scale = QPointF((pos.x() - pivot.x()) / mOriginalRect.width(), (pos.y() - pivot.y()) / mOriginalRect.height());
-				if (keepProportions)
-					scale.rx() = scale.ry() = qMin(scale.x(), scale.y());
+				scale = calcScale(pos, pivot, 1.0, 1.0, keepProportions);
 				break;
 
 			case MARKER_CENTER_RIGHT:
@@ -696,9 +690,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 
 			case MARKER_TOP_RIGHT:
 				pivot = mOriginalRect.bottomLeft();
-				scale = QPointF((pos.x() - pivot.x()) / mOriginalRect.width(), (pivot.y() - pos.y()) / mOriginalRect.height());
-				if (keepProportions)
-					scale.rx() = scale.ry() = qMin(scale.x(), scale.y());
+				scale = calcScale(pos, pivot, 1.0, -1.0, keepProportions);
 				break;
 
 			case MARKER_TOP_CENTER:
@@ -769,7 +761,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 		else if (mEditorState == STATE_MOVE_CENTER)
 		{
 			// перемещаем центр вращения
-			mSnappedCenter = getEndPoint(mOriginalCenter, pos, (event->modifiers() & Qt::ShiftModifier) != 0);
+			mSnappedCenter = calcEndPoint(mOriginalCenter, pos, (event->modifiers() & Qt::ShiftModifier) != 0);
 			if (mSelectedObjects.size() == 1)
 				mSelectedObjects.front()->setRotationCenter(mSnappedCenter);
 		}
@@ -1018,7 +1010,7 @@ QPointF EditorWindow::snapPoint(const QPointF &pt)
 	return QPointF(snapXCoord(pt.x()), snapYCoord(pt.y()));
 }
 
-QPointF EditorWindow::getEndPoint(const QPointF &start, const QPointF &end, bool shift)
+QPointF EditorWindow::calcEndPoint(const QPointF &start, const QPointF &end, bool shift)
 {
 	if (shift)
 	{
@@ -1051,6 +1043,21 @@ QPointF EditorWindow::getEndPoint(const QPointF &start, const QPointF &end, bool
 	}
 
 	return snapPoint(end);
+}
+
+QPointF EditorWindow::calcScale(const QPointF &pos, const QPointF &pivot, qreal sx, qreal sy, bool keepProportions)
+{
+	if (keepProportions)
+	{
+		// привязываем точку к осям X/Y по отдельности и выбираем наименьший масштаб
+		QPointF snappedPos(snapXCoord(pos.x()), snapYCoord(pos.y()));
+		QPointF scale((snappedPos.x() - pivot.x()) * sx / mOriginalRect.width(), (snappedPos.y() - pivot.y()) * sy / mOriginalRect.height());
+		scale.rx() = scale.ry() = qMin(scale.x(), scale.y());
+		return scale;
+	}
+
+	QPointF snappedPos = snapPoint(pos);
+	return QPointF((snappedPos.x() - pivot.x()) * sx / mOriginalRect.width(), (snappedPos.y() - pivot.y()) * sy / mOriginalRect.height());
 }
 
 void EditorWindow::selectGameObject(GameObject *object)
