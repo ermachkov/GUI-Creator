@@ -108,9 +108,9 @@ void EditorWindow::setZoom(qreal zoom)
 	emit mouseMoved(pos);
 }
 
-bool EditorWindow::hasSelectedObjects() const
+QList<GameObject *> EditorWindow::getSelectedObjects() const
 {
-	return !mSelectedObjects.empty();
+	return mSelectedObjects;
 }
 
 void EditorWindow::cut()
@@ -479,6 +479,16 @@ void EditorWindow::paintEvent(QPaintEvent *event)
 		}
 	}
 
+	// рисуем линии привязки
+	if (mEditorState == STATE_MOVE || mEditorState == STATE_RESIZE || mEditorState == STATE_MOVE_CENTER)
+	{
+		painter.setPen(Qt::green);
+		if (!mHorzSnapLine.isNull())
+			painter.drawLine(worldToWindow(mHorzSnapLine.p1()), worldToWindow(mHorzSnapLine.p2()));
+		if (!mVertSnapLine.isNull())
+			painter.drawLine(worldToWindow(mVertSnapLine.p1()), worldToWindow(mVertSnapLine.p2()));
+	}
+
 	// рисуем рамку выделения
 	if (mEditorState == STATE_SELECT && !mSelectionRect.isNull())
 	{
@@ -640,9 +650,77 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 		else if (mEditorState == STATE_MOVE)
 		{
 			// определяем вектор перемещения
-			QPointF start = mOriginalRect.topLeft(), end = start + QPointF(mLastPos - mFirstPos) / mZoom;
 			bool shift = (event->modifiers() & Qt::ShiftModifier) != 0;
-			QPointF offset = calcEndPoint(start, end, shift) - start;
+			QVector2D axis;
+			QPointF offset = calcTranslation(QPointF(mLastPos - mFirstPos) / mZoom, shift, axis);
+
+			// определяем сдвинутый прямоугольник выделения и сбрасываем линии привязки
+			QRectF rect = mOriginalRect.translated(offset);
+			mHorzSnapLine = mVertSnapLine = QLineF();
+
+			// привязываем прямоугольник по оси X
+			if (!shift || qAbs(axis.y()) < Utils::EPS)
+			{
+				// вычисляем расстояния привязок для левого края, центра и правого края прямоугольника выделения
+				QLineF leftLine, centerLine, rightLine;
+				qreal leftDistance, centerDistance, rightDistance;
+				qreal left = snapXCoord(rect.left(), rect.top(), rect.bottom(), &leftLine, &leftDistance);
+				qreal center = snapXCoord(rect.center().x(), rect.center().y(), rect.center().y(), &centerLine, &centerDistance);
+				qreal right = snapXCoord(rect.right(), rect.top(), rect.bottom(), &rightLine, &rightDistance);
+
+				// привязываем край с наименьшим расстоянием привязки
+				if (leftDistance < SNAP_DISTANCE && leftDistance <= centerDistance && leftDistance <= rightDistance)
+				{
+					offset.rx() += left - rect.left();
+					mVertSnapLine = leftLine;
+				}
+				else if (centerDistance < SNAP_DISTANCE && centerDistance <= leftDistance && centerDistance <= rightDistance)
+				{
+					offset.rx() += center - rect.center().x();
+					mVertSnapLine = centerLine;
+				}
+				else if (rightDistance < SNAP_DISTANCE && rightDistance <= leftDistance && rightDistance <= centerDistance)
+				{
+					offset.rx() += right - rect.right();
+					mVertSnapLine = rightLine;
+				}
+				else
+				{
+					offset.rx() += left - rect.left();
+				}
+			}
+
+			// привязываем прямоугольник по оси Y
+			if (!shift || qAbs(axis.x()) < Utils::EPS)
+			{
+				// вычисляем расстояния привязок для верхнего края, центра и нижнего края прямоугольника выделения
+				QLineF topLine, centerLine, bottomLine;
+				qreal topDistance, centerDistance, bottomDistance;
+				qreal top = snapYCoord(rect.top(), rect.left(), rect.right(), &topLine, &topDistance);
+				qreal center = snapYCoord(rect.center().y(), rect.center().x(), rect.center().x(), &centerLine, &centerDistance);
+				qreal bottom = snapYCoord(rect.bottom(), rect.left(), rect.right(), &bottomLine, &bottomDistance);
+
+				// привязываем край с наименьшим расстоянием привязки
+				if (topDistance < SNAP_DISTANCE && topDistance <= centerDistance && topDistance <= bottomDistance)
+				{
+					offset.ry() += top - rect.top();
+					mHorzSnapLine = topLine;
+				}
+				else if (centerDistance < SNAP_DISTANCE && centerDistance <= topDistance && centerDistance <= bottomDistance)
+				{
+					offset.ry() += center - rect.center().y();
+					mHorzSnapLine = centerLine;
+				}
+				else if (bottomDistance < SNAP_DISTANCE && bottomDistance <= topDistance && bottomDistance <= centerDistance)
+				{
+					offset.ry() += bottom - rect.bottom();
+					mHorzSnapLine = bottomLine;
+				}
+				else
+				{
+					offset.ry() += top - rect.top();
+				}
+			}
 
 			// перемещаем все выделенные объекты
 			for (int i = 0; i < mSelectedObjects.size(); ++i)
@@ -662,7 +740,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 
 			case MARKER_CENTER_LEFT:
 				pivot = QPointF(mOriginalRect.right(), mOriginalRect.center().y());
-				scale.rx() = (pivot.x() - snapXCoord(pos.x())) / mOriginalRect.width();
+				scale.rx() = (pivot.x() - snapXCoord(pos.x(), mOriginalRect.center().y(), mOriginalRect.center().y())) / mOriginalRect.width();
 				scale.ry() = keepProportions ? scale.x() : 1.0;
 				break;
 
@@ -673,7 +751,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 
 			case MARKER_BOTTOM_CENTER:
 				pivot = QPointF(mOriginalRect.center().x(), mOriginalRect.top());
-				scale.ry() = (snapYCoord(pos.y()) - pivot.y()) / mOriginalRect.height();
+				scale.ry() = (snapYCoord(pos.y(), mOriginalRect.center().x(), mOriginalRect.center().x()) - pivot.y()) / mOriginalRect.height();
 				scale.rx() = keepProportions ? scale.y() : 1.0;
 				break;
 
@@ -684,7 +762,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 
 			case MARKER_CENTER_RIGHT:
 				pivot = QPointF(mOriginalRect.left(), mOriginalRect.center().y());
-				scale.rx() = (snapXCoord(pos.x()) - pivot.x()) / mOriginalRect.width();
+				scale.rx() = (snapXCoord(pos.x(), mOriginalRect.center().y(), mOriginalRect.center().y()) - pivot.x()) / mOriginalRect.width();
 				scale.ry() = keepProportions ? scale.x() : 1.0;
 				break;
 
@@ -695,13 +773,19 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 
 			case MARKER_TOP_CENTER:
 				pivot = QPointF(mOriginalRect.center().x(), mOriginalRect.bottom());
-				scale.ry() = (pivot.y() - snapYCoord(pos.y())) / mOriginalRect.height();
+				scale.ry() = (pivot.y() - snapYCoord(pos.y(), mOriginalRect.center().x(), mOriginalRect.center().x())) / mOriginalRect.height();
 				scale.rx() = keepProportions ? scale.y() : 1.0;
 				break;
 
 			default:
 				break;
 			}
+
+			// не даем уменьшить рамку выделения до нулевого размера
+			if (qAbs(scale.x()) < Utils::EPS)
+				scale.rx() = Utils::EPS;
+			if (qAbs(scale.y()) < Utils::EPS)
+				scale.ry() = Utils::EPS;
 
 			// пересчитываем положение и размеры выделенных объектов
 			for (int i = 0; i < mSelectedObjects.size(); ++i)
@@ -761,7 +845,8 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 		else if (mEditorState == STATE_MOVE_CENTER)
 		{
 			// перемещаем центр вращения
-			mSnappedCenter = calcEndPoint(mOriginalCenter, pos, (event->modifiers() & Qt::ShiftModifier) != 0);
+			QVector2D axis;
+			mSnappedCenter = mOriginalCenter + calcTranslation(pos - mOriginalCenter, (event->modifiers() & Qt::ShiftModifier) != 0, axis);
 			if (mSelectedObjects.size() == 1)
 				mSelectedObjects.front()->setRotationCenter(mSnappedCenter);
 		}
@@ -874,9 +959,9 @@ void EditorWindow::dragEnterEvent(QDragEnterEvent *event)
 	QDataStream stream(data);
 	stream >> row >> col >> roles;
 
-	// проверяем строку в UserRole
-	QString str = roles.value(Qt::UserRole).toString();
-	if (str.startsWith("sprite://") || str.startsWith("label://"))
+	// проверяем тип объекта в UserRole
+	QString type = roles.value(Qt::UserRole).toString();
+	if (type == "Sprite" || type == "Label")
 		event->acceptProposedAction();
 }
 
@@ -897,32 +982,31 @@ void EditorWindow::dropEvent(QDropEvent *event)
 	QDataStream stream(data);
 	stream >> row >> col >> roles;
 
-	// выделяем и проверяем имя файла
-	QString fileName;
-	QString str = roles.value(Qt::UserRole).toString();
-	if (str.startsWith("sprite://"))
-		fileName = str.mid(9);
-	else if (str.startsWith("label://"))
-		fileName = str.mid(8);
-	else
-		return;
-
-	if (!Utils::isFileNameValid(fileName))
-	{
-		QMessageBox::warning(this, "", "Неверный путь к файлу " + fileName + "\nПереименуйте файлы и папки так, чтобы они "
-			"начинались с буквы и состояли только из маленьких латинских букв, цифр и знаков подчеркивания");
-		return;
-	}
-
-	// создаем нужный игровой объект в окне редактора
+	// создаем игровой объект по типу в UserRole
 	GameObject *object;
 	QPointF pos = windowToWorld(event->pos());
-	if (str.startsWith("sprite://"))
-		object = mLocation->createSprite(pos, fileName);
-	else if (str.startsWith("label://"))
-		object = mLocation->createLabel(pos, fileName, roles.value(Qt::UserRole + 1).toInt() != 0 ? roles.value(Qt::UserRole + 1).toInt() : 32);
+	QString type = roles.value(Qt::UserRole).toString();
+	if (type == "Sprite" || type == "Label")
+	{
+		// проверяем имя файла
+		QString fileName = roles.value(Qt::UserRole + 1).toString();
+		if (!Utils::isFileNameValid(fileName))
+		{
+			QMessageBox::warning(this, "", "Неверный путь к файлу " + fileName + "\nПереименуйте файлы и папки так, чтобы они "
+				"начинались с буквы и состояли только из маленьких латинских букв, цифр и знаков подчеркивания");
+			return;
+		}
+
+		// создаем нужный игровой объект в окне редактора
+		if (type == "Sprite")
+			object = mLocation->createSprite(pos, fileName);
+		else
+			object = mLocation->createLabel(pos, fileName, roles.value(Qt::UserRole + 2).toInt() > 0 ? roles.value(Qt::UserRole + 2).toInt() : 32);
+	}
 	else
+	{
 		return;
+	}
 
 	// выделяем созданный объект
 	selectGameObject(object);
@@ -959,13 +1043,20 @@ QRectF EditorWindow::worldRectToWindow(const QRectF &rect) const
 	return QRectF(topLeft, bottomRight);
 }
 
-qreal EditorWindow::snapXCoord(qreal x)
+qreal EditorWindow::snapXCoord(qreal x, qreal y1, qreal y2, QLineF *linePtr, qreal *distancePtr)
 {
 	Options &options = Options::getSingleton();
-	qreal snappedX = qRound(x);
+
+	qreal snappedX = x;
+	qreal distance = SNAP_DISTANCE;
+	QLineF line;
+
+	// привязываем координату к умным направляющим
+	if (options.isEnableSmartGuides() && distance == SNAP_DISTANCE)
+		mLocation->getRootLayer()->snapXCoord(x, y1, y2, mSelectedObjects, snappedX, distance, line);
 
 	// привязываем координату к сетке
-	if (options.isSnapToGrid())
+	if (options.isSnapToGrid() && distance == SNAP_DISTANCE)
 	{
 		// подбираем подходящий шаг сетки
 		int gridSpacing = options.getGridSpacing();
@@ -979,16 +1070,29 @@ qreal EditorWindow::snapXCoord(qreal x)
 		snappedX = qFloor((x + gridSpacing / 2.0) / gridSpacing) * gridSpacing;
 	}
 
+	// возвращаем полученные значения
+	if (linePtr != NULL)
+		*linePtr = line;
+	if (distancePtr != NULL)
+		*distancePtr = distance;
+
 	return snappedX;
 }
 
-qreal EditorWindow::snapYCoord(qreal y)
+qreal EditorWindow::snapYCoord(qreal y, qreal x1, qreal x2, QLineF *linePtr, qreal *distancePtr)
 {
 	Options &options = Options::getSingleton();
-	qreal snappedY = qRound(y);
+
+	qreal snappedY = y;
+	qreal distance = SNAP_DISTANCE;
+	QLineF line;
+
+	// привязываем координату к умным направляющим
+	if (options.isEnableSmartGuides() && distance == SNAP_DISTANCE)
+		mLocation->getRootLayer()->snapYCoord(y, x1, x2, mSelectedObjects, snappedY, distance, line);
 
 	// привязываем координату к сетке
-	if (options.isSnapToGrid())
+	if (options.isSnapToGrid() && distance == SNAP_DISTANCE)
 	{
 		// подбираем подходящий шаг сетки
 		int gridSpacing = options.getGridSpacing();
@@ -1002,20 +1106,21 @@ qreal EditorWindow::snapYCoord(qreal y)
 		snappedY = qFloor((y + gridSpacing / 2.0) / gridSpacing) * gridSpacing;
 	}
 
+	// возвращаем полученные значения
+	if (linePtr != NULL)
+		*linePtr = line;
+	if (distancePtr != NULL)
+		*distancePtr = distance;
+
 	return snappedY;
 }
 
-QPointF EditorWindow::snapPoint(const QPointF &pt)
-{
-	return QPointF(snapXCoord(pt.x()), snapYCoord(pt.y()));
-}
-
-QPointF EditorWindow::calcEndPoint(const QPointF &start, const QPointF &end, bool shift)
+QPointF EditorWindow::calcTranslation(const QPointF &direction, bool shift, QVector2D &axis)
 {
 	if (shift)
 	{
 		// определяем угол между исходным вектором и осью OX в радианах
-		QVector2D vector(end - start);
+		QVector2D vector(direction);
 		qreal angle = qAcos(vector.normalized().x());
 		if (QString::number(angle) == "nan" || qAbs(angle) < Utils::EPS)
 			angle = 0.0;
@@ -1028,36 +1133,40 @@ QPointF EditorWindow::calcEndPoint(const QPointF &start, const QPointF &end, boo
 		angle = qFloor((angle + Utils::PI / 8.0) / (Utils::PI / 4.0)) * (Utils::PI / 4.0);
 
 		// получаем ось перемещения и проецируем на нее исходный вектор
-		QVector2D axis(qCos(angle), qSin(angle));
-		QPointF pos = start + (QVector2D::dotProduct(vector, axis) * axis).toPointF();
-
-		// привязываем конечную точку к сетке/направляющим
-		if (qAbs(axis.x()) < Utils::EPS)
-			pos = QPointF(qRound(pos.x()), snapYCoord(pos.y()));
-		else if (qAbs(axis.y()) < Utils::EPS)
-			pos = QPointF(snapXCoord(pos.x()), qRound(pos.y()));
-		else
-			pos = QPointF(qRound(pos.x()), qRound(pos.y()));
-
-		return pos;
+		axis = QVector2D(qCos(angle), qSin(angle));
+		return (QVector2D::dotProduct(vector, axis) * axis).toPointF();
 	}
-
-	return snapPoint(end);
+	else
+	{
+		// возвращаем исходный вектор перемещения
+		axis = QVector2D(direction).normalized();
+		return direction;
+	}
 }
 
 QPointF EditorWindow::calcScale(const QPointF &pos, const QPointF &pivot, qreal sx, qreal sy, bool keepProportions)
 {
+	// привязываем точку к осям X и Y и вычисляем масштаб
+	qreal snappedX = snapXCoord(pos.x(), pos.y(), pos.y(), &mVertSnapLine);
+	qreal snappedY = snapYCoord(pos.y(), pos.x(), pos.x(), &mHorzSnapLine);
+	QPointF scale((snappedX - pivot.x()) * sx / mOriginalRect.width(), (snappedY - pivot.y()) * sy / mOriginalRect.height());
+
+	// при пропорциональном масштабировании привязываем точку только по оси с наименьшим масштабом
 	if (keepProportions)
 	{
-		// привязываем точку к осям X/Y по отдельности и выбираем наименьший масштаб
-		QPointF snappedPos(snapXCoord(pos.x()), snapYCoord(pos.y()));
-		QPointF scale((snappedPos.x() - pivot.x()) * sx / mOriginalRect.width(), (snappedPos.y() - pivot.y()) * sy / mOriginalRect.height());
-		scale.rx() = scale.ry() = qMin(scale.x(), scale.y());
-		return scale;
+		if (qAbs(scale.x()) < qAbs(scale.y()))
+		{
+			scale.ry() = Utils::sign(scale.y()) * qAbs(scale.x());
+			mHorzSnapLine = QLineF();
+		}
+		else
+		{
+			scale.rx() = Utils::sign(scale.x()) * qAbs(scale.y());
+			mVertSnapLine = QLineF();
+		}
 	}
 
-	QPointF snappedPos = snapPoint(pos);
-	return QPointF((snappedPos.x() - pivot.x()) * sx / mOriginalRect.width(), (snappedPos.y() - pivot.y()) * sy / mOriginalRect.height());
+	return scale;
 }
 
 void EditorWindow::selectGameObject(GameObject *object)
@@ -1103,7 +1212,7 @@ void EditorWindow::selectGameObjects(const QList<GameObject *> &objects)
 			mOriginalCenter = mSnappedCenter = mSelectedObjects.size() == 1 ? mSelectedObjects.front()->getRotationCenter() : mOriginalRect.center();
 
 		// посылаем сигнал об изменении выделения
-		emit selectionChanged(!mSelectedObjects.empty());
+		emit selectionChanged(mSelectedObjects);
 	}
 }
 

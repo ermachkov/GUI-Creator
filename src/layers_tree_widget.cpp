@@ -6,9 +6,6 @@
 #include "layer_group.h"
 #include "utils.h"
 
-// FIXME: условия надо полностью писать: topItem->parent() != NULL
-// в любом другом языке сразу ошибка компила вывалится, потому что в if выражения должны быть только типа bool, а ему всякие указатели пихают
-
 LayersTreeWidget::LayersTreeWidget(QWidget *parent)
 : QTreeWidget(parent), mPrimaryGLWidget(NULL), mFrameBuffer(NULL)
 {

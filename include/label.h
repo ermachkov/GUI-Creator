@@ -22,9 +22,6 @@ public:
 	// Конструктор
 	Label(const QString &name, int id, const QPointF &pos, const QString &fileName, int size, Layer *parent = NULL);
 
-	// Конструктор копирования
-	Label(const Label &label);
-
 	// Деструктор
 	virtual ~Label();
 
@@ -57,6 +54,12 @@ public:
 
 	// Устанавливает вертикальное выравнивание текста
 	void setVertAlignment(VertAlignment alignment);
+
+	// Возвращает межстрочный интервал
+	qreal getLineSpacing() const;
+
+	// Устанавливает межстрочный интервал
+	void setLineSpacing(qreal lineSpacing);
 
 	// Возвращает цвет текста
 	QColor getColor() const;
@@ -96,6 +99,7 @@ private:
 	QSharedPointer<FTFont>  mFont;          // Шрифт надписи
 	FTGL::TextAlignment     mAlignment;     // Горизонтальное выравнивание текста
 	VertAlignment           mVertAlignment; // Вертикальное выравнивание текста
+	qreal                   mLineSpacing;   // Межстрочный интервал
 	QColor                  mColor;         // Цвет текста
 };
 

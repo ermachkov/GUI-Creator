@@ -43,8 +43,8 @@ public:
 	// Устанавливает новый масштаб с центровкой по середине окна
 	void setZoom(qreal zoom);
 
-	// Возвращает true, если в окне редактирования есть выделенные объекты
-	bool hasSelectedObjects() const;
+	// Возвращает список выделенных объектов
+	QList<GameObject *> getSelectedObjects() const;
 
 	// Вырезает выделенные объекты в буфер обмена
 	void cut();
@@ -88,7 +88,7 @@ signals:
 	void zoomChanged(const QString &zoomStr);
 
 	// Сигнал об изменении выделения
-	void selectionChanged(bool selected);
+	void selectionChanged(const QList<GameObject *> &objects);
 
 	// Сигнал об изменении локации
 	void locationChanged(bool changed);
@@ -131,6 +131,7 @@ private:
 	static const int GRID_SPACING_COEFF = 4;    // Множитель динамического изменения шага сетки
 	static const int MARKER_SIZE = 9;           // Размер маркера выделения в пикселях
 	static const int CENTER_SIZE = 13;          // Размер перекрестья центра вращения в пикселях
+	static const int SNAP_DISTANCE = 4;         // Расстояние привязки к сетке/направляющим в пикселях
 
 	// Состояния редактирования
 	enum EditorState
@@ -167,16 +168,13 @@ private:
 	QRectF worldRectToWindow(const QRectF &rect) const;
 
 	// Привязывает координату X к сетке/направляющим
-	qreal snapXCoord(qreal x);
+	qreal snapXCoord(qreal x, qreal y1, qreal y2, QLineF *linePtr = NULL, qreal *distancePtr = NULL);
 
 	// Привязывает координату Y к сетке/направляющим
-	qreal snapYCoord(qreal y);
+	qreal snapYCoord(qreal y, qreal x1, qreal x2, QLineF *linePtr = NULL, qreal *distancePtr = NULL);
 
-	// Привязывает точку к сетке/направляющим
-	QPointF snapPoint(const QPointF &pt);
-
-	// Определяет конечную точку при перемещении игрового объекта
-	QPointF calcEndPoint(const QPointF &start, const QPointF &end, bool shift);
+	// Определяет вектор перемещения игрового объекта
+	QPointF calcTranslation(const QPointF &direction, bool shift, QVector2D &axis);
 
 	// Определяет масштаб при изменении размеров игрового объекта
 	QPointF calcScale(const QPointF &pos, const QPointF &pivot, qreal sx, qreal sy, bool keepProportions);
@@ -224,6 +222,8 @@ private:
 	QRectF              mOriginalRect;      // Исходный ограничивающий прямоугольник выделенных объектов
 	QRectF              mSnappedRect;       // Текущий ограничивающий прямоугольник, привязанный к сетке
 	QRectF              mSelectionRect;     // Рамка выделения
+	QLineF              mHorzSnapLine;      // Горизонтальная линия привязки
+	QLineF              mVertSnapLine;      // Вертикальная линия привязки
 
 	bool                mRotationMode;      // Текущий режим поворота
 	QPointF             mOriginalCenter;    // Исходный центр вращения

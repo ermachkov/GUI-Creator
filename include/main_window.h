@@ -5,7 +5,9 @@
 
 class EditorWindow;
 class FontBrowser;
+class GameObject;
 class LayersWindow;
+class PropertyWindow;
 class SpriteBrowser;
 class Texture;
 
@@ -105,7 +107,7 @@ private slots:
 	void onZoomEditingFinished();
 
 	// Обработчик изменения выделения в окне редактирования
-	void onEditorWindowSelectionChanged(bool selected);
+	void onEditorWindowSelectionChanged(const QList<GameObject *> &objects);
 
 	// Обработчик изменения локации в окне редактирования
 	void onEditorWindowLocationChanged(bool changed);
@@ -160,6 +162,7 @@ private:
 
 	SpriteBrowser       *mSpriteBrowser;        // Браузер спрайтов
 	FontBrowser         *mFontBrowser;          // Браузер шрифтов
+	PropertyWindow      *mPropertyWindow;       // Окно свойств объекта
 	LayersWindow        *mLayersWindow;         // Окно слоев
 	int                 mUntitledIndex;         // Текущий номер для новых файлов
 

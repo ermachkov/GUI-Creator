@@ -67,8 +67,9 @@ void FontBrowser::scanFonts()
 		// установка иконки по умолчанию
 		item->setIcon(mIconDrawText);
 
-		// сохраняем относительный путь к файлу в UserRole для поддержки перетаскивания
-		item->setData(Qt::UserRole, "label://fonts/" + fileName);
+		// сохраняем тип и относительный путь к файлу для поддержки перетаскивания
+		item->setData(Qt::UserRole, "Label");
+		item->setData(Qt::UserRole + 1, "fonts/" + fileName);
 
 		// всплывающая подсказка с несокращенным именем
 		item->setToolTip(fileName);

@@ -27,11 +27,6 @@ Sprite::Sprite(const QString &name, int id, const QPointF &pos, const QString &f
 	updateTransform();
 }
 
-Sprite::Sprite(const Sprite &sprite)
-: GameObject(sprite), mFileName(sprite.mFileName), mTexture(sprite.mTexture), mColor(sprite.mColor)
-{
-}
-
 Sprite::~Sprite()
 {
 	// устанавливаем текущий контекст OpenGL для корректного удаления текстуры спрайта

@@ -62,6 +62,12 @@ public:
 	// Сортирует игровые объекты по глубине
 	virtual QList<GameObject *> sortGameObjects(const QList<GameObject *> &objects) const;
 
+	// Привязывает координату по оси X к игровым объектам
+	virtual void snapXCoord(qreal x, qreal y1, qreal y2, const QList<GameObject *> &objects, qreal &snappedX, qreal &distance, QLineF &line) const;
+
+	// Привязывает координату по оси Y к игровым объектам
+	virtual void snapYCoord(qreal y, qreal x1, qreal x2, const QList<GameObject *> &objects, qreal &snappedY, qreal &distance, QLineF &line) const;
+
 	// Дублирует слой
 	virtual BaseLayer *duplicate(BaseLayer *parent = NULL, int index = 0) const;
 

@@ -12,6 +12,9 @@ public:
 	// Погрешность расчетов
 	static const qreal EPS;
 
+	// Возвращает значение функции y = sign(x)
+	static qreal sign(qreal x);
+
 	// Переводит угол из радианов в градусы
 	static qreal radToDeg(qreal angle);
 

@@ -4,6 +4,15 @@
 const qreal Utils::PI = 3.14159265358979323846;
 const qreal Utils::EPS = 0.0001;
 
+qreal Utils::sign(qreal x)
+{
+	if (x > 0.0)
+		return 1.0;
+	if (x < 0.0)
+		return -1.0;
+	return 0.0;
+}
+
 qreal Utils::radToDeg(qreal angle)
 {
 	return angle * 180.0 / PI;

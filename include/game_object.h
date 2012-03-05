@@ -73,6 +73,12 @@ public:
 	// Возвращает true если объект целиком лежит внутри заданного прямоугольника
 	bool isContainedInRect(const QRectF &rect) const;
 
+	// Привязывает координату по оси X к игровому объекту
+	void snapXCoord(qreal x, qreal y1, qreal y2, qreal &snappedX, qreal &distance, QLineF &line) const;
+
+	// Привязывает координату по оси Y к игровому объекту
+	void snapYCoord(qreal y, qreal x1, qreal x2, qreal &snappedY, qreal &distance, QLineF &line) const;
+
 	// Загружает объект из бинарного потока
 	virtual bool load(QDataStream &stream);
 

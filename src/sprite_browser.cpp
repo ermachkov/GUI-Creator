@@ -250,11 +250,6 @@ void SpriteBrowser::recreateWatcher()
 // Обновление отображения текущего каталога
 void SpriteBrowser::update(QString oldPath, QString newPath)
 {
-	qDebug() << "oldPath:" << oldPath << "newPath:" << newPath;
-	qDebug() << "getRootPath:" << getRootPath();
-	qDebug() << "mRelativePath:" << mRelativePath;
-	qDebug() << "--";
-
 	// всплывающая подсказка с полным путем
 	mListWidget->setToolTip(getRootPath() + mRelativePath);
 
@@ -405,8 +400,9 @@ void SpriteBrowser::update(QString oldPath, QString newPath)
 		QListWidgetItem *item = new QListWidgetItem(fileName, mListWidget);
 		item->setIcon(iterTC->getIcon());
 
-		// сохраняем относительный путь к файлу в UserRole для поддержки перетаскивания
-		item->setData(Qt::UserRole, "sprite://sprites/" + mRelativePath + fileName);
+		// сохраняем тип и относительный путь к файлу для поддержки перетаскивания
+		item->setData(Qt::UserRole, "Sprite");
+		item->setData(Qt::UserRole + 1, "sprites/" + mRelativePath + fileName);
 
 		// всплывающая подсказка с несокращенным именем
 		item->setToolTip(fileName);

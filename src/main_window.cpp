@@ -6,6 +6,7 @@
 #include "layers_window.h"
 #include "options.h"
 #include "options_dialog.h"
+#include "property_window.h"
 #include "sprite_browser.h"
 #include "texture_manager.h"
 #include "utils.h"
@@ -33,11 +34,15 @@ MainWindow::MainWindow()
 
 	// создаем браузер спрайтов
 	mSpriteBrowser = new SpriteBrowser(this);
-	addDockWidget(Qt::RightDockWidgetArea, mSpriteBrowser);
+	addDockWidget(Qt::LeftDockWidgetArea, mSpriteBrowser);
 
 	// создаем браузер шрифтов
 	mFontBrowser = new FontBrowser(this);
-	addDockWidget(Qt::RightDockWidgetArea, mFontBrowser);
+	addDockWidget(Qt::LeftDockWidgetArea, mFontBrowser);
+
+	// создаем окно свойств объекта
+	mPropertyWindow = new PropertyWindow(this);
+	addDockWidget(Qt::RightDockWidgetArea, mPropertyWindow);
 
 	// создаем окно слоев
 	mLayersWindow = new LayersWindow(mPrimaryGLWidget, this);
@@ -52,6 +57,9 @@ MainWindow::MainWindow()
 		if (tabBar->count() != 0)
 			tabBar->setCurrentIndex(0);
 
+	// разворачивание окна редактора на весь экран
+	showMaximized();
+
 	// добавляем в меню Файл пункты для последних файлов
 	for (int i = 0; i < 5; ++i)
 	{
@@ -65,6 +73,8 @@ MainWindow::MainWindow()
 
 	// настраиваем акселераторы по Alt для пунктов меню плавающих окон
 	mSpriteBrowser->toggleViewAction()->setText("&Спрайты");
+	mFontBrowser->toggleViewAction()->setText("&Шрифты");
+	mPropertyWindow->toggleViewAction()->setText("С&войства");
 	mLayersWindow->toggleViewAction()->setText("С&лои");
 
 	// добавляем в меню Вид пункты для плавающих окон
@@ -443,7 +453,7 @@ void MainWindow::on_mTabWidget_currentChanged(int index)
 		onZoomChanged(zoomStr);
 
 		// обновляем пункты меню, связанные с редактированием выделенных объектов
-		onEditorWindowSelectionChanged(editorWindow->hasSelectedObjects());
+		onEditorWindowSelectionChanged(editorWindow->getSelectedObjects());
 
 		// обновляем пункт меню Файл-Сохранить
 		mSaveAction->setEnabled(editorWindow->isChanged());
@@ -470,7 +480,7 @@ void MainWindow::on_mTabWidget_currentChanged(int index)
 		mZoomOutAction->setEnabled(false);
 
 		// деактивируем пункты меню, связанные с редактированием выделенных объектов
-		onEditorWindowSelectionChanged(false);
+		onEditorWindowSelectionChanged(QList<GameObject *>());
 
 		// деактивируем комбобокс со списком масштабов
 		mZoomComboBox->setEnabled(false);
@@ -519,9 +529,10 @@ void MainWindow::onZoomEditingFinished()
 	onZoomChanged(zoomStr);
 }
 
-void MainWindow::onEditorWindowSelectionChanged(bool selected)
+void MainWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &objects)
 {
 	// разрешаем/запрещаем нужные пункты меню
+	bool selected = !objects.empty();
 	mCutAction->setEnabled(selected);
 	mCopyAction->setEnabled(selected);
 	mDeleteAction->setEnabled(selected);
@@ -581,10 +592,13 @@ EditorWindow *MainWindow::createEditorWindow(const QString &fileName)
 
 	// связываем сигналы от окна редактирования с соответствующими слотами
 	connect(editorWindow, SIGNAL(zoomChanged(const QString &)), this, SLOT(onZoomChanged(const QString &)));
-	connect(editorWindow, SIGNAL(selectionChanged(bool)), this, SLOT(onEditorWindowSelectionChanged(bool)));
+	connect(editorWindow, SIGNAL(selectionChanged(const QList<GameObject *> &)), this, SLOT(onEditorWindowSelectionChanged(const QList<GameObject *> &)));
 	connect(editorWindow, SIGNAL(locationChanged(bool)), this, SLOT(onEditorWindowLocationChanged(bool)));
 	connect(editorWindow, SIGNAL(mouseMoved(const QPointF &)), this, SLOT(onEditorWindowMouseMoved(const QPointF &)));
 	connect(editorWindow, SIGNAL(layerChanged(Location *, BaseLayer *)), mLayersWindow, SIGNAL(layerChanged(Location *, BaseLayer *)));
+
+	// связывание сигнала изменения выделения объекта(-ов) для отправки в ГУИ настроек
+	connect(editorWindow, SIGNAL(selectionChanged(const QList<GameObject *> &)), mPropertyWindow, SLOT(onEditorWindowSelectionChanged(const QList<GameObject *> &)));
 
 	// активируем нужные пункты меню
 	mSaveAsAction->setEnabled(true);

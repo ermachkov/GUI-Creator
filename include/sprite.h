@@ -15,9 +15,6 @@ public:
 	// Конструктор
 	Sprite(const QString &name, int id, const QPointF &pos, const QString &fileName, Layer *parent = NULL);
 
-	// Конструктор копирования
-	Sprite(const Sprite &sprite);
-
 	// Деструктор
 	virtual ~Sprite();
 

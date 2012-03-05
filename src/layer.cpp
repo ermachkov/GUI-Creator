@@ -189,6 +189,22 @@ QList<GameObject *> Layer::sortGameObjects(const QList<GameObject *> &objects) c
 	return sortedObjects;
 }
 
+void Layer::snapXCoord(qreal x, qreal y1, qreal y2, const QList<GameObject *> &objects, qreal &snappedX, qreal &distance, QLineF &line) const
+{
+	// проходим по всем дочерним игровым объектам
+	foreach (GameObject *object, mGameObjects)
+		if (!objects.contains(object))
+			object->snapXCoord(x, y1, y2, snappedX, distance, line);
+}
+
+void Layer::snapYCoord(qreal y, qreal x1, qreal x2, const QList<GameObject *> &objects, qreal &snappedY, qreal &distance, QLineF &line) const
+{
+	// проходим по всем дочерним игровым объектам
+	foreach (GameObject *object, mGameObjects)
+		if (!objects.contains(object))
+			object->snapYCoord(y, x1, x2, snappedY, distance, line);
+}
+
 BaseLayer *Layer::duplicate(BaseLayer *parent, int index) const
 {
 	// создаем свою копию и добавляем ее к родительскому слою

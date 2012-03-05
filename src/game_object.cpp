@@ -71,9 +71,8 @@ QSizeF GameObject::getSize() const
 void GameObject::setSize(const QSizeF &size)
 {
 	// пересчитываем локальные координаты центра вращения и сохраняем новый размер
-	QSizeF newSize(qAbs(size.width()) >= 1.0 ? size.width() : mSize.width(), qAbs(size.height()) >= 1.0 ? size.height() : mSize.height());
-	mRotationCenter = QPointF(mRotationCenter.x() * newSize.width() / mSize.width(), mRotationCenter.y() * newSize.height() / mSize.height());
-	mSize = newSize;
+	mRotationCenter = QPointF(mRotationCenter.x() * size.width() / mSize.width(), mRotationCenter.y() * size.height() / mSize.height());
+	mSize = size;
 	updateTransform();
 }
 
@@ -123,6 +122,62 @@ bool GameObject::isContainedInRect(const QRectF &rect) const
 {
 	// проверяем, что все четыре вершины объекта лежат внутри заданного прямоугольника
 	return rect.contains(mVertices[0]) && rect.contains(mVertices[1]) && rect.contains(mVertices[2]) && rect.contains(mVertices[3]);
+}
+
+void GameObject::snapXCoord(qreal x, qreal y1, qreal y2, qreal &snappedX, qreal &distance, QLineF &line) const
+{
+	// находим расстояния по оси X до левого края, центра и правого края
+	qreal leftDistance = qAbs(x - mBoundingRect.left());
+	qreal centerDistance = qAbs(x - mBoundingRect.center().x());
+	qreal rightDistance = qAbs(x - mBoundingRect.right());
+
+	// определяем наименьшее расстояние и привязываем координату к соответствующему краю
+	if (leftDistance < distance && leftDistance <= centerDistance && leftDistance <= rightDistance)
+	{
+		snappedX = mBoundingRect.left();
+		distance = leftDistance;
+		line = QLineF(snappedX, qMin(y1, mBoundingRect.top()), snappedX, qMax(y2, mBoundingRect.bottom()));
+	}
+	else if (centerDistance < distance && centerDistance <= leftDistance && centerDistance <= rightDistance)
+	{
+		snappedX = mBoundingRect.center().x();
+		distance = centerDistance;
+		line = QLineF(snappedX, qMin(y1, mBoundingRect.center().y()), snappedX, qMax(y2, mBoundingRect.center().y()));
+	}
+	else if (rightDistance < distance && rightDistance <= leftDistance && rightDistance <= centerDistance)
+	{
+		snappedX = mBoundingRect.right();
+		distance = rightDistance;
+		line = QLineF(snappedX, qMin(y1, mBoundingRect.top()), snappedX, qMax(y2, mBoundingRect.bottom()));
+	}
+}
+
+void GameObject::snapYCoord(qreal y, qreal x1, qreal x2, qreal &snappedY, qreal &distance, QLineF &line) const
+{
+	// находим расстояния по оси Y до верхнего края, центра и нижнего края
+	qreal topDistance = qAbs(y - mBoundingRect.top());
+	qreal centerDistance = qAbs(y - mBoundingRect.center().y());
+	qreal bottomDistance = qAbs(y - mBoundingRect.bottom());
+
+	// определяем наименьшее расстояние и привязываем координату к соответствующему краю
+	if (topDistance < distance && topDistance <= centerDistance && topDistance <= bottomDistance)
+	{
+		snappedY = mBoundingRect.top();
+		distance = topDistance;
+		line = QLineF(qMin(x1, mBoundingRect.left()), snappedY, qMax(x2, mBoundingRect.right()), snappedY);
+	}
+	else if (centerDistance < distance && centerDistance <= topDistance && centerDistance <= bottomDistance)
+	{
+		snappedY = mBoundingRect.center().y();
+		distance = centerDistance;
+		line = QLineF(qMin(x1, mBoundingRect.center().x()), snappedY, qMax(x2, mBoundingRect.center().x()), snappedY);
+	}
+	else if (bottomDistance < distance && bottomDistance <= topDistance && bottomDistance <= centerDistance)
+	{
+		snappedY = mBoundingRect.bottom();
+		distance = bottomDistance;
+		line = QLineF(qMin(x1, mBoundingRect.left()), snappedY, qMax(x2, mBoundingRect.right()), snappedY);
+	}
 }
 
 bool GameObject::load(QDataStream &stream)

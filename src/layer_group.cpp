@@ -12,11 +12,6 @@ LayerGroup::LayerGroup(const QString &name, BaseLayer *parent, int index)
 {
 }
 
-LayerGroup::LayerGroup(const LayerGroup &group)
-: BaseLayer(group)
-{
-}
-
 bool LayerGroup::load(LuaScript &script, int depth)
 {
 	// загружаем общие свойства слоя
@@ -155,6 +150,20 @@ QList<GameObject *> LayerGroup::sortGameObjects(const QList<GameObject *> &objec
 		sortedObjects.append(layer->sortGameObjects(objects));
 
 	return sortedObjects;
+}
+
+void LayerGroup::snapXCoord(qreal x, qreal y1, qreal y2, const QList<GameObject *> &objects, qreal &snappedX, qreal &distance, QLineF &line) const
+{
+	// проходим по всем дочерним слоям
+	foreach (BaseLayer *layer, mChildLayers)
+		layer->snapXCoord(x, y1, y2, objects, snappedX, distance, line);
+}
+
+void LayerGroup::snapYCoord(qreal y, qreal x1, qreal x2, const QList<GameObject *> &objects, qreal &snappedY, qreal &distance, QLineF &line) const
+{
+	// проходим по всем дочерним слоям
+	foreach (BaseLayer *layer, mChildLayers)
+		layer->snapYCoord(y, x1, x2, objects, snappedY, distance, line);
 }
 
 BaseLayer *LayerGroup::duplicate(BaseLayer *parent, int index) const
