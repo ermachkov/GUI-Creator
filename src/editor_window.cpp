@@ -509,6 +509,7 @@ void EditorWindow::mousePressEvent(QMouseEvent *event)
 		// сохраняем начальные оконные координаты мыши и сбрасываем флаг разрешения редактирования
 		mFirstPos = event->pos();
 		mEnableEdit = false;
+		mHorzSnapLine = mVertSnapLine = QLineF();
 
 		qreal size = CENTER_SIZE / mZoom;
 		qreal offset = size / 2.0;
@@ -654,7 +655,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 			QVector2D axis;
 			QPointF offset = calcTranslation(QPointF(mLastPos - mFirstPos) / mZoom, shift, axis);
 
-			// определяем сдвинутый прямоугольник выделения и сбрасываем линии привязки
+			// определяем координаты привязываемого прямоугольника
 			QRectF rect = mOriginalRect.translated(offset);
 			mHorzSnapLine = mVertSnapLine = QLineF();
 
@@ -664,9 +665,9 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 				// вычисляем расстояния привязок для левого края, центра и правого края прямоугольника выделения
 				QLineF leftLine, centerLine, rightLine;
 				qreal leftDistance, centerDistance, rightDistance;
-				qreal left = snapXCoord(rect.left(), rect.top(), rect.bottom(), &leftLine, &leftDistance);
-				qreal center = snapXCoord(rect.center().x(), rect.center().y(), rect.center().y(), &centerLine, &centerDistance);
-				qreal right = snapXCoord(rect.right(), rect.top(), rect.bottom(), &rightLine, &rightDistance);
+				qreal left = snapXCoord(rect.left(), rect.top(), rect.bottom(), true, &leftLine, &leftDistance);
+				qreal center = snapXCoord(rect.center().x(), rect.center().y(), rect.center().y(), true, &centerLine, &centerDistance);
+				qreal right = snapXCoord(rect.right(), rect.top(), rect.bottom(), true, &rightLine, &rightDistance);
 
 				// привязываем край с наименьшим расстоянием привязки
 				if (leftDistance < SNAP_DISTANCE && leftDistance <= centerDistance && leftDistance <= rightDistance)
@@ -696,9 +697,9 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 				// вычисляем расстояния привязок для верхнего края, центра и нижнего края прямоугольника выделения
 				QLineF topLine, centerLine, bottomLine;
 				qreal topDistance, centerDistance, bottomDistance;
-				qreal top = snapYCoord(rect.top(), rect.left(), rect.right(), &topLine, &topDistance);
-				qreal center = snapYCoord(rect.center().y(), rect.center().x(), rect.center().x(), &centerLine, &centerDistance);
-				qreal bottom = snapYCoord(rect.bottom(), rect.left(), rect.right(), &bottomLine, &bottomDistance);
+				qreal top = snapYCoord(rect.top(), rect.left(), rect.right(), true, &topLine, &topDistance);
+				qreal center = snapYCoord(rect.center().y(), rect.center().x(), rect.center().x(), true, &centerLine, &centerDistance);
+				qreal bottom = snapYCoord(rect.bottom(), rect.left(), rect.right(), true, &bottomLine, &bottomDistance);
 
 				// привязываем край с наименьшим расстоянием привязки
 				if (topDistance < SNAP_DISTANCE && topDistance <= centerDistance && topDistance <= bottomDistance)
@@ -724,13 +725,17 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 
 			// перемещаем все выделенные объекты
 			for (int i = 0; i < mSelectedObjects.size(); ++i)
-				mSelectedObjects[i]->setPosition(mOriginalPositions[i] + offset);
+			{
+				QPointF position = mOriginalPositions[i] + offset;
+				mSelectedObjects[i]->setPosition(QPointF(qRound(position.x()), qRound(position.y())));
+			}
 		}
 		else if (mEditorState == STATE_RESIZE)
 		{
 			// определяем значение масштаба и координаты точки, относительно которой он производится
 			bool keepProportions = (event->modifiers() & Qt::ShiftModifier) != 0 || mHasRotatedObjects;
 			QPointF pivot, scale;
+			mHorzSnapLine = mVertSnapLine = QLineF();
 			switch (mSelectionMarker)
 			{
 			case MARKER_TOP_LEFT:
@@ -740,8 +745,8 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 
 			case MARKER_CENTER_LEFT:
 				pivot = QPointF(mOriginalRect.right(), mOriginalRect.center().y());
-				scale.rx() = (pivot.x() - snapXCoord(pos.x(), mOriginalRect.center().y(), mOriginalRect.center().y())) / mOriginalRect.width();
-				scale.ry() = keepProportions ? scale.x() : 1.0;
+				scale.rx() = (pivot.x() - snapXCoord(pos.x(), pivot.y(), pivot.y(), true, &mVertSnapLine)) / mOriginalRect.width();
+				scale.ry() = keepProportions ? qAbs(scale.x()) : 1.0;
 				break;
 
 			case MARKER_BOTTOM_LEFT:
@@ -751,8 +756,8 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 
 			case MARKER_BOTTOM_CENTER:
 				pivot = QPointF(mOriginalRect.center().x(), mOriginalRect.top());
-				scale.ry() = (snapYCoord(pos.y(), mOriginalRect.center().x(), mOriginalRect.center().x()) - pivot.y()) / mOriginalRect.height();
-				scale.rx() = keepProportions ? scale.y() : 1.0;
+				scale.ry() = (snapYCoord(pos.y(), pivot.x(), pivot.x(), true, &mHorzSnapLine) - pivot.y()) / mOriginalRect.height();
+				scale.rx() = keepProportions ? qAbs(scale.y()) : 1.0;
 				break;
 
 			case MARKER_BOTTOM_RIGHT:
@@ -762,8 +767,8 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 
 			case MARKER_CENTER_RIGHT:
 				pivot = QPointF(mOriginalRect.left(), mOriginalRect.center().y());
-				scale.rx() = (snapXCoord(pos.x(), mOriginalRect.center().y(), mOriginalRect.center().y()) - pivot.x()) / mOriginalRect.width();
-				scale.ry() = keepProportions ? scale.x() : 1.0;
+				scale.rx() = (snapXCoord(pos.x(), pivot.y(), pivot.y(), true, &mVertSnapLine) - pivot.x()) / mOriginalRect.width();
+				scale.ry() = keepProportions ? qAbs(scale.x()) : 1.0;
 				break;
 
 			case MARKER_TOP_RIGHT:
@@ -773,8 +778,8 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 
 			case MARKER_TOP_CENTER:
 				pivot = QPointF(mOriginalRect.center().x(), mOriginalRect.bottom());
-				scale.ry() = (pivot.y() - snapYCoord(pos.y(), mOriginalRect.center().x(), mOriginalRect.center().x())) / mOriginalRect.height();
-				scale.rx() = keepProportions ? scale.y() : 1.0;
+				scale.ry() = (pivot.y() - snapYCoord(pos.y(), pivot.x(), pivot.x(), true, &mHorzSnapLine)) / mOriginalRect.height();
+				scale.rx() = keepProportions ? qAbs(scale.y()) : 1.0;
 				break;
 
 			default:
@@ -790,12 +795,16 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 			// пересчитываем положение и размеры выделенных объектов
 			for (int i = 0; i < mSelectedObjects.size(); ++i)
 			{
-				mSelectedObjects[i]->setPosition(QPointF((mOriginalPositions[i].x() - pivot.x()) * scale.x() + pivot.x(),
-					(mOriginalPositions[i].y() - pivot.y()) * scale.y() + pivot.y()));
+				QPointF position((mOriginalPositions[i].x() - pivot.x()) * scale.x() + pivot.x(),
+					(mOriginalPositions[i].y() - pivot.y()) * scale.y() + pivot.y());
+				mSelectedObjects[i]->setPosition(QPointF(qRound(position.x()), qRound(position.y())));
+
+				QSizeF size;
 				if (keepProportions || mOriginalAngles[i] == 0.0 || mOriginalAngles[i] == 180.0)
-					mSelectedObjects[i]->setSize(QSizeF(mOriginalSizes[i].width() * scale.x(), mOriginalSizes[i].height() * scale.y()));
+					size = QSizeF(mOriginalSizes[i].width() * scale.x(), mOriginalSizes[i].height() * scale.y());
 				else
-					mSelectedObjects[i]->setSize(QSizeF(mOriginalSizes[i].width() * scale.y(), mOriginalSizes[i].height() * scale.x()));
+					size = QSizeF(mOriginalSizes[i].width() * scale.y(), mOriginalSizes[i].height() * scale.x());
+				mSelectedObjects[i]->setSize(QSizeF(qRound(size.width()), qRound(size.height())));
 			}
 		}
 		else if (mEditorState == STATE_ROTATE)
@@ -837,16 +846,35 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 				// поворачиваем объект на привязанный угол
 				qreal newAngle = Utils::degToRad(absAngle - mOriginalAngles[i]);
 				QPointF pt = mOriginalPositions[i] - mOriginalCenter;
-				mSelectedObjects[i]->setPosition(QPointF(pt.x() * qCos(newAngle) - pt.y() * qSin(newAngle) + mOriginalCenter.x(),
-					pt.x() * qSin(newAngle) + pt.y() * qCos(newAngle) + mOriginalCenter.y()));
+				QPointF position(pt.x() * qCos(newAngle) - pt.y() * qSin(newAngle) + mOriginalCenter.x(),
+					pt.x() * qSin(newAngle) + pt.y() * qCos(newAngle) + mOriginalCenter.y());
+				if (absAngle == 0.0 || absAngle == 90.0 || absAngle == 180.0 || absAngle == 270.0)
+					position = QPointF(qRound(position.x()), qRound(position.y()));
+				mSelectedObjects[i]->setPosition(position);
 				mSelectedObjects[i]->setRotationAngle(absAngle);
 			}
 		}
 		else if (mEditorState == STATE_MOVE_CENTER)
 		{
-			// перемещаем центр вращения
+			// определяем вектор перемещения
+			bool shift = (event->modifiers() & Qt::ShiftModifier) != 0;
 			QVector2D axis;
-			mSnappedCenter = mOriginalCenter + calcTranslation(pos - mOriginalCenter, (event->modifiers() & Qt::ShiftModifier) != 0, axis);
+			QPointF offset = calcTranslation(pos - mOriginalCenter, shift, axis);
+
+			// определяем координаты привязываемой точки
+			QPointF pt = mOriginalCenter + offset;
+			mHorzSnapLine = mVertSnapLine = QLineF();
+
+			// привязываем точку по оси X
+			if (!shift || qAbs(axis.y()) < Utils::EPS)
+				offset.rx() += snapXCoord(pt.x(), pt.y(), pt.y(), false, &mVertSnapLine) - pt.x();
+
+			// привязываем точку по оси Y
+			if (!shift || qAbs(axis.x()) < Utils::EPS)
+				offset.ry() += snapYCoord(pt.y(), pt.x(), pt.x(), false, &mHorzSnapLine) - pt.y();
+
+			// перемещаем центр вращения
+			mSnappedCenter = mOriginalCenter + offset;
 			if (mSelectedObjects.size() == 1)
 				mSelectedObjects.front()->setRotationCenter(mSnappedCenter);
 		}
@@ -1043,7 +1071,7 @@ QRectF EditorWindow::worldRectToWindow(const QRectF &rect) const
 	return QRectF(topLeft, bottomRight);
 }
 
-qreal EditorWindow::snapXCoord(qreal x, qreal y1, qreal y2, QLineF *linePtr, qreal *distancePtr)
+qreal EditorWindow::snapXCoord(qreal x, qreal y1, qreal y2, bool excludeSelection, QLineF *linePtr, qreal *distancePtr)
 {
 	Options &options = Options::getSingleton();
 
@@ -1052,8 +1080,9 @@ qreal EditorWindow::snapXCoord(qreal x, qreal y1, qreal y2, QLineF *linePtr, qre
 	QLineF line;
 
 	// привязываем координату к умным направляющим
+	const QList<GameObject *> &excludedObjects = excludeSelection ? mSelectedObjects : QList<GameObject *>();
 	if (options.isEnableSmartGuides() && distance == SNAP_DISTANCE)
-		mLocation->getRootLayer()->snapXCoord(x, y1, y2, mSelectedObjects, snappedX, distance, line);
+		mLocation->getRootLayer()->snapXCoord(x, y1, y2, excludedObjects, snappedX, distance, line);
 
 	// привязываем координату к сетке
 	if (options.isSnapToGrid() && distance == SNAP_DISTANCE)
@@ -1079,7 +1108,7 @@ qreal EditorWindow::snapXCoord(qreal x, qreal y1, qreal y2, QLineF *linePtr, qre
 	return snappedX;
 }
 
-qreal EditorWindow::snapYCoord(qreal y, qreal x1, qreal x2, QLineF *linePtr, qreal *distancePtr)
+qreal EditorWindow::snapYCoord(qreal y, qreal x1, qreal x2, bool excludeSelection, QLineF *linePtr, qreal *distancePtr)
 {
 	Options &options = Options::getSingleton();
 
@@ -1088,8 +1117,9 @@ qreal EditorWindow::snapYCoord(qreal y, qreal x1, qreal x2, QLineF *linePtr, qre
 	QLineF line;
 
 	// привязываем координату к умным направляющим
+	const QList<GameObject *> &excludedObjects = excludeSelection ? mSelectedObjects : QList<GameObject *>();
 	if (options.isEnableSmartGuides() && distance == SNAP_DISTANCE)
-		mLocation->getRootLayer()->snapYCoord(y, x1, x2, mSelectedObjects, snappedY, distance, line);
+		mLocation->getRootLayer()->snapYCoord(y, x1, x2, excludedObjects, snappedY, distance, line);
 
 	// привязываем координату к сетке
 	if (options.isSnapToGrid() && distance == SNAP_DISTANCE)
@@ -1147,8 +1177,8 @@ QPointF EditorWindow::calcTranslation(const QPointF &direction, bool shift, QVec
 QPointF EditorWindow::calcScale(const QPointF &pos, const QPointF &pivot, qreal sx, qreal sy, bool keepProportions)
 {
 	// привязываем точку к осям X и Y и вычисляем масштаб
-	qreal snappedX = snapXCoord(pos.x(), pos.y(), pos.y(), &mVertSnapLine);
-	qreal snappedY = snapYCoord(pos.y(), pos.x(), pos.x(), &mHorzSnapLine);
+	qreal snappedX = snapXCoord(pos.x(), pos.y(), pos.y(), true, &mVertSnapLine);
+	qreal snappedY = snapYCoord(pos.y(), pos.x(), pos.x(), true, &mHorzSnapLine);
 	QPointF scale((snappedX - pivot.x()) * sx / mOriginalRect.width(), (snappedY - pivot.y()) * sy / mOriginalRect.height());
 
 	// при пропорциональном масштабировании привязываем точку только по оси с наименьшим масштабом
@@ -1157,11 +1187,15 @@ QPointF EditorWindow::calcScale(const QPointF &pos, const QPointF &pivot, qreal 
 		if (qAbs(scale.x()) < qAbs(scale.y()))
 		{
 			scale.ry() = Utils::sign(scale.y()) * qAbs(scale.x());
+			qreal y = mOriginalRect.height() * scale.y() * sy + pivot.y();
+			snapXCoord(pos.x(), y, y, true, &mVertSnapLine);
 			mHorzSnapLine = QLineF();
 		}
 		else
 		{
 			scale.rx() = Utils::sign(scale.x()) * qAbs(scale.y());
+			qreal x = mOriginalRect.width() * scale.x() * sx + pivot.x();
+			snapYCoord(pos.y(), x, x, true, &mHorzSnapLine);
 			mVertSnapLine = QLineF();
 		}
 	}

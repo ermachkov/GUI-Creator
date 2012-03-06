@@ -168,10 +168,10 @@ private:
 	QRectF worldRectToWindow(const QRectF &rect) const;
 
 	// Привязывает координату X к сетке/направляющим
-	qreal snapXCoord(qreal x, qreal y1, qreal y2, QLineF *linePtr = NULL, qreal *distancePtr = NULL);
+	qreal snapXCoord(qreal x, qreal y1, qreal y2, bool excludeSelection, QLineF *linePtr = NULL, qreal *distancePtr = NULL);
 
 	// Привязывает координату Y к сетке/направляющим
-	qreal snapYCoord(qreal y, qreal x1, qreal x2, QLineF *linePtr = NULL, qreal *distancePtr = NULL);
+	qreal snapYCoord(qreal y, qreal x1, qreal x2, bool excludeSelection, QLineF *linePtr = NULL, qreal *distancePtr = NULL);
 
 	// Определяет вектор перемещения игрового объекта
 	QPointF calcTranslation(const QPointF &direction, bool shift, QVector2D &axis);
