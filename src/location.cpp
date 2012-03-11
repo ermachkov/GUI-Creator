@@ -197,3 +197,51 @@ int Location::generateDuplicateObjectID()
 {
 	return mObjectIndex++;
 }
+
+int Location::getNumGuides(bool horz) const
+{
+	const QList<qreal> &guides = horz ? mHorzGuides : mVertGuides;
+	return guides.size();
+}
+
+qreal Location::getGuide(bool horz, int index) const
+{
+	const QList<qreal> &guides = horz ? mHorzGuides : mVertGuides;
+	return guides[index];
+}
+
+void Location::setGuide(bool horz, int index, qreal coord)
+{
+	QList<qreal> &guides = horz ? mHorzGuides : mVertGuides;
+	guides[index] = coord;
+}
+
+int Location::findGuide(bool horz, qreal coord, qreal distance) const
+{
+	// ищем ближайшую направляющую к заданной координате
+	const QList<qreal> &guides = horz ? mHorzGuides : mVertGuides;
+	int index = -1;
+	for (int i = 0; i < guides.size(); ++i)
+	{
+		qreal diff = qAbs(guides[i] - coord);
+		if (diff < distance)
+		{
+			distance = diff;
+			index = i;
+		}
+	}
+	return index;
+}
+
+int Location::addGuide(bool horz, qreal coord)
+{
+	QList<qreal> &guides = horz ? mHorzGuides : mVertGuides;
+	guides.push_back(coord);
+	return guides.size() - 1;
+}
+
+void Location::removeGuide(bool horz, int index)
+{
+	QList<qreal> &guides = horz ? mHorzGuides : mVertGuides;
+	guides.removeAt(index);
+}

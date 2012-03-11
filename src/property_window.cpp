@@ -2,6 +2,7 @@
 #include "game_object.h"
 #include "label.h"
 #include "sprite.h"
+#include "utils.h"
 #include <typeinfo>
 
 PropertyWindow::PropertyWindow(QWidget *parent)
@@ -85,6 +86,8 @@ void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &o
 	foreach (GameObject *object, objects)
 		qDebug() << typeid(*object).name();
 
+	// отображение общих свойств
+	updateCommonWidgets(objects);
 
 	// определение идентичности типа выделенных объектов
 	QStringList types;
@@ -116,6 +119,9 @@ void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &o
 
 		// установка страницы для специфических настроек спрайта
 		mStackedWidget->setCurrentIndex(0);
+
+		// отображение свойств спрайтов
+		updateSpriteWidgets(objects);
 	}
 	else if (dynamic_cast<Label *>(objects.front()) != NULL)
 	{
@@ -128,6 +134,9 @@ void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &o
 
 		// установка страницы для специфических настроек текста
 		mStackedWidget->setCurrentIndex(1);
+
+		// отображение свойств спрайтов
+		updateLabelWidgets(objects);
 	}
 //	else if (dynamic_cast<"your type here">(objects.front()) != NULL)
 //	{
@@ -138,3 +147,174 @@ void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &o
 	}
 
 }
+
+void PropertyWindow::updateCommonWidgets(const QList<GameObject *> &objects)
+{
+	// флаги идентичности значений свойств объектов
+	bool equalName = true;
+	bool equalObjectID = true;
+	bool equalPosition = true;
+	bool equalSize = true;
+	bool isPositiveWSize = true;
+	bool isNegativeWSize = true;
+	bool isPositiveHSize = true;
+	bool isNegativeHSize = true;
+	bool equalRotationAngle = true;
+	//bool equalRotationCenter;
+
+	Q_ASSERT(!objects.empty());
+
+	GameObject *first = objects.front();
+
+	foreach (GameObject *obj, objects)
+	{
+		GameObject *it = obj;
+
+		if (it->getName() != objects.front()->getName())
+			equalName = false;
+
+		if (it->getObjectID() != objects.front()->getObjectID())
+			equalObjectID = false;
+
+		if (!Utils::fuzzyCompare(it->getPosition().x(), objects.front()->getPosition().x()) ||
+			!Utils::fuzzyCompare(it->getPosition().y(), objects.front()->getPosition().y()))
+			equalPosition = false;
+
+		if (!Utils::fuzzyCompare(it->getSize().width(), first->getSize().width()) ||
+			!Utils::fuzzyCompare(it->getSize().height(), first->getSize().height()))
+			equalSize = false;
+
+		if (it->getSize().width() < 0)
+			isPositiveWSize = false;
+		if (it->getSize().width() >= 0)
+			isNegativeWSize = false;
+		if (it->getSize().height() < 0)
+			isPositiveHSize = false;
+		if (it->getSize().height() >= 0)
+			isNegativeHSize = false;
+
+		if (!Utils::fuzzyCompare(it->getRotationAngle(), first->getRotationAngle()))
+			equalRotationAngle = false;
+
+		//equalRotationCenter
+	}
+
+	const int PRECISION = 8;
+
+	mNameLineEdit->setText(equalName ? first->getName() : "");
+
+	mObjectIDLineEdit->setText(equalObjectID ? QString::number(first->getObjectID()) : "");
+
+	mPositionXLineEdit->setText(equalPosition ? QString::number(first->getPosition().x(), 'g', PRECISION) : "");
+	mPositionYLineEdit->setText(equalPosition ? QString::number(first->getPosition().y(), 'g', PRECISION) : "");
+
+	mSizeWLineEdit->setText(equalSize ? QString::number(first->getSize().width(), 'g', PRECISION) : "");
+	mSizeHLineEdit->setText(equalSize ? QString::number(first->getSize().height(), 'g', PRECISION) : "");
+
+	if (isPositiveWSize)
+		mFlipXCheckBox->setCheckState(Qt::Checked);
+	else if (isNegativeWSize)
+		mFlipXCheckBox->setCheckState(Qt::Unchecked);
+	else
+		mFlipXCheckBox->setCheckState(Qt::PartiallyChecked);
+
+	if (isPositiveHSize)
+		mFlipYCheckBox->setCheckState(Qt::Checked);
+	else if (isNegativeHSize)
+		mFlipYCheckBox->setCheckState(Qt::Unchecked);
+	else
+		mFlipYCheckBox->setCheckState(Qt::PartiallyChecked);
+
+	qDebug() << "++";
+	qDebug() << objects.front()->getRotationAngle();
+	qDebug() << QString::number(objects.front()->getRotationAngle(), 'g', PRECISION);
+
+	mRotationAngleComboBox->lineEdit()->setText(equalRotationAngle ? QString::number(objects.front()->getRotationAngle(), 'g', PRECISION) : "");
+
+	//objects.front()->getRotationCenter().x()
+	//objects.front()->getRotationCenter().y()
+}
+
+void PropertyWindow::updateSpriteWidgets(const QList<GameObject *> &objects)
+{
+
+}
+
+void PropertyWindow::updateLabelWidgets(const QList<GameObject *> &objects)
+{
+	// флаги идентичности значений свойств объектов
+	bool equalText = true;
+	bool equalFileName = true;
+	bool equalFontSize = true;
+	bool equalAlignment = true;
+	bool equalVertAlignment = true;
+
+	bool equalLineSpacing = true;
+	bool equalLabelColor = true;
+
+	bool equalLabelOpacity = true;
+
+	Q_ASSERT(!objects.empty());
+
+	Label *first = dynamic_cast<Label *>(objects.front());
+
+	foreach (GameObject *obj, objects)
+	{
+		Label *it = dynamic_cast<Label *>(obj);
+
+		if (it->getText() != first->getText())
+			equalText = false;
+
+		if (it->getFileName() != first->getFileName())
+			 equalFileName = false;
+
+		if (it->getFontSize() != first->getFontSize())
+			 equalFontSize = false;
+
+		if (it->getAlignment() != first->getAlignment())
+			equalAlignment = false;
+
+		if (it->getVertAlignment() != first->getVertAlignment())
+			equalVertAlignment = false;
+
+		if (it->getLineSpacing() != first->getLineSpacing())
+			equalLineSpacing = false;
+
+		if (it->getColor().rgb() != first->getColor().rgb())
+			equalLabelColor = false;
+
+		if (it->getColor().alpha() != first->getColor().alpha())
+			equalLabelOpacity = false;
+	}
+/*
+	mTextLineEdit
+
+	mFileNameComboBox
+
+	mFontSizeComboBox
+
+	mAlignmentLeftPushButton
+	mAlignmentCenterPushButton
+	mAlignmentRightPushButton
+	mVertAlignmentTopPushButton
+	mVertAlignmentCenterPushButton
+	mVertAlignmentBottomPushButton
+
+	mLineSpacingComboBox
+	mLabelColorHTMLLineEdit
+
+	mLabelOpacityHorizontalSlider
+	mLabelOpacityLineEdit
+
+
+	mText
+	mFileName
+	mFontSize
+	mFont
+	mAlignment
+	mVertAlignment
+	mLineSpacing
+	mColor
+*/
+}
+

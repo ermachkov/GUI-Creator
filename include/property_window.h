@@ -16,6 +16,14 @@ public:
 public slots:
 
 	void onEditorWindowSelectionChanged(const QList<GameObject *> &objects);
+
+private:
+
+	// отображение значений параметров объектов в виджетах ГУИ
+	void updateCommonWidgets(const QList<GameObject *> &objects);
+	void updateSpriteWidgets(const QList<GameObject *> &objects);
+	void updateLabelWidgets(const QList<GameObject *> &objects);
+
 };
 
 #endif // PROPERTY_WINDOW_H

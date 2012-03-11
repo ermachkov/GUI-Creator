@@ -132,17 +132,17 @@ void GameObject::snapXCoord(qreal x, qreal y1, qreal y2, qreal &snappedX, qreal 
 	qreal rightDistance = qAbs(x - mBoundingRect.right());
 
 	// определяем наименьшее расстояние и привязываем координату к соответствующему краю
-	if (leftDistance < distance && leftDistance <= centerDistance && leftDistance <= rightDistance)
-	{
-		snappedX = mBoundingRect.left();
-		distance = leftDistance;
-		line = QLineF(snappedX, qMin(y1, mBoundingRect.top()), snappedX, qMax(y2, mBoundingRect.bottom()));
-	}
-	else if (centerDistance < distance && centerDistance <= leftDistance && centerDistance <= rightDistance)
+	if (centerDistance < distance && centerDistance <= leftDistance && centerDistance <= rightDistance)
 	{
 		snappedX = mBoundingRect.center().x();
 		distance = centerDistance;
 		line = QLineF(snappedX, qMin(y1, mBoundingRect.center().y()), snappedX, qMax(y2, mBoundingRect.center().y()));
+	}
+	else if (leftDistance < distance && leftDistance <= centerDistance && leftDistance <= rightDistance)
+	{
+		snappedX = mBoundingRect.left();
+		distance = leftDistance;
+		line = QLineF(snappedX, qMin(y1, mBoundingRect.top()), snappedX, qMax(y2, mBoundingRect.bottom()));
 	}
 	else if (rightDistance < distance && rightDistance <= leftDistance && rightDistance <= centerDistance)
 	{
@@ -160,17 +160,17 @@ void GameObject::snapYCoord(qreal y, qreal x1, qreal x2, qreal &snappedY, qreal 
 	qreal bottomDistance = qAbs(y - mBoundingRect.bottom());
 
 	// определяем наименьшее расстояние и привязываем координату к соответствующему краю
-	if (topDistance < distance && topDistance <= centerDistance && topDistance <= bottomDistance)
-	{
-		snappedY = mBoundingRect.top();
-		distance = topDistance;
-		line = QLineF(qMin(x1, mBoundingRect.left()), snappedY, qMax(x2, mBoundingRect.right()), snappedY);
-	}
-	else if (centerDistance < distance && centerDistance <= topDistance && centerDistance <= bottomDistance)
+	if (centerDistance < distance && centerDistance <= topDistance && centerDistance <= bottomDistance)
 	{
 		snappedY = mBoundingRect.center().y();
 		distance = centerDistance;
 		line = QLineF(qMin(x1, mBoundingRect.center().x()), snappedY, qMax(x2, mBoundingRect.center().x()), snappedY);
+	}
+	else if (topDistance < distance && topDistance <= centerDistance && topDistance <= bottomDistance)
+	{
+		snappedY = mBoundingRect.top();
+		distance = topDistance;
+		line = QLineF(qMin(x1, mBoundingRect.left()), snappedY, qMax(x2, mBoundingRect.right()), snappedY);
 	}
 	else if (bottomDistance < distance && bottomDistance <= topDistance && bottomDistance <= centerDistance)
 	{

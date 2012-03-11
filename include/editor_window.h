@@ -131,7 +131,10 @@ private:
 	static const int GRID_SPACING_COEFF = 4;    // Множитель динамического изменения шага сетки
 	static const int MARKER_SIZE = 9;           // Размер маркера выделения в пикселях
 	static const int CENTER_SIZE = 13;          // Размер перекрестья центра вращения в пикселях
+	static const int RULER_SIZE = 20;           // Размер линейки в пикселях
+	static const int DIVISION_SIZE = 6;         // Длина одного деления линейки в пикселях
 	static const int SNAP_DISTANCE = 4;         // Расстояние привязки к сетке/направляющим в пикселях
+	static const int GUIDE_DISTANCE = 3;        // Расстояние до направляющей для начала перетаскивания
 
 	// Состояния редактирования
 	enum EditorState
@@ -141,7 +144,9 @@ private:
 		STATE_MOVE,         // Перемещение объектов
 		STATE_RESIZE,       // Изменение размера объектов
 		STATE_ROTATE,       // Поворот объектов
-		STATE_MOVE_CENTER   // Перемещение центра вращения
+		STATE_MOVE_CENTER,  // Перемещение центра вращения
+		STATE_HORZ_GUIDE,   // Перемещение горизонтальной направляющей
+		STATE_VERT_GUIDE    // Перемещение вертикальной направляющей
 	};
 
 	// Маркеры выделения
@@ -222,6 +227,7 @@ private:
 	QRectF              mOriginalRect;      // Исходный ограничивающий прямоугольник выделенных объектов
 	QRectF              mSnappedRect;       // Текущий ограничивающий прямоугольник, привязанный к сетке
 	QRectF              mSelectionRect;     // Рамка выделения
+	qreal               mGuideIndex;        // Индекс текущей направляющей
 	QLineF              mHorzSnapLine;      // Горизонтальная линия привязки
 	QLineF              mVertSnapLine;      // Вертикальная линия привязки
 

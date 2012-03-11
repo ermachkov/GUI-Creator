@@ -27,6 +27,14 @@
        <bool>true</bool>
       </property>
       <widget class="QWidget" name="mScrollAreaWidgetContents">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>746</width>
+         <height>482</height>
+        </rect>
+       </property>
        <widget class="QStackedWidget" name="mStackedWidget">
         <property name="geometry">
          <rect>
@@ -57,14 +65,14 @@
           </property>
           <layout class="QGridLayout" name="gridLayout_3">
            <item row="0" column="0">
-            <widget class="QLabel" name="label_29">
+            <widget class="QLabel" name="mFileNameLabel_2">
              <property name="text">
               <string>Имя файла с текстурой:</string>
              </property>
             </widget>
            </item>
            <item row="0" column="2">
-            <widget class="QLineEdit" name="lineEdit_17">
+            <widget class="QLineEdit" name="mFileNameLineEdit">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>0</horstretch>
@@ -77,21 +85,55 @@
             </widget>
            </item>
            <item row="1" column="0">
-            <widget class="QLabel" name="label_30">
+            <widget class="QLabel" name="mSpriteColorLabel">
              <property name="text">
               <string>Цвет:</string>
              </property>
             </widget>
            </item>
            <item row="2" column="0">
-            <widget class="QLabel" name="label_31">
+            <widget class="QLabel" name="mSpriteOpacityLabel">
              <property name="text">
               <string>Прозрачность:</string>
              </property>
             </widget>
            </item>
-           <item row="2" column="2">
-            <widget class="QLineEdit" name="lineEdit_21">
+           <item row="1" column="3">
+            <widget class="QLabel" name="mSpriteColorHTMLLabel">
+             <property name="text">
+              <string>HTML цвет:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="4">
+            <widget class="QLineEdit" name="mSpriteColorHTMLLineEdit">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QFrame" name="mSpriteColorFrame">
+             <property name="frameShape">
+              <enum>QFrame::Box</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Plain</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QPushButton" name="mFileNameBrowsePushButton">
+             <property name="text">
+              <string>...</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="3">
+            <widget class="QLineEdit" name="mSpriteOpacityLineEdit">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>0</horstretch>
@@ -103,37 +145,10 @@
              </property>
             </widget>
            </item>
-           <item row="1" column="3">
-            <widget class="QLabel" name="label_41">
-             <property name="text">
-              <string>HTML цвет:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="4">
-            <widget class="QLineEdit" name="lineEdit_22">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="2">
-            <widget class="QFrame" name="frame">
-             <property name="frameShape">
-              <enum>QFrame::Box</enum>
-             </property>
-             <property name="frameShadow">
-              <enum>QFrame::Plain</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="3">
-            <widget class="QPushButton" name="pushButton_13">
-             <property name="text">
-              <string>...</string>
+           <item row="2" column="2">
+            <widget class="QSlider" name="mSpriteOpacityHorizontalSlider">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
              </property>
             </widget>
            </item>
@@ -152,21 +167,21 @@
           </property>
           <layout class="QGridLayout" name="gridLayout_4">
            <item row="0" column="0">
-            <widget class="QLabel" name="label_32">
+            <widget class="QLabel" name="mTextLabel">
              <property name="text">
               <string>Текст:</string>
              </property>
             </widget>
            </item>
            <item row="1" column="0">
-            <widget class="QLabel" name="label_33">
+            <widget class="QLabel" name="mFileNameLabel">
              <property name="text">
               <string>Имя файла ttf:</string>
              </property>
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="QLineEdit" name="lineEdit_18">
+            <widget class="QLineEdit" name="mTextLineEdit">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>0</horstretch>
@@ -179,56 +194,56 @@
             </widget>
            </item>
            <item row="0" column="2">
-            <widget class="QPushButton" name="pushButton_6">
+            <widget class="QPushButton" name="mTextEditPushButton">
              <property name="text">
               <string>...</string>
              </property>
             </widget>
            </item>
            <item row="2" column="0">
-            <widget class="QLabel" name="label_34">
+            <widget class="QLabel" name="mFontSizeLabel">
              <property name="text">
               <string>Размер шрифта:</string>
              </property>
             </widget>
            </item>
            <item row="3" column="0">
-            <widget class="QLabel" name="label_35">
+            <widget class="QLabel" name="mAlignmentLabel">
              <property name="text">
               <string>Горизонтальное выравнивание:</string>
              </property>
             </widget>
            </item>
            <item row="4" column="0">
-            <widget class="QLabel" name="label_36">
+            <widget class="QLabel" name="mVertAlignmentLabel">
              <property name="text">
               <string>Вертикальное выравнивание:</string>
              </property>
             </widget>
            </item>
            <item row="5" column="0">
-            <widget class="QLabel" name="label_37">
+            <widget class="QLabel" name="mLineSpacingLabel">
              <property name="text">
               <string>Межстрочный интервал:</string>
              </property>
             </widget>
            </item>
            <item row="6" column="0">
-            <widget class="QLabel" name="label_38">
+            <widget class="QLabel" name="mLabelColorLabel">
              <property name="text">
               <string>Цвет:</string>
              </property>
             </widget>
            </item>
            <item row="7" column="0">
-            <widget class="QLabel" name="label_39">
+            <widget class="QLabel" name="mLabelOpacityLabel">
              <property name="text">
               <string>Прозрачность:</string>
              </property>
             </widget>
            </item>
            <item row="6" column="3">
-            <widget class="QLineEdit" name="lineEdit_19">
+            <widget class="QLineEdit" name="mLabelColorHTMLLineEdit">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>0</horstretch>
@@ -238,21 +253,21 @@
             </widget>
            </item>
            <item row="6" column="2">
-            <widget class="QLabel" name="label_40">
+            <widget class="QLabel" name="mLabelColorHTMLLabel">
              <property name="text">
               <string>HTML цвет:</string>
              </property>
             </widget>
            </item>
            <item row="7" column="1">
-            <widget class="QSlider" name="horizontalSlider">
+            <widget class="QSlider" name="mLabelOpacityHorizontalSlider">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
             </widget>
            </item>
            <item row="7" column="2">
-            <widget class="QLineEdit" name="lineEdit_20">
+            <widget class="QLineEdit" name="mLabelOpacityLineEdit">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>0</horstretch>
@@ -264,21 +279,21 @@
            <item row="3" column="1">
             <layout class="QHBoxLayout" name="horizontalLayout_3">
              <item>
-              <widget class="QPushButton" name="pushButton_7">
+              <widget class="QPushButton" name="mAlignmentLeftPushButton">
                <property name="text">
                 <string>Левое</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QPushButton" name="pushButton_8">
+              <widget class="QPushButton" name="mAlignmentCenterPushButton">
                <property name="text">
                 <string>Центр</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QPushButton" name="pushButton_9">
+              <widget class="QPushButton" name="mAlignmentRightPushButton">
                <property name="text">
                 <string>Правое</string>
                </property>
@@ -289,21 +304,21 @@
            <item row="4" column="1">
             <layout class="QHBoxLayout" name="horizontalLayout_4">
              <item>
-              <widget class="QPushButton" name="pushButton_10">
+              <widget class="QPushButton" name="mVertAlignmentTopPushButton">
                <property name="text">
                 <string>Вверх</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QPushButton" name="pushButton_11">
+              <widget class="QPushButton" name="mVertAlignmentCenterPushButton">
                <property name="text">
                 <string>Центр</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QPushButton" name="pushButton_12">
+              <widget class="QPushButton" name="mVertAlignmentBottomPushButton">
                <property name="text">
                 <string>Вниз</string>
                </property>
@@ -312,7 +327,7 @@
             </layout>
            </item>
            <item row="6" column="1">
-            <widget class="QFrame" name="frame_2">
+            <widget class="QFrame" name="mLabelColorFrame">
              <property name="frameShape">
               <enum>QFrame::Box</enum>
              </property>
@@ -322,19 +337,19 @@
             </widget>
            </item>
            <item row="5" column="1">
-            <widget class="QComboBox" name="comboBox_3"/>
+            <widget class="QComboBox" name="mLineSpacingComboBox"/>
            </item>
            <item row="2" column="1">
-            <widget class="QComboBox" name="comboBox_4"/>
+            <widget class="QComboBox" name="mFontSizeComboBox"/>
            </item>
            <item row="1" column="1">
-            <widget class="QComboBox" name="comboBox_5"/>
+            <widget class="QComboBox" name="mFileNameComboBox"/>
            </item>
           </layout>
          </widget>
         </widget>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>9</x>
@@ -347,14 +362,14 @@
          <item>
           <layout class="QGridLayout" name="gridLayout">
            <item row="0" column="0">
-            <widget class="QLabel" name="label_12">
+            <widget class="QLabel" name="mNameLabel">
              <property name="text">
               <string>Имя:</string>
              </property>
             </widget>
            </item>
            <item row="2" column="4">
-            <widget class="QLineEdit" name="lineEdit">
+            <widget class="QLineEdit" name="mPositionYLineEdit">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>0</horstretch>
@@ -364,7 +379,7 @@
             </widget>
            </item>
            <item row="1" column="2">
-            <widget class="QLineEdit" name="lineEdit_7">
+            <widget class="QLineEdit" name="mObjectIDLineEdit">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>0</horstretch>
@@ -377,35 +392,35 @@
             </widget>
            </item>
            <item row="1" column="0">
-            <widget class="QLabel" name="label_2">
+            <widget class="QLabel" name="mObjectIDLabel">
              <property name="text">
               <string>ID:</string>
              </property>
             </widget>
            </item>
            <item row="2" column="0">
-            <widget class="QLabel" name="label_3">
+            <widget class="QLabel" name="mPositionLabel">
              <property name="text">
               <string>Позиция</string>
              </property>
             </widget>
            </item>
            <item row="3" column="0">
-            <widget class="QLabel" name="label_6">
+            <widget class="QLabel" name="mSizeLabel">
              <property name="text">
               <string>Размер</string>
              </property>
             </widget>
            </item>
            <item row="4" column="0">
-            <widget class="QLabel" name="label_7">
+            <widget class="QLabel" name="mFlipLabel">
              <property name="text">
               <string>Отражение:</string>
              </property>
             </widget>
            </item>
            <item row="2" column="2">
-            <widget class="QLineEdit" name="lineEdit_3">
+            <widget class="QLineEdit" name="mPositionXLineEdit">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>0</horstretch>
@@ -415,42 +430,42 @@
             </widget>
            </item>
            <item row="2" column="3">
-            <widget class="QLabel" name="label_4">
+            <widget class="QLabel" name="mPositionYLabel">
              <property name="text">
               <string>Y:</string>
              </property>
             </widget>
            </item>
            <item row="4" column="2">
-            <widget class="QCheckBox" name="checkBox">
+            <widget class="QCheckBox" name="mFlipXCheckBox">
              <property name="text">
               <string/>
              </property>
             </widget>
            </item>
            <item row="4" column="4">
-            <widget class="QCheckBox" name="checkBox_2">
+            <widget class="QCheckBox" name="mFlipYCheckBox">
              <property name="text">
               <string/>
              </property>
             </widget>
            </item>
            <item row="4" column="3">
-            <widget class="QLabel" name="label_8">
+            <widget class="QLabel" name="mFlipYLabel">
              <property name="text">
               <string>по Y:</string>
              </property>
             </widget>
            </item>
            <item row="3" column="3">
-            <widget class="QLabel" name="label_5">
+            <widget class="QLabel" name="mSizeHLabel">
              <property name="text">
               <string>H:</string>
              </property>
             </widget>
            </item>
            <item row="3" column="4">
-            <widget class="QLineEdit" name="lineEdit_6">
+            <widget class="QLineEdit" name="mSizeHLineEdit">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>0</horstretch>
@@ -460,7 +475,7 @@
             </widget>
            </item>
            <item row="3" column="2">
-            <widget class="QLineEdit" name="lineEdit_5">
+            <widget class="QLineEdit" name="mSizeWLineEdit">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>0</horstretch>
@@ -470,7 +485,7 @@
             </widget>
            </item>
            <item row="0" column="2">
-            <widget class="QLineEdit" name="lineEdit_2">
+            <widget class="QLineEdit" name="mNameLineEdit">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>0</horstretch>
@@ -483,31 +498,35 @@
             </widget>
            </item>
            <item row="3" column="5">
-            <widget class="QPushButton" name="pushButton_2">
+            <widget class="QPushButton" name="mResetSizePushButton">
              <property name="text">
               <string>Исходный</string>
              </property>
             </widget>
            </item>
            <item row="5" column="0">
-            <widget class="QLabel" name="label_9">
+            <widget class="QLabel" name="mRotationAngleLabel">
              <property name="text">
               <string>Угол поворота:</string>
              </property>
             </widget>
            </item>
            <item row="5" column="2">
-            <widget class="QComboBox" name="comboBox"/>
+            <widget class="QComboBox" name="mRotationAngleComboBox">
+             <property name="editable">
+              <bool>true</bool>
+             </property>
+            </widget>
            </item>
            <item row="6" column="0">
-            <widget class="QLabel" name="label_10">
+            <widget class="QLabel" name="mRotationCenterLabel">
              <property name="text">
               <string>Центр вращения</string>
              </property>
             </widget>
            </item>
            <item row="6" column="2">
-            <widget class="QLineEdit" name="lineEdit_8">
+            <widget class="QLineEdit" name="mRotationCenterXLineEdit">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>0</horstretch>
@@ -517,14 +536,14 @@
             </widget>
            </item>
            <item row="6" column="3">
-            <widget class="QLabel" name="label_11">
+            <widget class="QLabel" name="mRotationCenterYLabel">
              <property name="text">
               <string>Y:</string>
              </property>
             </widget>
            </item>
            <item row="6" column="4">
-            <widget class="QLineEdit" name="lineEdit_9">
+            <widget class="QLineEdit" name="mRotationCenterYLineEdit">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>0</horstretch>
@@ -534,35 +553,35 @@
             </widget>
            </item>
            <item row="6" column="5">
-            <widget class="QPushButton" name="pushButton_3">
+            <widget class="QPushButton" name="mResetRotationCenterPushButton">
              <property name="text">
               <string>Центр</string>
              </property>
             </widget>
            </item>
            <item row="2" column="1">
-            <widget class="QLabel" name="label_13">
+            <widget class="QLabel" name="mPositionXLabel">
              <property name="text">
               <string>X:</string>
              </property>
             </widget>
            </item>
            <item row="3" column="1">
-            <widget class="QLabel" name="label_26">
+            <widget class="QLabel" name="mSizeWLabel">
              <property name="text">
               <string>W:</string>
              </property>
             </widget>
            </item>
            <item row="6" column="1">
-            <widget class="QLabel" name="label_27">
+            <widget class="QLabel" name="mRotationCenterXLabel">
              <property name="text">
               <string>X:</string>
              </property>
             </widget>
            </item>
            <item row="4" column="1">
-            <widget class="QLabel" name="label_28">
+            <widget class="QLabel" name="mFlipXLabel">
              <property name="text">
               <string>по X:</string>
              </property>
@@ -572,11 +591,8 @@
          </item>
         </layout>
        </widget>
-       <zorder>horizontalLayoutWidget</zorder>
+       <zorder>layoutWidget</zorder>
        <zorder>mStackedWidget</zorder>
-       <zorder>horizontalSpacer_8</zorder>
-       <zorder>horizontalSpacer_3</zorder>
-       <zorder>horizontalSpacer_3</zorder>
       </widget>
      </widget>
     </item>

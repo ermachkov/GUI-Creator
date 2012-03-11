@@ -479,6 +479,36 @@ void EditorWindow::paintEvent(QPaintEvent *event)
 		}
 	}
 
+	// рисуем рамку выделения
+	if (mEditorState == STATE_SELECT && !mSelectionRect.isNull())
+	{
+		QRectF rect = worldRectToWindow(mSelectionRect.normalized());
+		painter.setPen(QColor(0, 127, 255));
+		painter.setBrush(QBrush(QColor(0, 100, 255, 60)));
+		painter.drawRect(rect.adjusted(0.5, 0.5, -0.5, -0.5));
+	}
+
+	// рисуем направляющие
+	if (options.isShowGuides())
+	{
+		// рисуем горизонтальные направляющие
+		painter.setPen(QColor(0, 192, 192));
+		int numHorzGuides = mLocation->getNumGuides(true);
+		for (int i = 0; i < numHorzGuides; ++i)
+		{
+			qreal y = qFloor((mLocation->getGuide(true, i) - mCameraPos.y()) * mZoom) + 0.5;
+			painter.drawLine(QPointF(0.5, y), QPointF(width() - 0.5, y));
+		}
+
+		// рисуем вертикальные направляющие
+		int numVertGuides = mLocation->getNumGuides(false);
+		for (int i = 0; i < numVertGuides; ++i)
+		{
+			qreal x = qFloor((mLocation->getGuide(false, i) - mCameraPos.x()) * mZoom) + 0.5;
+			painter.drawLine(QPointF(x, 0.5), QPointF(x, height() - 0.5));
+		}
+	}
+
 	// рисуем линии привязки
 	if (mEditorState == STATE_MOVE || mEditorState == STATE_RESIZE || mEditorState == STATE_MOVE_CENTER)
 	{
@@ -489,13 +519,46 @@ void EditorWindow::paintEvent(QPaintEvent *event)
 			painter.drawLine(worldToWindow(mVertSnapLine.p1()), worldToWindow(mVertSnapLine.p2()));
 	}
 
-	// рисуем рамку выделения
-	if (mEditorState == STATE_SELECT && !mSelectionRect.isNull())
+	// рисуем линейки
+	if (options.isShowGuides())
 	{
-		QRectF rect = worldRectToWindow(mSelectionRect.normalized());
-		painter.setPen(QColor(0, 127, 255));
-		painter.setBrush(QBrush(QColor(0, 100, 255, 60)));
-		painter.drawRect(rect.adjusted(0.5, 0.5, -0.5, -0.5));
+		// рисуем фон для линеек
+		painter.fillRect(0, 0, width(), RULER_SIZE, Qt::white);
+		painter.fillRect(0, 0, RULER_SIZE, height(), Qt::white);
+
+		// подбираем цену деления
+		qreal rulerSpacing = 8.0;
+		while (rulerSpacing * mZoom < 8.0)
+			rulerSpacing *= 4.0;
+		while (rulerSpacing * mZoom > 32.0)
+			rulerSpacing /= 4.0;
+
+		// определяем номера делений для отрисовки
+		int left = static_cast<int>(qCeil((visibleRect.left() + RULER_SIZE / mZoom) / rulerSpacing));
+		int top = static_cast<int>(qCeil((visibleRect.top() + RULER_SIZE / mZoom) / rulerSpacing));
+		int right = static_cast<int>(visibleRect.right() / rulerSpacing);
+		int bottom = static_cast<int>(visibleRect.bottom() / rulerSpacing);
+
+		// рисуем горизонтальную линейку
+		painter.setPen(Qt::black);
+		for (int i = left; i <= right; ++i)
+		{
+			qreal x = qFloor((i * rulerSpacing - mCameraPos.x()) * mZoom) + 0.5;
+			if (i % 5 != 0)
+				painter.drawLine(QPointF(x, RULER_SIZE - DIVISION_SIZE + 0.5), QPointF(x, RULER_SIZE - 0.5));
+			else
+				painter.drawLine(QPointF(x, 0.5), QPointF(x, RULER_SIZE - 0.5));
+		}
+
+		// рисуем вертикальную линейку
+		for (int i = top; i <= bottom; ++i)
+		{
+			qreal y = qFloor((i * rulerSpacing - mCameraPos.y()) * mZoom) + 0.5;
+			if (i % 5 != 0)
+				painter.drawLine(QPointF(RULER_SIZE - DIVISION_SIZE + 0.5, y), QPointF(RULER_SIZE - 0.5, y));
+			else
+				painter.drawLine(QPointF(0.5, y), QPointF(RULER_SIZE - 0.5, y));
+		}
 	}
 }
 
@@ -511,11 +574,34 @@ void EditorWindow::mousePressEvent(QMouseEvent *event)
 		mEnableEdit = false;
 		mHorzSnapLine = mVertSnapLine = QLineF();
 
+		bool showGuides = Options::getSingleton().isShowGuides();
 		qreal size = CENTER_SIZE / mZoom;
 		qreal offset = size / 2.0;
 		GameObject *object;
 
-		if (mRotationMode && QRectF(mSnappedCenter.x() - offset, mSnappedCenter.y() - offset, size, size).contains(pos))
+		if (showGuides && event->pos().y() < RULER_SIZE)
+		{
+			// создаем горизонтальную направляющую и переходим в режим перетаскивания
+			mEditorState = STATE_HORZ_GUIDE;
+			mGuideIndex = mLocation->addGuide(true, qRound(pos.y()));
+		}
+		else if (showGuides && event->pos().x() < RULER_SIZE)
+		{
+			// создаем вертикальную направляющую и переходим в режим перетаскивания
+			mEditorState = STATE_VERT_GUIDE;
+			mGuideIndex = mLocation->addGuide(false, qRound(pos.x()));
+		}
+		else if (showGuides && (mGuideIndex = mLocation->findGuide(true, pos.y(), GUIDE_DISTANCE / mZoom)) != -1)
+		{
+			// переходим в режим перетаскивания горизонтальной направляющей
+			mEditorState = STATE_HORZ_GUIDE;
+		}
+		else if (showGuides && (mGuideIndex = mLocation->findGuide(false, pos.x(), GUIDE_DISTANCE / mZoom)) != -1)
+		{
+			// переходим в режим перетаскивания вертикальной направляющей
+			mEditorState = STATE_VERT_GUIDE;
+		}
+		else if (mRotationMode && QRectF(mSnappedCenter.x() - offset, mSnappedCenter.y() - offset, size, size).contains(pos))
 		{
 			// переходим в состояние перетаскивания центра вращения
 			mEditorState = STATE_MOVE_CENTER;
@@ -611,6 +697,34 @@ void EditorWindow::mouseReleaseEvent(QMouseEvent *event)
 				mChanged = true;
 				emit locationChanged(mChanged);
 			}
+			else if (mEditorState == STATE_HORZ_GUIDE)
+			{
+				// удаляем горизонтальную направляющую, если ее вытащили за пределы окна
+				bool outside = event->pos().y() < RULER_SIZE || event->pos().y() > height();
+				if (outside)
+					mLocation->removeGuide(true, mGuideIndex);
+
+				// посылаем сигнал об изменении локации, кроме случая, когда направляющую перетащили с линейки за пределы окна
+				if ((mFirstPos.x() >= RULER_SIZE && mFirstPos.y() >= RULER_SIZE) || !outside)
+				{
+					mChanged = true;
+					emit locationChanged(mChanged);
+				}
+			}
+			else if (mEditorState == STATE_VERT_GUIDE)
+			{
+				// удаляем вертикальную направляющую, если ее вытащили за пределы окна
+				bool outside = event->pos().x() < RULER_SIZE || event->pos().x() > width();
+				if (outside)
+					mLocation->removeGuide(false, mGuideIndex);
+
+				// посылаем сигнал об изменении локации, кроме случая, когда направляющую перетащили с линейки за пределы окна
+				if ((mFirstPos.x() >= RULER_SIZE && mFirstPos.y() >= RULER_SIZE) || !outside)
+				{
+					mChanged = true;
+					emit locationChanged(mChanged);
+				}
+			}
 		}
 		else if (mEditorState == STATE_MOVE && !mFirstTimeSelected)
 		{
@@ -618,6 +732,12 @@ void EditorWindow::mouseReleaseEvent(QMouseEvent *event)
 			mRotationMode = !mRotationMode;
 			if (mRotationMode)
 				mOriginalCenter = mSnappedCenter = mSelectedObjects.size() == 1 ? mSelectedObjects.front()->getRotationCenter() : mOriginalRect.center();
+		}
+		else if (mEditorState == STATE_HORZ_GUIDE || mEditorState == STATE_VERT_GUIDE)
+		{
+			// удаляем созданную направляющую при щелчке по линейке без перетаскивания
+			if (mFirstPos.x() < RULER_SIZE || mFirstPos.y() < RULER_SIZE)
+				mLocation->removeGuide(mEditorState == STATE_HORZ_GUIDE, mGuideIndex);
 		}
 
 		// возвращаемся в состояние простоя
@@ -670,15 +790,15 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 				qreal right = snapXCoord(rect.right(), rect.top(), rect.bottom(), true, &rightLine, &rightDistance);
 
 				// привязываем край с наименьшим расстоянием привязки
-				if (leftDistance < SNAP_DISTANCE && leftDistance <= centerDistance && leftDistance <= rightDistance)
-				{
-					offset.rx() += left - rect.left();
-					mVertSnapLine = leftLine;
-				}
-				else if (centerDistance < SNAP_DISTANCE && centerDistance <= leftDistance && centerDistance <= rightDistance)
+				if (centerDistance < SNAP_DISTANCE && centerDistance <= leftDistance && centerDistance <= rightDistance)
 				{
 					offset.rx() += center - rect.center().x();
 					mVertSnapLine = centerLine;
+				}
+				else if (leftDistance < SNAP_DISTANCE && leftDistance <= centerDistance && leftDistance <= rightDistance)
+				{
+					offset.rx() += left - rect.left();
+					mVertSnapLine = leftLine;
 				}
 				else if (rightDistance < SNAP_DISTANCE && rightDistance <= leftDistance && rightDistance <= centerDistance)
 				{
@@ -702,15 +822,15 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 				qreal bottom = snapYCoord(rect.bottom(), rect.left(), rect.right(), true, &bottomLine, &bottomDistance);
 
 				// привязываем край с наименьшим расстоянием привязки
-				if (topDistance < SNAP_DISTANCE && topDistance <= centerDistance && topDistance <= bottomDistance)
-				{
-					offset.ry() += top - rect.top();
-					mHorzSnapLine = topLine;
-				}
-				else if (centerDistance < SNAP_DISTANCE && centerDistance <= topDistance && centerDistance <= bottomDistance)
+				if (centerDistance < SNAP_DISTANCE && centerDistance <= topDistance && centerDistance <= bottomDistance)
 				{
 					offset.ry() += center - rect.center().y();
 					mHorzSnapLine = centerLine;
+				}
+				else if (topDistance < SNAP_DISTANCE && topDistance <= centerDistance && topDistance <= bottomDistance)
+				{
+					offset.ry() += top - rect.top();
+					mHorzSnapLine = topLine;
 				}
 				else if (bottomDistance < SNAP_DISTANCE && bottomDistance <= topDistance && bottomDistance <= centerDistance)
 				{
@@ -877,6 +997,16 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 			mSnappedCenter = mOriginalCenter + offset;
 			if (mSelectedObjects.size() == 1)
 				mSelectedObjects.front()->setRotationCenter(mSnappedCenter);
+		}
+		else if (mEditorState == STATE_HORZ_GUIDE)
+		{
+			// перемещаем горизонтальную направляющую
+			mLocation->setGuide(true, mGuideIndex, qRound(pos.y()));
+		}
+		else if (mEditorState == STATE_VERT_GUIDE)
+		{
+			// перемещаем вертикальную направляющую
+			mLocation->setGuide(false, mGuideIndex, qRound(pos.x()));
 		}
 
 		// пересчитываем общий прямоугольник выделения
@@ -1254,11 +1384,27 @@ void EditorWindow::updateMouseCursor(const QPointF &pos)
 {
 	if (mEditorState == STATE_IDLE)
 	{
+		bool showGuides = Options::getSingleton().isShowGuides();
 		qreal size = CENTER_SIZE / mZoom;
 		qreal offset = size / 2.0;
 		SelectionMarker marker;
 
-		if (mRotationMode && QRectF(mSnappedCenter.x() - offset, mSnappedCenter.y() - offset, size, size).contains(pos))
+		if (showGuides && ((pos.x() < mCameraPos.x() + RULER_SIZE / mZoom) || (pos.y() < mCameraPos.y() + RULER_SIZE / mZoom)))
+		{
+			// курсор над линейками
+			setCursor(Qt::ArrowCursor);
+		}
+		else if (showGuides && mLocation->findGuide(true, pos.y(), GUIDE_DISTANCE / mZoom) != -1)
+		{
+			// курсор над горизонтальной направляющей
+			setCursor(Qt::SplitVCursor);
+		}
+		else if (showGuides && mLocation->findGuide(false, pos.x(), GUIDE_DISTANCE / mZoom) != -1)
+		{
+			// курсор над вертикальной направляющей
+			setCursor(Qt::SplitHCursor);
+		}
+		else if (mRotationMode && QRectF(mSnappedCenter.x() - offset, mSnappedCenter.y() - offset, size, size).contains(pos))
 		{
 			// курсор над центром вращения
 			setCursor(Qt::CrossCursor);

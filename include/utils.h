@@ -21,6 +21,9 @@ public:
 	// Переводит угол из градусов в радианы
 	static qreal degToRad(qreal angle);
 
+	// Сравнение дробных чисел с необходимой точностью
+	static bool fuzzyCompare(qreal value1, qreal value2, qreal eps = EPS);
+
 	// Дополняет путь прямым слешем
 	static QString addTrailingSlash(const QString &path);
 

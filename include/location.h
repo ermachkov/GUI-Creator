@@ -57,16 +57,37 @@ public:
 	// Генерирует идентификатор для копии объекта
 	int generateDuplicateObjectID();
 
+	// Возвращает количество направляющих
+	int getNumGuides(bool horz) const;
+
+	// Возвращает координату направляющей
+	qreal getGuide(bool horz, int index) const;
+
+	// Устанавливает координату направляющей
+	void setGuide(bool horz, int index, qreal coord);
+
+	// Ищет направляющую по координате
+	int findGuide(bool horz, qreal coord, qreal distance) const;
+
+	// Добавляет новую направляющую
+	int addGuide(bool horz, qreal coord);
+
+	// Удаляет направляющую
+	void removeGuide(bool horz, int index);
+
 private:
 
-	BaseLayer   *mRootLayer;        // Корневой слой
-	BaseLayer   *mActiveLayer;      // Текущий активный слой
+	BaseLayer       *mRootLayer;        // Корневой слой
+	BaseLayer       *mActiveLayer;      // Текущий активный слой
 
-	int         mObjectIndex;       // Текущий индекс для генерации уникальных идентификаторов объектов
-	int         mLayerIndex;        // Текущий индекс для генерации имен слоев
-	int         mLayerGroupIndex;   // Текущий индекс для генерации имен групп слоев
-	int         mSpriteIndex;       // Текущий индекс для генерации имен спрайтов
-	int         mLabelIndex;        // Текущий индекс для генерации имен надписей
+	QList<qreal>    mHorzGuides;        // Горизонтальные направляющие
+	QList<qreal>    mVertGuides;        // Вертикальные направляющие
+
+	int             mObjectIndex;       // Текущий индекс для генерации уникальных идентификаторов объектов
+	int             mLayerIndex;        // Текущий индекс для генерации имен слоев
+	int             mLayerGroupIndex;   // Текущий индекс для генерации имен групп слоев
+	int             mSpriteIndex;       // Текущий индекс для генерации имен спрайтов
+	int             mLabelIndex;        // Текущий индекс для генерации имен надписей
 };
 
 #endif // LOCATION_H
