@@ -107,7 +107,7 @@ private slots:
 	void onZoomEditingFinished();
 
 	// Обработчик изменения выделения в окне редактирования
-	void onEditorWindowSelectionChanged(const QList<GameObject *> &objects);
+	void onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter);
 
 	// Обработчик изменения локации в окне редактирования
 	void onEditorWindowLocationChanged(bool changed);

@@ -21,7 +21,6 @@ Label::Label(const QString &name, int id, const QPointF &pos, const QString &fil
 	{
 		mSize = QSizeF(qCeil(mFont->Advance(Utils::toStdWString(mText).c_str())), qCeil(mFont->LineHeight()));
 		mPosition = QPointF(qFloor(pos.x() - mSize.width() / 2.0), qFloor(pos.y() - mSize.height() / 2.0));
-		mRotationCenter = QPointF(mSize.width() / 2.0, mSize.height() / 2.0);
 	}
 
 	// обновляем текущую трансформацию
@@ -205,8 +204,9 @@ void Label::draw()
 
 	// задаем новую трансформацию и цвет
 	QPointF scale(mSize.width() >= 0.0 ? 1.0 : -1.0, mSize.height() >= 0.0 ? 1.0 : -1.0);
-	glTranslated(mPosition.x(), mPosition.y() + qRound(mFont->LineHeight() / 1.25) * scale.y(), 0.0);
+	glTranslated(mPosition.x(), mPosition.y(), 0.0);
 	glRotated(mRotationAngle, 0.0, 0.0, 1.0);
+	glTranslated(0.0, qRound(mFont->LineHeight() / 1.25) * scale.y(), 0.0);
 	glScaled(scale.x(), -scale.y(), 1.0);
 	glColor4d(mColor.redF(), mColor.greenF(), mColor.blueF(), mColor.alphaF());
 

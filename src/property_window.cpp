@@ -6,9 +6,12 @@
 #include <typeinfo>
 
 PropertyWindow::PropertyWindow(QWidget *parent)
-: QDockWidget(parent)
+: QDockWidget(parent), PRECISION(8)
 {
 	setupUi(this);
+
+	// запрещение редактирования комбобокса
+	mFileNameComboBox->lineEdit()->setReadOnly(true);
 
 	//this->scrollArea->adjustSize();
 
@@ -61,7 +64,7 @@ PropertyWindow::PropertyWindow(QWidget *parent)
 	//scrollAreaWidgetContents->adjustSize();
 }
 
-void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &objects)
+void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter)
 {
 	//qDebug() << objects;
 
@@ -150,7 +153,7 @@ void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &o
 
 void PropertyWindow::updateCommonWidgets(const QList<GameObject *> &objects)
 {
-	// флаги идентичности значений свойств объектов
+	// флаги идентичности значений свойств объектов в группе
 	bool equalName = true;
 	bool equalObjectID = true;
 	bool equalPosition = true;
@@ -199,8 +202,6 @@ void PropertyWindow::updateCommonWidgets(const QList<GameObject *> &objects)
 		//equalRotationCenter
 	}
 
-	const int PRECISION = 8;
-
 	mNameLineEdit->setText(equalName ? first->getName() : "");
 
 	mObjectIDLineEdit->setText(equalObjectID ? QString::number(first->getObjectID()) : "");
@@ -212,46 +213,92 @@ void PropertyWindow::updateCommonWidgets(const QList<GameObject *> &objects)
 	mSizeHLineEdit->setText(equalSize ? QString::number(first->getSize().height(), 'g', PRECISION) : "");
 
 	if (isPositiveWSize)
-		mFlipXCheckBox->setCheckState(Qt::Checked);
-	else if (isNegativeWSize)
 		mFlipXCheckBox->setCheckState(Qt::Unchecked);
+
+	else if (isNegativeWSize)
+		mFlipXCheckBox->setCheckState(Qt::Checked);
 	else
 		mFlipXCheckBox->setCheckState(Qt::PartiallyChecked);
 
 	if (isPositiveHSize)
-		mFlipYCheckBox->setCheckState(Qt::Checked);
-	else if (isNegativeHSize)
 		mFlipYCheckBox->setCheckState(Qt::Unchecked);
+	else if (isNegativeHSize)
+		mFlipYCheckBox->setCheckState(Qt::Checked);
 	else
 		mFlipYCheckBox->setCheckState(Qt::PartiallyChecked);
 
-	qDebug() << "++";
-	qDebug() << objects.front()->getRotationAngle();
-	qDebug() << QString::number(objects.front()->getRotationAngle(), 'g', PRECISION);
+	mRotationAngleComboBox->lineEdit()->setText(equalRotationAngle ? QString::number(first->getRotationAngle(), 'g', PRECISION) : "");
 
-	mRotationAngleComboBox->lineEdit()->setText(equalRotationAngle ? QString::number(objects.front()->getRotationAngle(), 'g', PRECISION) : "");
-
-	//objects.front()->getRotationCenter().x()
-	//objects.front()->getRotationCenter().y()
+	//first->getRotationCenter().x()
+	//first->getRotationCenter().y()
 }
 
 void PropertyWindow::updateSpriteWidgets(const QList<GameObject *> &objects)
 {
+	// флаги идентичности значений свойств объектов в группе
+	bool equalFileName = true;
+	bool equalSpriteColor = true;
+	bool equalSpriteOpacity = true;
 
+	Q_ASSERT(!objects.empty());
+
+	Sprite *first = dynamic_cast<Sprite *>(objects.front());
+
+	foreach (GameObject *obj, objects)
+	{
+		Sprite *it = dynamic_cast<Sprite *>(obj);
+
+		if (it->getFileName() != first->getFileName())
+			equalFileName = false;
+
+		if (it->getColor().rgb() != first->getColor().rgb())
+			equalSpriteColor = false;
+
+		if (it->getColor().alpha() != first->getColor().alpha())
+			equalSpriteOpacity = false;
+	}
+
+	mFileNameLineEdit->setText(equalFileName ? first->getFileName() : "");
+
+	if (equalSpriteColor)
+	{
+		// FIXME:
+		mSpriteColorFrame;
+		QString htmlColor;
+		htmlColor.sprintf("%02X%02X%02X", first->getColor().red(), first->getColor().green(), first->getColor().blue());
+		mSpriteColorHTMLLineEdit->setText(htmlColor);
+	}
+	else
+	{
+		// FIXME:
+		mSpriteColorFrame;
+		mSpriteColorHTMLLineEdit->setText("");
+	}
+
+	if (equalSpriteOpacity)
+	{
+		// FIXME:
+		mSpriteOpacityHorizontalSlider;
+		mSpriteOpacityLineEdit->setText(QString::number(first->getColor().alpha(), 'g', PRECISION));
+	}
+	else
+	{
+		// FIXME:
+		mSpriteOpacityHorizontalSlider;
+		mSpriteOpacityLineEdit->setText("");
+	}
 }
 
 void PropertyWindow::updateLabelWidgets(const QList<GameObject *> &objects)
 {
-	// флаги идентичности значений свойств объектов
+	// флаги идентичности значений свойств объектов в группе
 	bool equalText = true;
 	bool equalFileName = true;
 	bool equalFontSize = true;
 	bool equalAlignment = true;
 	bool equalVertAlignment = true;
-
 	bool equalLineSpacing = true;
 	bool equalLabelColor = true;
-
 	bool equalLabelOpacity = true;
 
 	Q_ASSERT(!objects.empty());
@@ -286,35 +333,83 @@ void PropertyWindow::updateLabelWidgets(const QList<GameObject *> &objects)
 		if (it->getColor().alpha() != first->getColor().alpha())
 			equalLabelOpacity = false;
 	}
-/*
-	mTextLineEdit
-
-	mFileNameComboBox
-
-	mFontSizeComboBox
-
-	mAlignmentLeftPushButton
-	mAlignmentCenterPushButton
-	mAlignmentRightPushButton
-	mVertAlignmentTopPushButton
-	mVertAlignmentCenterPushButton
-	mVertAlignmentBottomPushButton
-
-	mLineSpacingComboBox
-	mLabelColorHTMLLineEdit
-
-	mLabelOpacityHorizontalSlider
-	mLabelOpacityLineEdit
 
 
-	mText
-	mFileName
-	mFontSize
-	mFont
-	mAlignment
-	mVertAlignment
-	mLineSpacing
-	mColor
-*/
+	mTextLineEdit->setText(equalText ? first->getText() : "");
+
+	mFileNameComboBox->lineEdit()->setText(equalFileName ? first->getFileName() : "");
+
+	mFontSizeComboBox->lineEdit()->setText(equalFontSize ? QString::number(first->getFontSize(), 'g', PRECISION) : "");
+
+	// деактивация кнопок выравнивания
+	mAlignmentLeftPushButton->setDown(false);
+	mAlignmentCenterPushButton->setDown(false);
+	mAlignmentRightPushButton->setDown(false);
+	// активация общей кнопоки выравнивания
+	if (equalAlignment)
+		switch (first->getAlignment())
+		{
+		case FTGL::ALIGN_LEFT:
+			mAlignmentLeftPushButton->setDown(true);
+			break;
+		case FTGL::ALIGN_CENTER:
+			mAlignmentCenterPushButton->setDown(true);
+			break;
+		case FTGL::ALIGN_RIGHT:
+			mAlignmentRightPushButton->setDown(true);
+			break;
+		case FTGL::ALIGN_JUSTIFY:
+			break;
+		}
+
+	// деактивация кнопок выравнивания по вертикали
+	mVertAlignmentTopPushButton->setDown(false);
+	mVertAlignmentCenterPushButton->setDown(false);
+	mVertAlignmentBottomPushButton->setDown(false);
+	// активация общей кнопоки выравнивания по вертикали
+	if (equalVertAlignment)
+		switch (first->getVertAlignment())
+		{
+		case Label::VERT_ALIGN_TOP:
+			mVertAlignmentTopPushButton->setDown(true);
+			break;
+		case Label::VERT_ALIGN_CENTER:
+			mVertAlignmentCenterPushButton->setDown(true);
+			break;
+		case Label::VERT_ALIGN_BOTTOM:
+			mVertAlignmentBottomPushButton->setDown(true);
+			break;
+		}
+
+	mLineSpacingComboBox->lineEdit()->setText(equalLineSpacing ? QString::number(first->getLineSpacing(), 'g', PRECISION) : "");
+
+	if (equalLabelColor)
+	{
+		// FIXME:
+		mLabelColorFrame;
+		QString htmlColor;
+		htmlColor.sprintf("%02X%02X%02X", first->getColor().red(), first->getColor().green(), first->getColor().blue());
+		mLabelColorHTMLLineEdit->setText(htmlColor);
+	}
+	else
+	{
+		// FIXME:
+		mLabelColorFrame;
+		mLabelColorHTMLLineEdit->setText("");
+	}
+
+	if (equalLabelOpacity)
+	{
+		// FIXME:
+		mLabelOpacityHorizontalSlider;
+		mLabelOpacityLineEdit->setText(QString::number(first->getColor().alpha(), 'g', PRECISION));
+	}
+	else
+	{
+		// FIXME:
+		mLabelOpacityHorizontalSlider;
+		mLabelOpacityLineEdit->setText("");
+	}
+
 }
 

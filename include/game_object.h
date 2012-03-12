@@ -119,7 +119,7 @@ protected:
 	QPointF     mPosition;          // Мировые координаты объекта
 	QSizeF      mSize;              // Размеры объекта в пикселях
 	qreal       mRotationAngle;     // Угол поворота объекта в градусах по часовой стрелке
-	QPointF     mRotationCenter;    // Центр вращения в локальных координатах
+	QPointF     mRotationCenter;    // Центр вращения в нормализованных локальных координатах
 	Layer       *mParentLayer;      // Указатель на родительский слой
 
 	QTransform  mTransform;         // Результирующая матрица трансформации

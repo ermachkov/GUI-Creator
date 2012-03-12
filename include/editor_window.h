@@ -88,7 +88,10 @@ signals:
 	void zoomChanged(const QString &zoomStr);
 
 	// Сигнал об изменении выделения
-	void selectionChanged(const QList<GameObject *> &objects);
+	void selectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter);
+
+	// Сигнал об изменении выделенных объектов
+	void objectsChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter);
 
 	// Сигнал об изменении локации
 	void locationChanged(bool changed);

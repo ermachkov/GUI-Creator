@@ -20,7 +20,6 @@ Sprite::Sprite(const QString &name, int id, const QPointF &pos, const QString &f
 	{
 		mSize = mTexture->getSize();
 		mPosition = QPointF(qFloor(pos.x() - mSize.width() / 2.0), qFloor(pos.y() - mSize.height() / 2.0));
-		mRotationCenter = QPointF(mSize.width() / 2.0, mSize.height() / 2.0);
 	}
 
 	// обновляем текущую трансформацию

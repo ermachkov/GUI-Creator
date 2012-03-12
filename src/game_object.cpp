@@ -10,7 +10,7 @@ GameObject::GameObject()
 }
 
 GameObject::GameObject(const QString &name, int id, Layer *parent)
-: mName(name), mObjectID(id), mRotationAngle(0.0), mParentLayer(NULL)
+: mName(name), mObjectID(id), mRotationAngle(0.0), mRotationCenter(0.5, 0.5), mParentLayer(NULL)
 {
 	// добавляем себя в родительский слой
 	if (parent != NULL)
@@ -70,8 +70,6 @@ QSizeF GameObject::getSize() const
 
 void GameObject::setSize(const QSizeF &size)
 {
-	// пересчитываем локальные координаты центра вращения и сохраняем новый размер
-	mRotationCenter = QPointF(mRotationCenter.x() * size.width() / mSize.width(), mRotationCenter.y() * size.height() / mSize.height());
 	mSize = size;
 	updateTransform();
 }
@@ -89,12 +87,14 @@ void GameObject::setRotationAngle(qreal angle)
 
 QPointF GameObject::getRotationCenter() const
 {
-	return localToWorld(mRotationCenter);
+	QPointF pt(mRotationCenter.x() * mSize.width(), mRotationCenter.y() * mSize.height());
+	return localToWorld(pt);
 }
 
 void GameObject::setRotationCenter(const QPointF &center)
 {
-	mRotationCenter = worldToLocal(center);
+	QPointF pt = worldToLocal(center);
+	mRotationCenter = QPointF(pt.x() / mSize.width(), pt.y() / mSize.height());
 }
 
 Layer *GameObject::getParentLayer() const

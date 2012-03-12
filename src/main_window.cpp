@@ -453,7 +453,7 @@ void MainWindow::on_mTabWidget_currentChanged(int index)
 		onZoomChanged(zoomStr);
 
 		// обновляем пункты меню, связанные с редактированием выделенных объектов
-		onEditorWindowSelectionChanged(editorWindow->getSelectedObjects());
+		onEditorWindowSelectionChanged(editorWindow->getSelectedObjects(), QPointF());
 
 		// обновляем пункт меню Файл-Сохранить
 		mSaveAction->setEnabled(editorWindow->isChanged());
@@ -480,7 +480,7 @@ void MainWindow::on_mTabWidget_currentChanged(int index)
 		mZoomOutAction->setEnabled(false);
 
 		// деактивируем пункты меню, связанные с редактированием выделенных объектов
-		onEditorWindowSelectionChanged(QList<GameObject *>());
+		onEditorWindowSelectionChanged(QList<GameObject *>(), QPointF());
 
 		// деактивируем комбобокс со списком масштабов
 		mZoomComboBox->setEnabled(false);
@@ -529,7 +529,7 @@ void MainWindow::onZoomEditingFinished()
 	onZoomChanged(zoomStr);
 }
 
-void MainWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &objects)
+void MainWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter)
 {
 	// разрешаем/запрещаем нужные пункты меню
 	bool selected = !objects.empty();
@@ -592,13 +592,15 @@ EditorWindow *MainWindow::createEditorWindow(const QString &fileName)
 
 	// связываем сигналы от окна редактирования с соответствующими слотами
 	connect(editorWindow, SIGNAL(zoomChanged(const QString &)), this, SLOT(onZoomChanged(const QString &)));
-	connect(editorWindow, SIGNAL(selectionChanged(const QList<GameObject *> &)), this, SLOT(onEditorWindowSelectionChanged(const QList<GameObject *> &)));
+	connect(editorWindow, SIGNAL(selectionChanged(const QList<GameObject *> &, const QPointF &)),
+		this, SLOT(onEditorWindowSelectionChanged(const QList<GameObject *> &, const QPointF &)));
 	connect(editorWindow, SIGNAL(locationChanged(bool)), this, SLOT(onEditorWindowLocationChanged(bool)));
 	connect(editorWindow, SIGNAL(mouseMoved(const QPointF &)), this, SLOT(onEditorWindowMouseMoved(const QPointF &)));
 	connect(editorWindow, SIGNAL(layerChanged(Location *, BaseLayer *)), mLayersWindow, SIGNAL(layerChanged(Location *, BaseLayer *)));
 
 	// связывание сигнала изменения выделения объекта(-ов) для отправки в ГУИ настроек
-	connect(editorWindow, SIGNAL(selectionChanged(const QList<GameObject *> &)), mPropertyWindow, SLOT(onEditorWindowSelectionChanged(const QList<GameObject *> &)));
+	connect(editorWindow, SIGNAL(selectionChanged(const QList<GameObject *> &, const QPointF &)),
+		mPropertyWindow, SLOT(onEditorWindowSelectionChanged(const QList<GameObject *> &, const QPointF &)));
 
 	// активируем нужные пункты меню
 	mSaveAsAction->setEnabled(true);
