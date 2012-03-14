@@ -106,6 +106,23 @@ bool LuaScript::getReal(const QString &name, qreal &value) const
 	return false;
 }
 
+bool LuaScript::getReal(int index, qreal &value) const
+{
+	// читаем значение вещественной переменной
+	lua_pushinteger(mLuaState, index);
+	lua_gettable(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -2);
+	if (lua_isnumber(mLuaState, -1) != 0)
+	{
+		value = lua_tonumber(mLuaState, -1);
+		lua_pop(mLuaState, 1);
+		return true;
+	}
+
+	// удаляем неверный элемент из стека
+	lua_pop(mLuaState, 1);
+	return false;
+}
+
 bool LuaScript::getBool(const QString &name, bool &value) const
 {
 	// читаем значение булевской переменной

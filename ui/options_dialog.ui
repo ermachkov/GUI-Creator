@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>546</width>
-    <height>441</height>
+    <width>566</width>
+    <height>439</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -206,34 +206,14 @@
            </widget>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="mSnapToGuidesLayout">
-            <item>
-             <spacer name="mSnapToGuidesSpacer">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeType">
-               <enum>QSizePolicy::Fixed</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>32</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="mSnapToGuidesCheckBox">
-              <property name="text">
-               <string>П&amp;ривязывать к направляющим</string>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-           </layout>
+           <widget class="QCheckBox" name="mSnapToGuidesCheckBox">
+            <property name="text">
+             <string>П&amp;ривязывать к направляющим</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QCheckBox" name="mEnableSmartGuidesCheckBox">
@@ -340,22 +320,6 @@
     <hint type="destinationlabel">
      <x>274</x>
      <y>147</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>mShowGuidesCheckBox</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>mSnapToGuidesCheckBox</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>276</x>
-     <y>305</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>295</x>
-     <y>334</y>
     </hint>
    </hints>
   </connection>

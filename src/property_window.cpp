@@ -13,6 +13,19 @@ PropertyWindow::PropertyWindow(QWidget *parent)
 	// запрещение редактирования комбобокса
 	mFileNameComboBox->lineEdit()->setReadOnly(true);
 
+	connect(mRotationAngleComboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(onRotationAngleEditingFinished()));
+
+	// для обработки сигнала щелчка по QFrame-ам
+	mSpriteColorFrame->installEventFilter(this);
+	mLabelColorFrame->installEventFilter(this);
+
+	// по умолчанию окно свойств пустое
+	mStackedWidget->setVisible(false);
+	mScrollArea->setVisible(false);
+	mNoSelectionObjectsLabel->setVisible(true);
+
+
+
 	//this->scrollArea->adjustSize();
 
 	//setSizeConstraint(QLayout::SetMinimumSize);
@@ -73,24 +86,20 @@ void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &o
 	{
 		// установка минимального набора общих свойств
 		mStackedWidget->setVisible(false);
-
-		// деактивация гуя свойств
-		mScrollArea->setEnabled(false);
-
+		// установка отсутствия свойств
+		mScrollArea->setVisible(false);
+		// показ надписи об отсутствии выделенных объектов
+		mNoSelectionObjectsLabel->setVisible(true);
 		return;
 	}
 	else
 	{
-		// активация гуя свойств
-		mScrollArea->setEnabled(true);
+		mScrollArea->setVisible(true);
+		mNoSelectionObjectsLabel->setVisible(false);
 	}
 
-	qDebug() << "--";
-	foreach (GameObject *object, objects)
-		qDebug() << typeid(*object).name();
-
 	// отображение общих свойств
-	updateCommonWidgets(objects);
+	updateCommonWidgets(objects, rotationCenter);
 
 	// определение идентичности типа выделенных объектов
 	QStringList types;
@@ -151,7 +160,50 @@ void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &o
 
 }
 
-void PropertyWindow::updateCommonWidgets(const QList<GameObject *> &objects)
+void PropertyWindow::onEditorWindowObjectsChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter)
+{
+	updateCommonWidgets(objects, rotationCenter);
+}
+
+bool PropertyWindow::eventFilter(QObject *object, QEvent *event)
+{
+	if (event->type() == QEvent::MouseButtonRelease)
+	{
+		QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
+		if (mouseEvent->button() == Qt::LeftButton)
+		{
+			if (object == mSpriteColorFrame)
+			{
+				// вызов диалогового окна выбора цвета
+				QColorDialog colorDialog;
+				QString color;
+				if (colorDialog.exec() == colorDialog.Accepted)
+				{
+					color = colorDialog.currentColor().name();
+				}
+
+				return true;
+			}
+			else
+			if (object == mLabelColorFrame)
+			{
+				// вызов диалогового окна выбора цвета
+				QColorDialog colorDialog;
+				QString color;
+				if (colorDialog.exec() == colorDialog.Accepted)
+				{
+					color = colorDialog.currentColor().name();
+				}
+
+				return true;
+			}
+		}
+	}
+
+	return QObject::eventFilter(object, event);
+}
+
+void PropertyWindow::updateCommonWidgets(const QList<GameObject *> &objects, const QPointF &rotationCenter)
 {
 	// флаги идентичности значений свойств объектов в группе
 	bool equalName = true;
@@ -163,7 +215,6 @@ void PropertyWindow::updateCommonWidgets(const QList<GameObject *> &objects)
 	bool isPositiveHSize = true;
 	bool isNegativeHSize = true;
 	bool equalRotationAngle = true;
-	//bool equalRotationCenter;
 
 	Q_ASSERT(!objects.empty());
 
@@ -179,12 +230,12 @@ void PropertyWindow::updateCommonWidgets(const QList<GameObject *> &objects)
 		if (it->getObjectID() != objects.front()->getObjectID())
 			equalObjectID = false;
 
-		if (!Utils::fuzzyCompare(it->getPosition().x(), objects.front()->getPosition().x()) ||
-			!Utils::fuzzyCompare(it->getPosition().y(), objects.front()->getPosition().y()))
+		if (!Utils::isEqual(it->getPosition().x(), objects.front()->getPosition().x()) ||
+			!Utils::isEqual(it->getPosition().y(), objects.front()->getPosition().y()))
 			equalPosition = false;
 
-		if (!Utils::fuzzyCompare(it->getSize().width(), first->getSize().width()) ||
-			!Utils::fuzzyCompare(it->getSize().height(), first->getSize().height()))
+		if (!Utils::isEqual(it->getSize().width(), first->getSize().width()) ||
+			!Utils::isEqual(it->getSize().height(), first->getSize().height()))
 			equalSize = false;
 
 		if (it->getSize().width() < 0)
@@ -196,10 +247,8 @@ void PropertyWindow::updateCommonWidgets(const QList<GameObject *> &objects)
 		if (it->getSize().height() >= 0)
 			isNegativeHSize = false;
 
-		if (!Utils::fuzzyCompare(it->getRotationAngle(), first->getRotationAngle()))
+		if (!Utils::isEqual(it->getRotationAngle(), first->getRotationAngle()))
 			equalRotationAngle = false;
-
-		//equalRotationCenter
 	}
 
 	mNameLineEdit->setText(equalName ? first->getName() : "");
@@ -229,8 +278,8 @@ void PropertyWindow::updateCommonWidgets(const QList<GameObject *> &objects)
 
 	mRotationAngleComboBox->lineEdit()->setText(equalRotationAngle ? QString::number(first->getRotationAngle(), 'g', PRECISION) : "");
 
-	//first->getRotationCenter().x()
-	//first->getRotationCenter().y()
+	mRotationCenterXLineEdit->setText(QString::number(rotationCenter.x(), 'g', PRECISION));
+	mRotationCenterYLineEdit->setText(QString::number(rotationCenter.y(), 'g', PRECISION));
 }
 
 void PropertyWindow::updateSpriteWidgets(const QList<GameObject *> &objects)
@@ -264,15 +313,11 @@ void PropertyWindow::updateSpriteWidgets(const QList<GameObject *> &objects)
 	{
 		// FIXME:
 		mSpriteColorFrame;
-		QString htmlColor;
-		htmlColor.sprintf("%02X%02X%02X", first->getColor().red(), first->getColor().green(), first->getColor().blue());
-		mSpriteColorHTMLLineEdit->setText(htmlColor);
 	}
 	else
 	{
 		// FIXME:
 		mSpriteColorFrame;
-		mSpriteColorHTMLLineEdit->setText("");
 	}
 
 	if (equalSpriteOpacity)
@@ -387,15 +432,11 @@ void PropertyWindow::updateLabelWidgets(const QList<GameObject *> &objects)
 	{
 		// FIXME:
 		mLabelColorFrame;
-		QString htmlColor;
-		htmlColor.sprintf("%02X%02X%02X", first->getColor().red(), first->getColor().green(), first->getColor().blue());
-		mLabelColorHTMLLineEdit->setText(htmlColor);
 	}
 	else
 	{
 		// FIXME:
 		mLabelColorFrame;
-		mLabelColorHTMLLineEdit->setText("");
 	}
 
 	if (equalLabelOpacity)
@@ -413,3 +454,95 @@ void PropertyWindow::updateLabelWidgets(const QList<GameObject *> &objects)
 
 }
 
+
+void PropertyWindow::on_mNameLineEdit_editingFinished()
+{
+	qDebug() << "on_mNameLineEdit_editingFinished";
+}
+
+void PropertyWindow::on_mPositionXLineEdit_editingFinished()
+{
+	qDebug() << "on_mPositionXLineEdit_editingFinished";
+
+	// FIXME:
+	//emit objectsChanged()
+}
+
+void PropertyWindow::on_mPositionYLineEdit_editingFinished()
+{
+	qDebug() << "on_mPositionYLineEdit_editingFinished";
+
+	// FIXME:
+	//emit objectsChanged()
+}
+
+void PropertyWindow::on_mSizeWLineEdit_editingFinished()
+{
+	qDebug() << "on_mSizeWLineEdit_editingFinished";
+
+	// FIXME:
+	//emit objectsChanged()
+}
+
+void PropertyWindow::on_mSizeHLineEdit_editingFinished()
+{
+	qDebug() << "on_mSizeHLineEdit_editingFinished";
+
+	// FIXME:
+	//emit objectsChanged()
+}
+
+void PropertyWindow::on_mFlipXCheckBox_clicked(bool checked)
+{
+	qDebug() << "on_mFlipXCheckBox_clicked";
+
+	// FIXME:
+	//emit objectsChanged()
+}
+
+void PropertyWindow::on_mFlipYCheckBox_clicked(bool checked)
+{
+	qDebug() << "on_mFlipYCheckBox_clicked";
+
+	// FIXME:
+	//emit objectsChanged()
+}
+
+void PropertyWindow::onRotationAngleEditingFinished()
+{
+	qDebug() << "onRotationAngleEditingFinished";
+
+	// FIXME:
+	//emit objectsChanged()
+}
+
+void PropertyWindow::on_mRotationCenterXLineEdit_editingFinished()
+{
+	qDebug() << "on_mRotationCenterXLineEdit_editingFinished";
+
+	// FIXME:
+	//emit objectsChanged()
+}
+
+void PropertyWindow::on_mRotationCenterYLineEdit_editingFinished()
+{
+	qDebug() << "on_mRotationCenterYLineEdit_editingFinished";
+
+	// FIXME:
+	//emit objectsChanged()
+}
+
+void PropertyWindow::on_mFileNameLineEdit_editingFinished()
+{
+	qDebug() << "on_mFileNameLineEdit_editingFinished";
+}
+
+void PropertyWindow::on_mFileNameBrowsePushButton_clicked()
+{
+	qDebug() << "on_mFileNameBrowsePushButton_clicked";
+}
+
+void PropertyWindow::on_mSpriteOpacityHorizontalSlider_sliderMoved(int position)
+{
+	qDebug() << "on_mSpriteOpacityHorizontalSlider_sliderMoved";
+}

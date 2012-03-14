@@ -90,7 +90,7 @@ signals:
 	// Сигнал об изменении выделения
 	void selectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter);
 
-	// Сигнал об изменении выделенных объектов
+	// Сигнал об изменении свойств выделенных объектов
 	void objectsChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter);
 
 	// Сигнал об изменении локации
@@ -207,6 +207,9 @@ private:
 
 	// Рисует маркер выделения
 	void drawSelectionMarker(qreal x, qreal y, QPainter &painter);
+
+	// Рисует умную направляющую
+	void drawSmartGuide(const QLineF &line, QPainter &painter);
 
 	Location            *mLocation;         // Игровая локация
 	QString             mFileName;          // Имя файла локации

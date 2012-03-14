@@ -82,6 +82,21 @@ private slots:
 	// Обработчик пункта меню Вид-Уменьшить
 	void on_mZoomOutAction_triggered();
 
+	// Обработчик пункта меню Вид-Показывать сетку
+	void on_mShowGridAction_triggered(bool checked);
+
+	// Обработчик пункта меню Вид-Привязывать к сетке
+	void on_mSnapToGridAction_triggered(bool checked);
+
+	// Обработчик пункта меню Вид-Показывать направляющие
+	void on_mShowGuidesAction_triggered(bool checked);
+
+	// Обработчик пункта меню Вид-Привязывать к направляющим
+	void on_mSnapToGuidesAction_triggered(bool checked);
+
+	// Обработчик пункта меню Вид-Умные направляющие
+	void on_mEnableSmartGuidesAction_triggered(bool checked);
+
 	// Обработчик пункта меню Объект-На передний план
 	void on_mBringToFrontAction_triggered();
 
@@ -150,6 +165,9 @@ private:
 
 	// Создает новое окно редактирования
 	EditorWindow *createEditorWindow(const QString &fileName);
+
+	// Обновляет состояния пунктов главного меню
+	void updateMainMenuActions();
 
 	// Обновляет пункты меню с последними файлами
 	void updateRecentFilesActions(const QString &fileName);

@@ -27,6 +27,9 @@ public:
 	// Возвращает вещественное значение по имени
 	bool getReal(const QString &name, qreal &value) const;
 
+	// Возвращает вещественное значение по индексу
+	bool getReal(int index, qreal &value) const;
+
 	// Возвращает булевское значение по имени
 	bool getBool(const QString &name, bool &value) const;
 

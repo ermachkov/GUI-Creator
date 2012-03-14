@@ -510,13 +510,14 @@ void EditorWindow::paintEvent(QPaintEvent *event)
 	}
 
 	// рисуем линии привязки
-	if (mEditorState == STATE_MOVE || mEditorState == STATE_RESIZE || mEditorState == STATE_MOVE_CENTER)
+	if (mEditorState == STATE_MOVE || mEditorState == STATE_RESIZE || mEditorState == STATE_MOVE_CENTER
+		|| mEditorState == STATE_HORZ_GUIDE || mEditorState == STATE_VERT_GUIDE)
 	{
 		painter.setPen(Qt::green);
 		if (!mHorzSnapLine.isNull())
-			painter.drawLine(worldToWindow(mHorzSnapLine.p1()), worldToWindow(mHorzSnapLine.p2()));
+			drawSmartGuide(mHorzSnapLine, painter);
 		if (!mVertSnapLine.isNull())
-			painter.drawLine(worldToWindow(mVertSnapLine.p1()), worldToWindow(mVertSnapLine.p2()));
+			drawSmartGuide(mVertSnapLine, painter);
 	}
 
 	// рисуем линейки
@@ -575,6 +576,7 @@ void EditorWindow::mousePressEvent(QMouseEvent *event)
 		mHorzSnapLine = mVertSnapLine = QLineF();
 
 		bool showGuides = Options::getSingleton().isShowGuides();
+		qreal distance = GUIDE_DISTANCE / mZoom;
 		qreal size = CENTER_SIZE / mZoom;
 		qreal offset = size / 2.0;
 		GameObject *object;
@@ -591,12 +593,12 @@ void EditorWindow::mousePressEvent(QMouseEvent *event)
 			mEditorState = STATE_VERT_GUIDE;
 			mGuideIndex = mLocation->addGuide(false, qRound(pos.x()));
 		}
-		else if (showGuides && (mGuideIndex = mLocation->findGuide(true, pos.y(), GUIDE_DISTANCE / mZoom)) != -1)
+		else if (showGuides && (mGuideIndex = mLocation->findGuide(true, pos.y(), distance)) != -1)
 		{
 			// переходим в режим перетаскивания горизонтальной направляющей
 			mEditorState = STATE_HORZ_GUIDE;
 		}
-		else if (showGuides && (mGuideIndex = mLocation->findGuide(false, pos.x(), GUIDE_DISTANCE / mZoom)) != -1)
+		else if (showGuides && (mGuideIndex = mLocation->findGuide(false, pos.x(), distance)) != -1)
 		{
 			// переходим в режим перетаскивания вертикальной направляющей
 			mEditorState = STATE_VERT_GUIDE;
@@ -786,17 +788,17 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 				qreal right = snapXCoord(rect.right(), rect.top(), rect.bottom(), true, &rightLine, &rightDistance);
 
 				// привязываем край с наименьшим расстоянием привязки
-				if (centerDistance < SNAP_DISTANCE && centerDistance <= leftDistance && centerDistance <= rightDistance)
+				if (centerDistance < SNAP_DISTANCE / mZoom && centerDistance <= leftDistance && centerDistance <= rightDistance)
 				{
 					offset.rx() += center - rect.center().x();
 					mVertSnapLine = centerLine;
 				}
-				else if (leftDistance < SNAP_DISTANCE && leftDistance <= centerDistance && leftDistance <= rightDistance)
+				else if (leftDistance < SNAP_DISTANCE / mZoom && leftDistance <= centerDistance && leftDistance <= rightDistance)
 				{
 					offset.rx() += left - rect.left();
 					mVertSnapLine = leftLine;
 				}
-				else if (rightDistance < SNAP_DISTANCE && rightDistance <= leftDistance && rightDistance <= centerDistance)
+				else if (rightDistance < SNAP_DISTANCE / mZoom && rightDistance <= leftDistance && rightDistance <= centerDistance)
 				{
 					offset.rx() += right - rect.right();
 					mVertSnapLine = rightLine;
@@ -818,17 +820,17 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 				qreal bottom = snapYCoord(rect.bottom(), rect.left(), rect.right(), true, &bottomLine, &bottomDistance);
 
 				// привязываем край с наименьшим расстоянием привязки
-				if (centerDistance < SNAP_DISTANCE && centerDistance <= topDistance && centerDistance <= bottomDistance)
+				if (centerDistance < SNAP_DISTANCE / mZoom && centerDistance <= topDistance && centerDistance <= bottomDistance)
 				{
 					offset.ry() += center - rect.center().y();
 					mHorzSnapLine = centerLine;
 				}
-				else if (topDistance < SNAP_DISTANCE && topDistance <= centerDistance && topDistance <= bottomDistance)
+				else if (topDistance < SNAP_DISTANCE / mZoom && topDistance <= centerDistance && topDistance <= bottomDistance)
 				{
 					offset.ry() += top - rect.top();
 					mHorzSnapLine = topLine;
 				}
-				else if (bottomDistance < SNAP_DISTANCE && bottomDistance <= topDistance && bottomDistance <= centerDistance)
+				else if (bottomDistance < SNAP_DISTANCE / mZoom && bottomDistance <= topDistance && bottomDistance <= centerDistance)
 				{
 					offset.ry() += bottom - rect.bottom();
 					mHorzSnapLine = bottomLine;
@@ -1022,12 +1024,28 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 		else if (mEditorState == STATE_HORZ_GUIDE)
 		{
 			// перемещаем горизонтальную направляющую
-			mLocation->setGuide(true, mGuideIndex, qRound(pos.y()));
+			qreal snappedY = pos.y();
+			if (Options::getSingleton().isEnableSmartGuides())
+			{
+				const qreal MAX_COORD = 1.0E+8;
+				qreal distance = SNAP_DISTANCE / mZoom;
+				mHorzSnapLine = mVertSnapLine = QLineF();
+				mLocation->getRootLayer()->snapYCoord(pos.y(), MAX_COORD, -MAX_COORD, QList<GameObject *>(), snappedY, distance, mHorzSnapLine);
+			}
+			mLocation->setGuide(true, mGuideIndex, qRound(snappedY));
 		}
 		else if (mEditorState == STATE_VERT_GUIDE)
 		{
 			// перемещаем вертикальную направляющую
-			mLocation->setGuide(false, mGuideIndex, qRound(pos.x()));
+			qreal snappedX = pos.x();
+			if (Options::getSingleton().isEnableSmartGuides())
+			{
+				const qreal MAX_COORD = 1.0E+8;
+				qreal distance = SNAP_DISTANCE / mZoom;
+				mHorzSnapLine = mVertSnapLine = QLineF();
+				mLocation->getRootLayer()->snapXCoord(pos.x(), MAX_COORD, -MAX_COORD, QList<GameObject *>(), snappedX, distance, mVertSnapLine);
+			}
+			mLocation->setGuide(false, mGuideIndex, qRound(snappedX));
 		}
 
 		// отправляем сигнал об изменении объектов
@@ -1218,16 +1236,29 @@ qreal EditorWindow::snapXCoord(qreal x, qreal y1, qreal y2, bool excludeSelectio
 	Options &options = Options::getSingleton();
 
 	qreal snappedX = x;
-	qreal distance = SNAP_DISTANCE;
+	qreal distance = SNAP_DISTANCE / mZoom;
 	QLineF line;
 
+	// привязываем координату к направляющим
+	if (options.isSnapToGuides())
+	{
+		int index = mLocation->findGuide(false, x, distance);
+		if (index != -1)
+		{
+			snappedX = mLocation->getGuide(false, index);
+			line = QLineF(snappedX, y1, snappedX, y2);
+		}
+	}
+
 	// привязываем координату к умным направляющим
-	const QList<GameObject *> &excludedObjects = excludeSelection ? mSelectedObjects : QList<GameObject *>();
-	if (options.isEnableSmartGuides() && distance == SNAP_DISTANCE)
+	if (options.isEnableSmartGuides())
+	{
+		const QList<GameObject *> &excludedObjects = excludeSelection ? mSelectedObjects : QList<GameObject *>();
 		mLocation->getRootLayer()->snapXCoord(x, y1, y2, excludedObjects, snappedX, distance, line);
+	}
 
 	// привязываем координату к сетке
-	if (options.isSnapToGrid() && distance == SNAP_DISTANCE)
+	if (options.isSnapToGrid() && distance == SNAP_DISTANCE / mZoom)
 	{
 		// подбираем подходящий шаг сетки
 		int gridSpacing = options.getGridSpacing();
@@ -1255,16 +1286,29 @@ qreal EditorWindow::snapYCoord(qreal y, qreal x1, qreal x2, bool excludeSelectio
 	Options &options = Options::getSingleton();
 
 	qreal snappedY = y;
-	qreal distance = SNAP_DISTANCE;
+	qreal distance = SNAP_DISTANCE / mZoom;
 	QLineF line;
 
+	// привязываем координату к направляющим
+	if (options.isSnapToGuides())
+	{
+		int index = mLocation->findGuide(true, y, distance);
+		if (index != -1)
+		{
+			snappedY = mLocation->getGuide(true, index);
+			line = QLineF(x1, snappedY, x2, snappedY);
+		}
+	}
+
 	// привязываем координату к умным направляющим
-	const QList<GameObject *> &excludedObjects = excludeSelection ? mSelectedObjects : QList<GameObject *>();
-	if (options.isEnableSmartGuides() && distance == SNAP_DISTANCE)
+	if (options.isEnableSmartGuides())
+	{
+		const QList<GameObject *> &excludedObjects = excludeSelection ? mSelectedObjects : QList<GameObject *>();
 		mLocation->getRootLayer()->snapYCoord(y, x1, x2, excludedObjects, snappedY, distance, line);
+	}
 
 	// привязываем координату к сетке
-	if (options.isSnapToGrid() && distance == SNAP_DISTANCE)
+	if (options.isSnapToGrid() && distance == SNAP_DISTANCE / mZoom)
 	{
 		// подбираем подходящий шаг сетки
 		int gridSpacing = options.getGridSpacing();
@@ -1397,6 +1441,7 @@ void EditorWindow::updateMouseCursor(const QPointF &pos)
 	if (mEditorState == STATE_IDLE)
 	{
 		bool showGuides = Options::getSingleton().isShowGuides();
+		qreal distance = GUIDE_DISTANCE / mZoom;
 		qreal size = CENTER_SIZE / mZoom;
 		qreal offset = size / 2.0;
 		SelectionMarker marker;
@@ -1406,12 +1451,12 @@ void EditorWindow::updateMouseCursor(const QPointF &pos)
 			// курсор над линейками
 			setCursor(Qt::ArrowCursor);
 		}
-		else if (showGuides && mLocation->findGuide(true, pos.y(), GUIDE_DISTANCE / mZoom) != -1)
+		else if (showGuides && mLocation->findGuide(true, pos.y(), distance) != -1)
 		{
 			// курсор над горизонтальной направляющей
 			setCursor(Qt::SplitVCursor);
 		}
-		else if (showGuides && mLocation->findGuide(false, pos.x(), GUIDE_DISTANCE / mZoom) != -1)
+		else if (showGuides && mLocation->findGuide(false, pos.x(), distance) != -1)
 		{
 			// курсор над вертикальной направляющей
 			setCursor(Qt::SplitHCursor);
@@ -1503,4 +1548,22 @@ void EditorWindow::drawSelectionMarker(qreal x, qreal y, QPainter &painter)
 		painter.drawEllipse(QPointF(x, y), offset, offset);
 	else
 		painter.drawRect(QRectF(x - offset, y - offset, MARKER_SIZE - 1.0, MARKER_SIZE - 1.0));
+}
+
+void EditorWindow::drawSmartGuide(const QLineF &line, QPainter &painter)
+{
+	// рисуем линию
+	QPointF p1 = worldToWindow(line.p1()), p2 = worldToWindow(line.p2());
+	p1 = QPointF(qFloor(p1.x()) + 0.5, qFloor(p1.y()) + 0.5);
+	p2 = QPointF(qFloor(p2.x()) + 0.5, qFloor(p2.y()) + 0.5);
+	painter.drawLine(p1, p2);
+
+	// рисуем крестик в начале линии
+	qreal offset = qFloor(CENTER_SIZE / 2.0);
+	painter.drawLine(QPointF(p1.x() - offset, p1.y() - offset), QPointF(p1.x() + offset, p1.y() + offset));
+	painter.drawLine(QPointF(p1.x() - offset, p1.y() + offset), QPointF(p1.x() + offset, p1.y() - offset));
+
+	// рисуем крестик в конце линии
+	painter.drawLine(QPointF(p2.x() - offset, p2.y() - offset), QPointF(p2.x() + offset, p2.y() + offset));
+	painter.drawLine(QPointF(p2.x() - offset, p2.y() + offset), QPointF(p2.x() + offset, p2.y() - offset));
 }

@@ -23,7 +23,7 @@ qreal Utils::degToRad(qreal angle)
 	return angle * PI / 180.0;
 }
 
-bool Utils::fuzzyCompare(qreal value1, qreal value2, qreal eps)
+bool Utils::isEqual(qreal value1, qreal value2, qreal eps)
 {
 	return qAbs(value1 - value2) < eps;
 }

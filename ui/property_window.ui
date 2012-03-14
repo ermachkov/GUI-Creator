@@ -31,7 +31,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>746</width>
+         <width>608</width>
          <height>482</height>
         </rect>
        </property>
@@ -95,23 +95,6 @@
             <widget class="QLabel" name="mSpriteOpacityLabel">
              <property name="text">
               <string>Прозрачность:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="3">
-            <widget class="QLabel" name="mSpriteColorHTMLLabel">
-             <property name="text">
-              <string>HTML цвет:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="4">
-            <widget class="QLineEdit" name="mSpriteColorHTMLLineEdit">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
              </property>
             </widget>
            </item>
@@ -242,23 +225,6 @@
              </property>
             </widget>
            </item>
-           <item row="6" column="3">
-            <widget class="QLineEdit" name="mLabelColorHTMLLineEdit">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="2">
-            <widget class="QLabel" name="mLabelColorHTMLLabel">
-             <property name="text">
-              <string>HTML цвет:</string>
-             </property>
-            </widget>
-           </item>
            <item row="7" column="1">
             <widget class="QSlider" name="mLabelOpacityHorizontalSlider">
              <property name="orientation">
@@ -341,6 +307,29 @@
              <property name="editable">
               <bool>true</bool>
              </property>
+             <property name="insertPolicy">
+              <enum>QComboBox::NoInsert</enum>
+             </property>
+             <item>
+              <property name="text">
+               <string>0.5</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>1.0</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>1.5</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>2.0</string>
+              </property>
+             </item>
             </widget>
            </item>
            <item row="2" column="1">
@@ -348,13 +337,19 @@
              <property name="editable">
               <bool>true</bool>
              </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QComboBox" name="mFileNameComboBox">
-             <property name="editable">
-              <bool>true</bool>
+             <property name="insertPolicy">
+              <enum>QComboBox::NoInsert</enum>
              </property>
+             <item>
+              <property name="text">
+               <string>6</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>8</string>
+              </property>
+             </item>
              <item>
               <property name="text">
                <string>10</string>
@@ -362,9 +357,59 @@
              </item>
              <item>
               <property name="text">
+               <string>12</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>14</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>16</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>18</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
                <string>20</string>
               </property>
              </item>
+             <item>
+              <property name="text">
+               <string>24</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>32</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>40</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>64</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QComboBox" name="mFileNameComboBox">
+             <property name="editable">
+              <bool>true</bool>
+             </property>
+             <property name="insertPolicy">
+              <enum>QComboBox::NoInsert</enum>
+             </property>
             </widget>
            </item>
           </layout>
@@ -538,6 +583,89 @@
              <property name="editable">
               <bool>true</bool>
              </property>
+             <property name="insertPolicy">
+              <enum>QComboBox::NoInsert</enum>
+             </property>
+             <item>
+              <property name="text">
+               <string>0</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>30</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>45</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>60</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>90</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>120</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>135</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>150</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>180</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>210</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>225</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>240</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>270</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>300</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>315</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>330</string>
+              </property>
+             </item>
             </widget>
            </item>
            <item row="6" column="0">
@@ -616,6 +744,13 @@
        <zorder>layoutWidget</zorder>
        <zorder>mStackedWidget</zorder>
       </widget>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="mNoSelectionObjectsLabel">
+      <property name="text">
+       <string>Нет выбранных объектов</string>
+      </property>
      </widget>
     </item>
    </layout>

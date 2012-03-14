@@ -67,7 +67,7 @@ public:
 	void setGuide(bool horz, int index, qreal coord);
 
 	// Ищет направляющую по координате
-	int findGuide(bool horz, qreal coord, qreal distance) const;
+	int findGuide(bool horz, qreal coord, qreal &distance) const;
 
 	// Добавляет новую направляющую
 	int addGuide(bool horz, qreal coord);

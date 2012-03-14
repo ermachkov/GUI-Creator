@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1024</width>
-    <height>700</height>
+    <width>901</width>
+    <height>612</height>
    </rect>
   </property>
   <widget class="QWidget" name="mCentralWidget">
@@ -35,8 +35,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1024</width>
-     <height>21</height>
+     <width>901</width>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="mFileMenu">
@@ -65,6 +65,13 @@
     <addaction name="mZoomMenu"/>
     <addaction name="mZoomInAction"/>
     <addaction name="mZoomOutAction"/>
+    <addaction name="separator"/>
+    <addaction name="mShowGridAction"/>
+    <addaction name="mSnapToGridAction"/>
+    <addaction name="separator"/>
+    <addaction name="mShowGuidesAction"/>
+    <addaction name="mSnapToGuidesAction"/>
+    <addaction name="mEnableSmartGuidesAction"/>
    </widget>
    <widget class="QMenu" name="mEditMenu">
     <property name="title">
@@ -142,6 +149,8 @@
    </attribute>
    <addaction name="mZoomInAction"/>
    <addaction name="mZoomOutAction"/>
+   <addaction name="mShowGridAction"/>
+   <addaction name="mShowGuidesAction"/>
   </widget>
   <widget class="QToolBar" name="mObjectToolBar">
    <property name="windowTitle">
@@ -412,6 +421,66 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+PgDown</string>
+   </property>
+  </action>
+  <action name="mShowGridAction">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../res/resources.qrc">
+     <normaloff>:/images/show_grid.png</normaloff>:/images/show_grid.png</iconset>
+   </property>
+   <property name="text">
+    <string>Показывать &amp;сетку</string>
+   </property>
+  </action>
+  <action name="mSnapToGridAction">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Привязывать к сетке</string>
+   </property>
+  </action>
+  <action name="mShowGuidesAction">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../res/resources.qrc">
+     <normaloff>:/images/show_guides.png</normaloff>:/images/show_guides.png</iconset>
+   </property>
+   <property name="text">
+    <string>Показывать &amp;направляющие</string>
+   </property>
+  </action>
+  <action name="mSnapToGuidesAction">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>П&amp;ривязывать к направляющим</string>
+   </property>
+  </action>
+  <action name="mEnableSmartGuidesAction">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Умные направляющие</string>
    </property>
   </action>
  </widget>

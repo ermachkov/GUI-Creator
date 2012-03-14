@@ -59,6 +59,36 @@ bool Location::load(const QString &fileName)
 		|| !script.getInt("spriteIndex", mSpriteIndex) || !script.getInt("labelIndex", mLabelIndex))
 		return false;
 
+	// загружаем горизонтальные направляющие
+	if (!script.pushTable("horzGuides"))
+		return false;
+
+	length = script.getLength();
+	for (int i = 1; i <= length; ++i)
+	{
+		qreal coord;
+		if (!script.getReal(i, coord))
+			return false;
+		mHorzGuides.push_back(coord);
+	}
+
+	script.popTable();
+
+	// загружаем вертикальные направляющие
+	if (!script.pushTable("vertGuides"))
+		return false;
+
+	length = script.getLength();
+	for (int i = 1; i <= length; ++i)
+	{
+		qreal coord;
+		if (!script.getReal(i, coord))
+			return false;
+		mVertGuides.push_back(coord);
+	}
+
+	script.popTable();
+
 	return true;
 }
 
@@ -96,6 +126,18 @@ bool Location::save(const QString &fileName)
 	stream << "layerGroupIndex = " << mLayerGroupIndex << endl;
 	stream << "spriteIndex = " << mSpriteIndex << endl;
 	stream << "labelIndex = " << mLabelIndex << endl;
+
+	// сохраняем горизонтальные направляющие
+	QStringList horzGuides;
+	foreach (qreal coord, mHorzGuides)
+		horzGuides.push_back(QString::number(coord));
+	stream << endl << "horzGuides = {" << horzGuides.join(", ") << "}" << endl;
+
+	// сохраняем вертикальные направляющие
+	QStringList vertGuides;
+	foreach (qreal coord, mVertGuides)
+		vertGuides.push_back(QString::number(coord));
+	stream << "vertGuides = {" << vertGuides.join(", ") << "}" << endl;
 
 	return stream.status() == QTextStream::Ok;
 }
@@ -216,7 +258,7 @@ void Location::setGuide(bool horz, int index, qreal coord)
 	guides[index] = coord;
 }
 
-int Location::findGuide(bool horz, qreal coord, qreal distance) const
+int Location::findGuide(bool horz, qreal coord, qreal &distance) const
 {
 	// ищем ближайшую направляющую к заданной координате
 	const QList<qreal> &guides = horz ? mHorzGuides : mVertGuides;

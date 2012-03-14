@@ -89,7 +89,10 @@ void LayersTreeWidget::setPrimaryGLWidget(QGLWidget *primaryGLWidget)
 	mPrimaryGLWidget->makeCurrent();
 
 	delete mFrameBuffer;
-	mFrameBuffer = new QGLFramebufferObject(WIDTH_THUMBNAIL, HEIGHT_THUMBNAIL);
+
+	QGLFramebufferObjectFormat format;
+	format.setInternalTextureFormat(GL_RGB);
+	mFrameBuffer = new QGLFramebufferObject(WIDTH_THUMBNAIL, HEIGHT_THUMBNAIL, format);
 }
 
 void LayersTreeWidget::DEBUG_TREES()
@@ -1034,7 +1037,8 @@ QIcon LayersTreeWidget::createLayerIcon(BaseLayer *baseLayer)
 	mFrameBuffer->bind();
 
 	// отчистка
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	QColor color = palette().base().color();
+	glClearColor(color.redF(), color.greenF(), color.blueF(), 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	// устанавливаем систему координат с началом координат в левом верхнем углу

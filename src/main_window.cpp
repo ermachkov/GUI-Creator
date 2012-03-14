@@ -60,6 +60,9 @@ MainWindow::MainWindow()
 	// разворачивание окна редактора на весь экран
 	showMaximized();
 
+	// обновляем пункты главного меню
+	updateMainMenuActions();
+
 	// добавляем в меню Файл пункты для последних файлов
 	for (int i = 0; i < 5; ++i)
 	{
@@ -67,19 +70,22 @@ MainWindow::MainWindow()
 		connect(action, SIGNAL(triggered()), this, SLOT(on_mOpenAction_triggered()));
 		mRecentFilesActions.push_back(action);
 	}
+
 	mFileMenu->insertActions(mExitAction, mRecentFilesActions);
 	mRecentFilesSeparator = mFileMenu->insertSeparator(mExitAction);
 	updateRecentFilesActions("");
 
 	// настраиваем акселераторы по Alt для пунктов меню плавающих окон
-	mSpriteBrowser->toggleViewAction()->setText("&Спрайты");
+	mSpriteBrowser->toggleViewAction()->setText("Спр&айты");
 	mFontBrowser->toggleViewAction()->setText("&Шрифты");
-	mPropertyWindow->toggleViewAction()->setText("С&войства");
+	mPropertyWindow->toggleViewAction()->setText("Сво&йства");
 	mLayersWindow->toggleViewAction()->setText("С&лои");
 
 	// добавляем в меню Вид пункты для плавающих окон
 	QAction *zoomAction = mZoomMenu->menuAction();
 	mViewMenu->insertAction(zoomAction, mSpriteBrowser->toggleViewAction());
+	mViewMenu->insertAction(zoomAction, mFontBrowser->toggleViewAction());
+	mViewMenu->insertAction(zoomAction, mPropertyWindow->toggleViewAction());
 	mViewMenu->insertAction(zoomAction, mLayersWindow->toggleViewAction());
 	mViewMenu->insertSeparator(zoomAction);
 
@@ -173,9 +179,10 @@ MainWindow::MainWindow()
 
 MainWindow::~MainWindow()
 {
-	// удаляем объекты редактора в нужном порядке
+	// удаляем объекты редактора
 	delete mSpriteBrowser;
 	delete mFontBrowser;
+	delete mPropertyWindow;
 	delete mLayersWindow;
 
 	// удаляем синглетоны в последнюю очередь
@@ -357,8 +364,12 @@ void MainWindow::on_mDeleteAction_triggered()
 
 void MainWindow::on_mOptionsAction_triggered()
 {
+	// вызываем диалог настроек приложения
 	OptionsDialog dialog(this);
 	dialog.exec();
+
+	// обновляем пункты главного меню
+	updateMainMenuActions();
 }
 
 void MainWindow::on_mSelectAllAction_triggered()
@@ -396,6 +407,31 @@ void MainWindow::on_mZoomOutAction_triggered()
 	// устанавливаем новый масштаб
 	QString zoomStr = QString::number(qRound(zoom * 100.0)) + '%';
 	onZoomChanged(zoomStr);
+}
+
+void MainWindow::on_mShowGridAction_triggered(bool checked)
+{
+	Options::getSingleton().setShowGrid(checked);
+}
+
+void MainWindow::on_mSnapToGridAction_triggered(bool checked)
+{
+	Options::getSingleton().setSnapToGrid(checked);
+}
+
+void MainWindow::on_mShowGuidesAction_triggered(bool checked)
+{
+	Options::getSingleton().setShowGuides(checked);
+}
+
+void MainWindow::on_mSnapToGuidesAction_triggered(bool checked)
+{
+	Options::getSingleton().setSnapToGuides(checked);
+}
+
+void MainWindow::on_mEnableSmartGuidesAction_triggered(bool checked)
+{
+	Options::getSingleton().setEnableSmartGuides(checked);
 }
 
 void MainWindow::on_mBringToFrontAction_triggered()
@@ -601,6 +637,8 @@ EditorWindow *MainWindow::createEditorWindow(const QString &fileName)
 	// связывание сигнала изменения выделения объекта(-ов) для отправки в ГУИ настроек
 	connect(editorWindow, SIGNAL(selectionChanged(const QList<GameObject *> &, const QPointF &)),
 		mPropertyWindow, SLOT(onEditorWindowSelectionChanged(const QList<GameObject *> &, const QPointF &)));
+	connect(editorWindow, SIGNAL(objectsChanged(const QList<GameObject *> &, const QPointF &)),
+		mPropertyWindow, SLOT(onEditorWindowObjectsChanged(const QList<GameObject *> &, const QPointF &)));
 
 	// активируем нужные пункты меню
 	mSaveAsAction->setEnabled(true);
@@ -616,6 +654,16 @@ EditorWindow *MainWindow::createEditorWindow(const QString &fileName)
 
 	// возвращаем указатель на созданное окно редактирования
 	return editorWindow;
+}
+
+void MainWindow::updateMainMenuActions()
+{
+	Options &options = Options::getSingleton();
+	mShowGridAction->setChecked(options.isShowGrid());
+	mSnapToGridAction->setChecked(options.isSnapToGrid());
+	mShowGuidesAction->setChecked(options.isShowGuides());
+	mSnapToGuidesAction->setChecked(options.isSnapToGuides());
+	mEnableSmartGuidesAction->setChecked(options.isEnableSmartGuides());
 }
 
 void MainWindow::updateRecentFilesActions(const QString &fileName)
