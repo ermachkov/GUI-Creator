@@ -82,6 +82,9 @@ public:
 	// Заменяет текстуру в локации
 	void changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture);
 
+	// Обновляет прямоугольник выделения и центр вращения
+	void updateSelection(const QPointF &rotationCenter);
+
 signals:
 
 	// Сигнал об изменении масштаба

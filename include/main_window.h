@@ -136,6 +136,9 @@ private slots:
 	// Обработчик изменения слоя в окне слоёв
 	void onLayerWindowLayerChanged();
 
+	// Обработчик изменения свойств объектов в окне свойств
+	void onPropertyWindowObjectsChanged(const QPointF &rotationCenter);
+
 	// Обработчик сигнала изменения текстуры от текстурного менеджера
 	void onTextureChanged(const QString &fileName, const QSharedPointer<Texture> &texture);
 

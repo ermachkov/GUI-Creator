@@ -313,6 +313,13 @@ void EditorWindow::changeTexture(const QString &fileName, const QSharedPointer<T
 		emit layerChanged(mLocation, layer);
 }
 
+void EditorWindow::updateSelection(const QPointF &rotationCenter)
+{
+	// обновляем прямоугольник выделения и текущий центр вращения
+	selectGameObjects(mSelectedObjects);
+	mOriginalCenter = mSnappedCenter = mSelectedObjects.size() == 1 ? mSelectedObjects.front()->getRotationCenter() : rotationCenter;
+}
+
 void EditorWindow::paintEvent(QPaintEvent *event)
 {
 	// очищаем окно

@@ -157,6 +157,9 @@ MainWindow::MainWindow()
 	connect(mLayersWindow, SIGNAL(locationChanged()), this, SLOT(onLayerWindowLocationChanged()));
 	connect(mLayersWindow, SIGNAL(layerChanged()), this, SLOT(onLayerWindowLayerChanged()));
 
+	// связываем сигналы об изменениях в окне свойств
+	connect(mPropertyWindow, SIGNAL(objectsChanged(const QPointF &)), this, SLOT(onPropertyWindowObjectsChanged(const QPointF &)));
+
 	// связываем сигнал об изменении текстуры
 	connect(TextureManager::getSingletonPtr(), SIGNAL(textureChanged(const QString &, const QSharedPointer<Texture> &)),
 		this, SLOT(onTextureChanged(const QString &, const QSharedPointer<Texture> &)));
@@ -607,6 +610,11 @@ void MainWindow::onLayerWindowLayerChanged()
 	getEditorWindow()->deselectAll();
 }
 
+void MainWindow::onPropertyWindowObjectsChanged(const QPointF &rotationCenter)
+{
+	getEditorWindow()->updateSelection(rotationCenter);
+}
+
 void MainWindow::onTextureChanged(const QString &fileName, const QSharedPointer<Texture> &texture)
 {
 	// заменяем текстуру во всех открытых вкладках
@@ -634,7 +642,7 @@ EditorWindow *MainWindow::createEditorWindow(const QString &fileName)
 	connect(editorWindow, SIGNAL(mouseMoved(const QPointF &)), this, SLOT(onEditorWindowMouseMoved(const QPointF &)));
 	connect(editorWindow, SIGNAL(layerChanged(Location *, BaseLayer *)), mLayersWindow, SIGNAL(layerChanged(Location *, BaseLayer *)));
 
-	// связывание сигнала изменения выделения объекта(-ов) для отправки в ГУИ настроек
+	// связывание сигналов изменения выделения объектов для отправки в ГУИ настроек
 	connect(editorWindow, SIGNAL(selectionChanged(const QList<GameObject *> &, const QPointF &)),
 		mPropertyWindow, SLOT(onEditorWindowSelectionChanged(const QList<GameObject *> &, const QPointF &)));
 	connect(editorWindow, SIGNAL(objectsChanged(const QList<GameObject *> &, const QPointF &)),

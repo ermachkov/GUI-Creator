@@ -15,9 +15,25 @@ PropertyWindow::PropertyWindow(QWidget *parent)
 
 	connect(mRotationAngleComboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(onRotationAngleEditingFinished()));
 
+	connect(mFontSizeComboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(onFontSizeEditingFinished()));
+
+	connect(mLineSpacingComboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(onLineSpacingEditingFinished()));
+
 	// для обработки сигнала щелчка по QFrame-ам
 	mSpriteColorFrame->installEventFilter(this);
 	mLabelColorFrame->installEventFilter(this);
+
+	// для объединения кнопок в группы
+	mAlignmentButtonGroup = new QButtonGroup(this);
+	mVertAlignmentButtonGroup = new QButtonGroup(this);
+	mAlignmentButtonGroup->addButton(mAlignmentLeftPushButton);
+	mAlignmentButtonGroup->addButton(mAlignmentCenterPushButton);
+	mAlignmentButtonGroup->addButton(mAlignmentRightPushButton);
+	mVertAlignmentButtonGroup->addButton(mVertAlignmentTopPushButton);
+	mVertAlignmentButtonGroup->addButton(mVertAlignmentCenterPushButton);
+	mVertAlignmentButtonGroup->addButton(mVertAlignmentBottomPushButton);
+	connect(mAlignmentButtonGroup, SIGNAL(buttonClicked(QAbstractButton *)), this, SLOT(onAlignmentClicked(QAbstractButton *)));
+	connect(mVertAlignmentButtonGroup, SIGNAL(buttonClicked(QAbstractButton *)), this, SLOT(onVertAlignmentClicked(QAbstractButton *)));
 
 	// по умолчанию окно свойств пустое
 	mStackedWidget->setVisible(false);
@@ -79,7 +95,11 @@ PropertyWindow::PropertyWindow(QWidget *parent)
 
 void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter)
 {
-	//qDebug() << objects;
+	// сохранение выделенных объектов во внутренний список
+	mCurrentSelectedObjects = objects;
+
+	// сохранение исходного центра вращения во внутреннюю переменную
+	mRotationCenter = rotationCenter;
 
 	// нет выделенных объектов
 	if (objects.empty())
@@ -162,6 +182,13 @@ void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &o
 
 void PropertyWindow::onEditorWindowObjectsChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter)
 {
+	// сохранение выделенных объектов во внутренний список
+	mCurrentSelectedObjects = objects;
+
+	// сохранение исходного центра вращения во внутреннюю переменную
+	mRotationCenter = rotationCenter;
+
+	// считывание общих свойств
 	updateCommonWidgets(objects, rotationCenter);
 }
 
@@ -387,42 +414,46 @@ void PropertyWindow::updateLabelWidgets(const QList<GameObject *> &objects)
 	mFontSizeComboBox->lineEdit()->setText(equalFontSize ? QString::number(first->getFontSize(), 'g', PRECISION) : "");
 
 	// деактивация кнопок выравнивания
-	mAlignmentLeftPushButton->setDown(false);
-	mAlignmentCenterPushButton->setDown(false);
-	mAlignmentRightPushButton->setDown(false);
+	mAlignmentButtonGroup->setExclusive(false);
+	mAlignmentLeftPushButton->setChecked(false);
+	mAlignmentCenterPushButton->setChecked(false);
+	mAlignmentRightPushButton->setChecked(false);
 	// активация общей кнопоки выравнивания
+	mAlignmentButtonGroup->setExclusive(true);
 	if (equalAlignment)
 		switch (first->getAlignment())
 		{
 		case FTGL::ALIGN_LEFT:
-			mAlignmentLeftPushButton->setDown(true);
+			mAlignmentLeftPushButton->setChecked(true);
 			break;
 		case FTGL::ALIGN_CENTER:
-			mAlignmentCenterPushButton->setDown(true);
+			mAlignmentCenterPushButton->setChecked(true);
 			break;
 		case FTGL::ALIGN_RIGHT:
-			mAlignmentRightPushButton->setDown(true);
+			mAlignmentRightPushButton->setChecked(true);
 			break;
 		case FTGL::ALIGN_JUSTIFY:
 			break;
 		}
 
 	// деактивация кнопок выравнивания по вертикали
-	mVertAlignmentTopPushButton->setDown(false);
-	mVertAlignmentCenterPushButton->setDown(false);
-	mVertAlignmentBottomPushButton->setDown(false);
+	mVertAlignmentButtonGroup->setExclusive(false);
+	mVertAlignmentTopPushButton->setChecked(false);
+	mVertAlignmentCenterPushButton->setChecked(false);
+	mVertAlignmentBottomPushButton->setChecked(false);
 	// активация общей кнопоки выравнивания по вертикали
+	mVertAlignmentButtonGroup->setExclusive(true);
 	if (equalVertAlignment)
 		switch (first->getVertAlignment())
 		{
 		case Label::VERT_ALIGN_TOP:
-			mVertAlignmentTopPushButton->setDown(true);
+			mVertAlignmentTopPushButton->setChecked(true);
 			break;
 		case Label::VERT_ALIGN_CENTER:
-			mVertAlignmentCenterPushButton->setDown(true);
+			mVertAlignmentCenterPushButton->setChecked(true);
 			break;
 		case Label::VERT_ALIGN_BOTTOM:
-			mVertAlignmentBottomPushButton->setDown(true);
+			mVertAlignmentBottomPushButton->setChecked(true);
 			break;
 		}
 
@@ -457,28 +488,85 @@ void PropertyWindow::updateLabelWidgets(const QList<GameObject *> &objects)
 
 void PropertyWindow::on_mNameLineEdit_editingFinished()
 {
-	qDebug() << "on_mNameLineEdit_editingFinished";
+	foreach (GameObject *obj, mCurrentSelectedObjects)
+		obj->setName(mNameLineEdit->text());
+}
+
+QRectF PropertyWindow::calculateCurrentBoundingRect()
+{
+	Q_ASSERT(!mCurrentSelectedObjects.empty());
+
+	// пересчитываем общий прямоугольник выделения
+	QRectF rect = mCurrentSelectedObjects.front()->getBoundingRect();
+	foreach (GameObject *object, mCurrentSelectedObjects)
+		rect |= object->getBoundingRect();
+	return rect;
+}
+
+QPointF PropertyWindow::calculatePercentPosition(const QRectF &boundingRect, const QPointF &rotationCenter)
+{
+	return QPointF(
+		(rotationCenter.x() - boundingRect.x()) / boundingRect.width(),
+		(rotationCenter.y() - boundingRect.y()) / boundingRect.height());
+}
+
+QPointF PropertyWindow::calculatePosition(const QRectF &boundingRect, const QPointF &percentCenter)
+{
+	return QPointF(
+		boundingRect.x() + boundingRect.width() * percentCenter.x(),
+		boundingRect.y() + boundingRect.height() * percentCenter.y());
+}
+
+void PropertyWindow::on_mNameEditPushButton_clicked(bool checked)
+{
+	qDebug() << "on_mNameEditPushButton_clicked";
+
+	// FIXME:
 }
 
 void PropertyWindow::on_mPositionXLineEdit_editingFinished()
 {
 	qDebug() << "on_mPositionXLineEdit_editingFinished";
 
+	QPointF percentCenter = calculatePercentPosition(calculateCurrentBoundingRect(), mRotationCenter);
+
+	foreach (GameObject *obj, mCurrentSelectedObjects)
+	{
+		QPointF pos = obj->getPosition();
+		pos.setX(mPositionXLineEdit->text().toFloat());
+		obj->setPosition(pos);
+	}
+
+	mRotationCenter = calculatePosition(calculateCurrentBoundingRect(), percentCenter);
+
 	// FIXME:
-	//emit objectsChanged()
+	// сохранение значения нового центра вращения в GUI
+	// mRotationCenter
+
+	emit objectsChanged(mRotationCenter);
 }
 
 void PropertyWindow::on_mPositionYLineEdit_editingFinished()
 {
 	qDebug() << "on_mPositionYLineEdit_editingFinished";
 
+	foreach (GameObject *obj, mCurrentSelectedObjects)
+	{
+		QPointF pos = obj->getPosition();
+		pos.setY(mPositionYLineEdit->text().toFloat());
+		obj->setPosition(pos);
+	}
+
 	// FIXME:
-	//emit objectsChanged()
+	//emit objectsChanged();
 }
 
 void PropertyWindow::on_mSizeWLineEdit_editingFinished()
 {
 	qDebug() << "on_mSizeWLineEdit_editingFinished";
+
+	foreach (GameObject *obj, mCurrentSelectedObjects)
+		obj->setSize(QSizeF(mSizeWLineEdit->text().toFloat(), obj->getSize().height()));
 
 	// FIXME:
 	//emit objectsChanged()
@@ -488,6 +576,9 @@ void PropertyWindow::on_mSizeHLineEdit_editingFinished()
 {
 	qDebug() << "on_mSizeHLineEdit_editingFinished";
 
+	foreach (GameObject *obj, mCurrentSelectedObjects)
+		obj->setSize(QSizeF(obj->getSize().width(), mSizeHLineEdit->text().toFloat()));
+
 	// FIXME:
 	//emit objectsChanged()
 }
@@ -495,6 +586,13 @@ void PropertyWindow::on_mSizeHLineEdit_editingFinished()
 void PropertyWindow::on_mFlipXCheckBox_clicked(bool checked)
 {
 	qDebug() << "on_mFlipXCheckBox_clicked";
+
+	foreach (GameObject *obj, mCurrentSelectedObjects)
+	{
+		QSizeF size = obj->getSize();
+		size.setWidth(checked ? -qAbs(size.width()) : qAbs(size.width()));
+		obj->setSize(size);
+	}
 
 	// FIXME:
 	//emit objectsChanged()
@@ -504,6 +602,14 @@ void PropertyWindow::on_mFlipYCheckBox_clicked(bool checked)
 {
 	qDebug() << "on_mFlipYCheckBox_clicked";
 
+	foreach (GameObject *obj, mCurrentSelectedObjects)
+	{
+		QSizeF size = obj->getSize();
+		size.setHeight(checked ? -qAbs(size.height()) : qAbs(size.height()));
+		obj->setSize(size);
+	}
+
+
 	// FIXME:
 	//emit objectsChanged()
 }
@@ -511,6 +617,9 @@ void PropertyWindow::on_mFlipYCheckBox_clicked(bool checked)
 void PropertyWindow::onRotationAngleEditingFinished()
 {
 	qDebug() << "onRotationAngleEditingFinished";
+
+	foreach (GameObject *obj, mCurrentSelectedObjects)
+		obj->setRotationAngle(mRotationAngleComboBox->lineEdit()->text().toFloat());
 
 	// FIXME:
 	//emit objectsChanged()
@@ -520,6 +629,13 @@ void PropertyWindow::on_mRotationCenterXLineEdit_editingFinished()
 {
 	qDebug() << "on_mRotationCenterXLineEdit_editingFinished";
 
+	foreach (GameObject *obj, mCurrentSelectedObjects)
+	{
+		QPointF rotationCenter = obj->getRotationCenter();
+		rotationCenter.setX(mRotationCenterXLineEdit->text().toFloat());
+		obj->setRotationCenter(rotationCenter);
+	}
+
 	// FIXME:
 	//emit objectsChanged()
 }
@@ -528,6 +644,13 @@ void PropertyWindow::on_mRotationCenterYLineEdit_editingFinished()
 {
 	qDebug() << "on_mRotationCenterYLineEdit_editingFinished";
 
+	foreach (GameObject *obj, mCurrentSelectedObjects)
+	{
+		QPointF rotationCenter = obj->getRotationCenter();
+		rotationCenter.setY(mRotationCenterYLineEdit->text().toFloat());
+		obj->setRotationCenter(rotationCenter);
+	}
+
 	// FIXME:
 	//emit objectsChanged()
 }
@@ -535,6 +658,11 @@ void PropertyWindow::on_mRotationCenterYLineEdit_editingFinished()
 void PropertyWindow::on_mFileNameLineEdit_editingFinished()
 {
 	qDebug() << "on_mFileNameLineEdit_editingFinished";
+
+	// просчет нового центра
+
+	// FIXME:
+	//emit objectsChanged()
 }
 
 void PropertyWindow::on_mFileNameBrowsePushButton_clicked()
@@ -544,5 +672,97 @@ void PropertyWindow::on_mFileNameBrowsePushButton_clicked()
 
 void PropertyWindow::on_mSpriteOpacityHorizontalSlider_sliderMoved(int position)
 {
-	qDebug() << "on_mSpriteOpacityHorizontalSlider_sliderMoved";
+	qDebug() << "on_mSpriteOpacityHorizontalSlider_sliderMoved" << position;
+}
+
+void PropertyWindow::on_mSpriteOpacityLineEdit_editingFinished()
+{
+
+}
+
+void PropertyWindow::on_mFileNameComboBox_currentIndexChanged(const QString &arg)
+{
+	qDebug() << "on_mFileNameComboBox_currentIndexChanged" << arg;
+}
+
+void PropertyWindow::onFontSizeEditingFinished()
+{
+	qDebug() << "onFontSizeEditingFinished";
+}
+
+
+void PropertyWindow::onAlignmentClicked(QAbstractButton *button)
+{
+	FTGL::TextAlignment alignment;
+
+	if (button == mAlignmentLeftPushButton)
+	{
+		mAlignmentLeftPushButton->setChecked(true);
+		alignment = FTGL::ALIGN_LEFT;
+	}
+	else if (button == mAlignmentCenterPushButton)
+	{
+		mAlignmentCenterPushButton->setChecked(true);
+		alignment = FTGL::ALIGN_CENTER;
+	}
+	else if (button == mAlignmentRightPushButton)
+	{
+		mAlignmentRightPushButton->setChecked(true);
+		alignment = FTGL::ALIGN_RIGHT;
+	}
+	//alignment = FTGL::ALIGN_JUSTIFY:
+
+	foreach (GameObject *obj, mCurrentSelectedObjects)
+	{
+		Label *it = dynamic_cast<Label *>(obj);
+		if (it != NULL)
+			it->setAlignment(alignment);
+	}
+
+
+}
+
+void PropertyWindow::onVertAlignmentClicked(QAbstractButton *button)
+{
+	qDebug() << "onVertAlignmentClicked" << button;
+
+	Label::VertAlignment vertAlignment;
+
+	if (button == mVertAlignmentTopPushButton)
+	{
+		mVertAlignmentTopPushButton->setChecked(true);
+		vertAlignment = Label::VERT_ALIGN_TOP;
+	}
+	else if (button == mVertAlignmentCenterPushButton)
+	{
+		mVertAlignmentCenterPushButton->setChecked(true);
+		vertAlignment = Label::VERT_ALIGN_CENTER;
+	}
+	else if (button == mVertAlignmentBottomPushButton)
+	{
+		mVertAlignmentBottomPushButton->setChecked(true);
+		vertAlignment = Label::VERT_ALIGN_BOTTOM;
+	}
+
+	foreach (GameObject *obj, mCurrentSelectedObjects)
+	{
+		Label *it = dynamic_cast<Label *>(obj);
+		if (it != NULL)
+			it->setVertAlignment(vertAlignment);
+	}
+}
+
+void PropertyWindow::onLineSpacingEditingFinished()
+{
+	qDebug() << "onLineSpacingEditingFinished";
+}
+
+void PropertyWindow::on_mLabelOpacityHorizontalSlider_sliderMoved(int position)
+{
+	qDebug() << "on_mLabelOpacityHorizontalSlider_sliderMoved" << position;
+}
+
+void PropertyWindow::on_mLabelOpacityLineEdit_editingFinished()
+{
+	qDebug() << "on_mLabelOpacityLineEdit_editingFinished";
 }
