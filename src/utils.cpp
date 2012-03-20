@@ -25,7 +25,7 @@ qreal Utils::degToRad(qreal angle)
 
 bool Utils::isEqual(qreal value1, qreal value2, qreal eps)
 {
-	return qAbs(value1 - value2) < eps;
+	return qAbs(value1 - value2) <= eps;
 }
 
 QString Utils::addTrailingSlash(const QString &path)

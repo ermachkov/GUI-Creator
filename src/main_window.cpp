@@ -475,6 +475,11 @@ bool MainWindow::on_mTabWidget_tabCloseRequested(int index)
 	// удаляем вкладку вместе с окном редактора
 	if (close)
 	{
+		// сбрасываем текущую локацию
+		mLayersWindow->setCurrentLocation(NULL);
+		mPropertyWindow->onEditorWindowSelectionChanged(QList<GameObject *>(), QPointF());
+
+		// удаляем вкладку и окно редактора
 		mTabWidget->removeTab(index);
 		delete editorWindow;
 	}
@@ -504,6 +509,7 @@ void MainWindow::on_mTabWidget_currentChanged(int index)
 
 		// устанавливаем текущую локацию
 		mLayersWindow->setCurrentLocation(editorWindow->getLocation());
+		mPropertyWindow->onEditorWindowSelectionChanged(editorWindow->getSelectedObjects(), editorWindow->getRotationCenter());
 	}
 	else
 	{
@@ -534,6 +540,7 @@ void MainWindow::on_mTabWidget_currentChanged(int index)
 
 		// сбрасываем текущую локацию
 		mLayersWindow->setCurrentLocation(NULL);
+		mPropertyWindow->onEditorWindowSelectionChanged(QList<GameObject *>(), QPointF());
 	}
 }
 

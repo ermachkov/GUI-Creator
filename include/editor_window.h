@@ -46,6 +46,9 @@ public:
 	// Возвращает список выделенных объектов
 	QList<GameObject *> getSelectedObjects() const;
 
+	// Возвращает координаты центра вращения
+	QPointF getRotationCenter() const;
+
 	// Вырезает выделенные объекты в буфер обмена
 	void cut();
 

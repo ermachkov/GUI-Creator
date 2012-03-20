@@ -5,6 +5,7 @@
 #include "layer_group.h"
 #include "lua_script.h"
 #include "sprite.h"
+#include "utils.h"
 
 Location::Location(QObject *parent)
 : QObject(parent), mObjectIndex(1), mLayerIndex(1), mLayerGroupIndex(1), mSpriteIndex(1), mLabelIndex(1)
@@ -31,6 +32,10 @@ bool Location::load(const QString &fileName)
 	// пересоздаем корневой слой
 	delete mRootLayer;
 	mRootLayer = new LayerGroup();
+
+	// читаем корневую таблицу
+	if (!script.pushTable(Utils::convertToCamelCase(QFileInfo(fileName).baseName())))
+		return false;
 
 	// читаем таблицу слоев
 	QString type;
@@ -89,6 +94,9 @@ bool Location::load(const QString &fileName)
 
 	script.popTable();
 
+	// извлекаем из стека корневую таблицу
+	script.popTable();
+
 	return true;
 }
 
@@ -109,35 +117,47 @@ bool Location::save(const QString &fileName)
 	stream << "-- All changes made in this file will be lost. DO NOT EDIT!" << endl;
 	stream << "-- *****************************************************************************" << endl;
 
+	// записываем корневую таблицу
+	stream << endl << "-- Scene root table. Do not declare global variables with the same name!" << endl;
+	stream << Utils::convertToCamelCase(QFileInfo(fileName).baseName()) << " =" << endl;
+	stream << "{" << endl;
+
 	// сохраняем слои
-	stream << endl << "layers =" << endl;
-	mRootLayer->save(stream, 0);
-	stream << endl;
+	stream << "\t-- Layers table" << endl;
+	stream << "\tlayers =" << endl;
+	mRootLayer->save(stream, 1);
+	stream << "," << endl;
 
 	// сохраняем последовательность индексов, ведущую к активному слою
 	QStringList indices;
 	for (BaseLayer *layer = mActiveLayer; layer != mRootLayer; layer = layer->getParentLayer())
 		indices.push_front(QString::number(layer->getParentLayer()->indexOfChildLayer(layer)));
-	stream << endl << "activeLayer = {" << indices.join(", ") << "}" << endl;
+	stream << endl << "\t-- Path to the current active layer" << endl;
+	stream << "\tactiveLayer = {" << indices.join(", ") << "}," << endl;
 
 	// сохраняем счетчики для генерации имен
-	stream << endl << "objectIndex = " << mObjectIndex << endl;
-	stream << "layerIndex = " << mLayerIndex << endl;
-	stream << "layerGroupIndex = " << mLayerGroupIndex << endl;
-	stream << "spriteIndex = " << mSpriteIndex << endl;
-	stream << "labelIndex = " << mLabelIndex << endl;
+	stream << endl << "\t-- Counters for generating various object IDs" << endl;
+	stream << "\tobjectIndex = " << mObjectIndex << "," << endl;
+	stream << "\tlayerIndex = " << mLayerIndex << "," << endl;
+	stream << "\tlayerGroupIndex = " << mLayerGroupIndex << "," << endl;
+	stream << "\tspriteIndex = " << mSpriteIndex << "," << endl;
+	stream << "\tlabelIndex = " << mLabelIndex << "," << endl;
 
 	// сохраняем горизонтальные направляющие
 	QStringList horzGuides;
 	foreach (qreal coord, mHorzGuides)
 		horzGuides.push_back(QString::number(coord));
-	stream << endl << "horzGuides = {" << horzGuides.join(", ") << "}" << endl;
+	stream << endl << "\t-- Coordinates of horizontal and vertical guides" << endl;
+	stream << "\thorzGuides = {" << horzGuides.join(", ") << "}," << endl;
 
 	// сохраняем вертикальные направляющие
 	QStringList vertGuides;
 	foreach (qreal coord, mVertGuides)
 		vertGuides.push_back(QString::number(coord));
-	stream << "vertGuides = {" << vertGuides.join(", ") << "}" << endl;
+	stream << "\tvertGuides = {" << vertGuides.join(", ") << "}" << endl;
+
+	// записываем закрывающую фигурную скобку корневой таблицы
+	stream << "}" << endl;
 
 	return stream.status() == QTextStream::Ok;
 }

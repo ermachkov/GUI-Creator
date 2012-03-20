@@ -34,7 +34,7 @@ private slots:
 
 	void on_mNameLineEdit_editingFinished();
 
-	void on_mNameEditPushButton_clicked(bool checked);
+	void on_mTextEditPushButton_clicked(bool checked);
 
 	void on_mPositionXLineEdit_editingFinished();
 
@@ -50,6 +50,8 @@ private slots:
 
 	void onRotationAngleEditingFinished();
 
+	void on_mRotationAngleComboBox_currentIndexChanged(const QString &arg);
+
 	void on_mRotationCenterXLineEdit_editingFinished();
 
 	void on_mRotationCenterYLineEdit_editingFinished();
@@ -58,23 +60,23 @@ private slots:
 
 	void on_mFileNameBrowsePushButton_clicked();
 
-	void on_mSpriteOpacityHorizontalSlider_sliderMoved(int position);
+	void on_mSpriteOpacityHorizontalSlider_valueChanged(int value);
 
-	void on_mSpriteOpacityLineEdit_editingFinished();
-
-	void on_mFileNameComboBox_currentIndexChanged(const QString &arg1);
+	void on_mFileNameComboBox_currentIndexChanged(const QString &arg);
 
 	void onFontSizeEditingFinished();
 
-	void onAlignmentClicked(QAbstractButton *button);
+	void on_mFontSizeComboBox_currentIndexChanged(const QString &arg);
+
+	void onHorzAlignmentClicked(QAbstractButton *button);
 
 	void onVertAlignmentClicked(QAbstractButton *button);
 
 	void onLineSpacingEditingFinished();
 
-	void on_mLabelOpacityHorizontalSlider_sliderMoved(int position);
+	void on_mLineSpacingComboBox_currentIndexChanged(const QString &arg);
 
-	void on_mLabelOpacityLineEdit_editingFinished();
+	void on_mLabelOpacityHorizontalSlider_valueChanged(int value);
 
 private:
 
@@ -97,7 +99,7 @@ private:
 	QList<GameObject *> mCurrentSelectedObjects;    // текущие выделенные объекты
 	QPointF             mRotationCenter;            // текущий центр вращения выделенных объектов
 
-	QButtonGroup        *mAlignmentButtonGroup;     // группировка кнопок горизонтального выравнивания
+	QButtonGroup        *mHorzAlignmentButtonGroup; // группировка кнопок горизонтального выравнивания
 	QButtonGroup        *mVertAlignmentButtonGroup; // группировка кнопок вертикального выравнивания
 };
 

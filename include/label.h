@@ -8,6 +8,14 @@ class Label : public GameObject
 {
 public:
 
+	// Тип для горизонтального выравнивания текста
+	enum HorzAlignment
+	{
+		HORZ_ALIGN_LEFT,
+		HORZ_ALIGN_CENTER,
+		HORZ_ALIGN_RIGHT
+	};
+
 	// Тип для вертикального выравнивания текста
 	enum VertAlignment
 	{
@@ -44,10 +52,10 @@ public:
 	void setFontSize(int size);
 
 	// Возвращает горизонтальное выравнивание текста
-	FTGL::TextAlignment getAlignment() const;
+	HorzAlignment getHorzAlignment() const;
 
 	// Устанавливает горизонтальное выравнивание текста
-	void setAlignment(FTGL::TextAlignment alignment);
+	void setHorzAlignment(HorzAlignment alignment);
 
 	// Возвращает вертикальное выравнивание текста
 	VertAlignment getVertAlignment() const;
@@ -97,7 +105,7 @@ private:
 	QString                 mFileName;      // Имя файла со шрифтом
 	int                     mFontSize;      // Размер шрифта в пунктах
 	QSharedPointer<FTFont>  mFont;          // Шрифт надписи
-	FTGL::TextAlignment     mAlignment;     // Горизонтальное выравнивание текста
+	HorzAlignment           mHorzAlignment; // Горизонтальное выравнивание текста
 	VertAlignment           mVertAlignment; // Вертикальное выравнивание текста
 	qreal                   mLineSpacing;   // Межстрочный интервал
 	QColor                  mColor;         // Цвет текста

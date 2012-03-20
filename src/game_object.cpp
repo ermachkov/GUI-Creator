@@ -203,10 +203,10 @@ bool GameObject::load(LuaScript &script)
 {
 	// загружаем свойства объекта из Lua скрипта
 	if (!script.getString("name", mName) || !script.getInt("id", mObjectID)
-		|| !script.getReal("pos_x", mPosition.rx()) || !script.getReal("pos_y", mPosition.ry())
+		|| !script.getReal("posX", mPosition.rx()) || !script.getReal("posY", mPosition.ry())
 		|| !script.getReal("width", mSize.rwidth()) || !script.getReal("height", mSize.rheight())
 		|| !script.getReal("angle", mRotationAngle)
-		|| !script.getReal("center_x", mRotationCenter.rx()) || !script.getReal("center_y", mRotationCenter.ry()))
+		|| !script.getReal("centerX", mRotationCenter.rx()) || !script.getReal("centerY", mRotationCenter.ry()))
 		return false;
 
 	// обновляем текущую трансформацию
@@ -218,10 +218,10 @@ bool GameObject::save(QTextStream &stream, int indent)
 {
 	// сохраняем свойства объекта в поток
 	stream << "name = \"" << Utils::insertBackslashes(mName) << "\", id = " << mObjectID
-		<< ", pos_x = " << mPosition.x() << ", pos_y = " << mPosition.y()
+		<< ", posX = " << mPosition.x() << ", posY = " << mPosition.y()
 		<< ", width = " << mSize.width() << ", height = " << mSize.height()
 		<< ", angle = " << mRotationAngle
-		<< ", center_x = " << mRotationCenter.x() << ", center_y = " << mRotationCenter.y();
+		<< ", centerX = " << mRotationCenter.x() << ", centerY = " << mRotationCenter.y();
 	return stream.status() == QTextStream::Ok;
 }
 

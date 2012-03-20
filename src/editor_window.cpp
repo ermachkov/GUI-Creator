@@ -92,7 +92,7 @@ qreal EditorWindow::getZoom() const
 void EditorWindow::setZoom(qreal zoom)
 {
 	// игнорируем разницу в полпроцента, вызванную округлением
-	if (qAbs(zoom - mZoom) <= 0.005)
+	if (Utils::isEqual(zoom, mZoom, 0.005))
 		return;
 
 	// смещение текущего положения камеры, чтобы новый центр экрана совпадал с текущим центром экрана
@@ -111,6 +111,11 @@ void EditorWindow::setZoom(qreal zoom)
 QList<GameObject *> EditorWindow::getSelectedObjects() const
 {
 	return mSelectedObjects;
+}
+
+QPointF EditorWindow::getRotationCenter() const
+{
+	return mSnappedCenter;
 }
 
 void EditorWindow::cut()
@@ -785,7 +790,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 			mHorzSnapLine = mVertSnapLine = QLineF();
 
 			// привязываем прямоугольник по оси X
-			if (!shift || qAbs(axis.y()) < Utils::EPS)
+			if (!shift || Utils::isEqual(axis.y(), 0.0))
 			{
 				// вычисляем расстояния привязок для левого края, центра и правого края прямоугольника выделения
 				QLineF leftLine, centerLine, rightLine;
@@ -817,7 +822,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 			}
 
 			// привязываем прямоугольник по оси Y
-			if (!shift || qAbs(axis.x()) < Utils::EPS)
+			if (!shift || Utils::isEqual(axis.x(), 0.0))
 			{
 				// вычисляем расстояния привязок для верхнего края, центра и нижнего края прямоугольника выделения
 				QLineF topLine, centerLine, bottomLine;
@@ -955,7 +960,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 			// определяем текущий угол поворота в радианах относительно начального вектора
 			QVector2D currVector = QVector2D(pos - mOriginalCenter).normalized();
 			qreal angle = qAcos(QVector2D::dotProduct(currVector, mRotationVector));
-			if (QString::number(angle) == "nan" || qAbs(angle) < Utils::EPS)
+			if (QString::number(angle) == "nan" || Utils::isEqual(angle, 0.0))
 				angle = 0.0;
 
 			// приводим угол к диапазону [-PI; PI]
@@ -977,13 +982,13 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 
 				// привязываем абсолютный угол поворота к 0/90/180/270 градусам
 				const qreal ANGLE_EPS = 0.5;
-				if (qAbs(absAngle) < ANGLE_EPS || qAbs(absAngle - 360.0) < ANGLE_EPS)
+				if (Utils::isEqual(absAngle, 0.0, ANGLE_EPS) || Utils::isEqual(absAngle, 360.0, ANGLE_EPS))
 					absAngle = 0.0;
-				else if (qAbs(absAngle - 90.0) < ANGLE_EPS)
+				else if (Utils::isEqual(absAngle, 90.0, ANGLE_EPS))
 					absAngle = 90.0;
-				else if (qAbs(absAngle - 180.0) < ANGLE_EPS)
+				else if (Utils::isEqual(absAngle, 180.0, ANGLE_EPS))
 					absAngle = 180.0;
-				else if (qAbs(absAngle - 270.0) < ANGLE_EPS)
+				else if (Utils::isEqual(absAngle, 270.0, ANGLE_EPS))
 					absAngle = 270.0;
 
 				// поворачиваем объект на привязанный угол
@@ -1016,11 +1021,11 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 			mHorzSnapLine = mVertSnapLine = QLineF();
 
 			// привязываем точку по оси X
-			if (!shift || qAbs(axis.y()) < Utils::EPS)
+			if (!shift || Utils::isEqual(axis.y(), 0.0))
 				offset.rx() += snapXCoord(pt.x(), pt.y(), pt.y(), false, &mVertSnapLine) - pt.x();
 
 			// привязываем точку по оси Y
-			if (!shift || qAbs(axis.x()) < Utils::EPS)
+			if (!shift || Utils::isEqual(axis.x(), 0.0))
 				offset.ry() += snapYCoord(pt.y(), pt.x(), pt.x(), false, &mHorzSnapLine) - pt.y();
 
 			// перемещаем центр вращения
@@ -1345,7 +1350,7 @@ QPointF EditorWindow::calcTranslation(const QPointF &direction, bool shift, QVec
 		// определяем угол между исходным вектором и осью OX в радианах
 		QVector2D vector(direction);
 		qreal angle = qAcos(vector.normalized().x());
-		if (QString::number(angle) == "nan" || qAbs(angle) < Utils::EPS)
+		if (QString::number(angle) == "nan" || Utils::isEqual(angle, 0.0))
 			angle = 0.0;
 
 		// приводим угол к диапазону [-PI; PI]

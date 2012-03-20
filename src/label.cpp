@@ -10,7 +10,7 @@ Label::Label()
 }
 
 Label::Label(const QString &name, int id, const QPointF &pos, const QString &fileName, int size, Layer *parent)
-: GameObject(name, id, parent), mText(name), mFileName(fileName), mFontSize(size), mAlignment(FTGL::ALIGN_LEFT),
+: GameObject(name, id, parent), mText(name), mFileName(fileName), mFontSize(size), mHorzAlignment(HORZ_ALIGN_LEFT),
   mVertAlignment(VERT_ALIGN_TOP), mLineSpacing(1.0), mColor(Qt::white)
 {
 	// загружаем шрифт
@@ -65,14 +65,14 @@ void Label::setFontSize(int size)
 	mFont = FontManager::getSingleton().loadFont(mFileName, mFontSize);
 }
 
-FTGL::TextAlignment Label::getAlignment() const
+Label::HorzAlignment Label::getHorzAlignment() const
 {
-	return mAlignment;
+	return mHorzAlignment;
 }
 
-void Label::setAlignment(FTGL::TextAlignment alignment)
+void Label::setHorzAlignment(HorzAlignment alignment)
 {
-	mAlignment = alignment;
+	mHorzAlignment = alignment;
 }
 
 Label::VertAlignment Label::getVertAlignment() const
@@ -112,11 +112,11 @@ bool Label::load(QDataStream &stream)
 		return false;
 
 	// загружаем данные надписи
-	int alignment, vertAlignment;
-	stream >> mText >> mFileName >> mFontSize >> alignment >> vertAlignment >> mLineSpacing >> mColor;
+	int horzAlignment, vertAlignment;
+	stream >> mText >> mFileName >> mFontSize >> horzAlignment >> vertAlignment >> mLineSpacing >> mColor;
 	if (stream.status() != QDataStream::Ok)
 		return false;
-	mAlignment = static_cast<FTGL::TextAlignment>(alignment);
+	mHorzAlignment = static_cast<HorzAlignment>(horzAlignment);
 	mVertAlignment = static_cast<VertAlignment>(vertAlignment);
 
 	// загружаем шрифт надписи
@@ -136,7 +136,7 @@ bool Label::save(QDataStream &stream)
 		return false;
 
 	// сохраняем данные надписи
-	stream << mText << mFileName << mFontSize << mAlignment << mVertAlignment << mLineSpacing << mColor;
+	stream << mText << mFileName << mFontSize << mHorzAlignment << mVertAlignment << mLineSpacing << mColor;
 	return stream.status() == QDataStream::Ok;
 }
 
@@ -147,12 +147,12 @@ bool Label::load(LuaScript &script)
 		return false;
 
 	// загружаем данные надписи
-	int alignment, vertAlignment, color;
-	if (!script.getString("text", mText) || !script.getString("font", mFileName) || !script.getInt("size", mFontSize)
-		|| !script.getInt("alignment", alignment) || !script.getInt("vert_alignment", vertAlignment)
-		|| !script.getReal("line_spacing", mLineSpacing) || !script.getInt("color", color))
+	int horzAlignment, vertAlignment, color;
+	if (!script.getString("text", mText) || !script.getString("fileName", mFileName) || !script.getInt("size", mFontSize)
+		|| !script.getInt("horzAlignment", horzAlignment) || !script.getInt("vertAlignment", vertAlignment)
+		|| !script.getReal("lineSpacing", mLineSpacing) || !script.getInt("color", color))
 		return false;
-	mAlignment = static_cast<FTGL::TextAlignment>(alignment);
+	mHorzAlignment = static_cast<HorzAlignment>(horzAlignment);
 	mVertAlignment = static_cast<VertAlignment>(vertAlignment);
 	mColor = QColor::fromRgba(color);
 
@@ -171,9 +171,9 @@ bool Label::save(QTextStream &stream, int indent)
 		return false;
 
 	// сохраняем свойства надписи
-	stream << ", text = \"" << Utils::insertBackslashes(mText) << "\", font = \"" << Utils::insertBackslashes(mFileName)
-		<< "\", size = " << mFontSize << ", alignment = " << mAlignment << ", vert_alignment = " << mVertAlignment
-		<< ", line_spacing = " << mLineSpacing << ", color = 0x" << hex << mColor.rgba() << dec << "}";
+	stream << ", text = \"" << Utils::insertBackslashes(mText) << "\", fileName = \"" << Utils::insertBackslashes(mFileName)
+		<< "\", size = " << mFontSize << ", horzAlignment = " << mHorzAlignment << ", vertAlignment = " << mVertAlignment
+		<< ", lineSpacing = " << mLineSpacing << ", color = 0x" << hex << mColor.rgba() << dec << "}";
 	return stream.status() == QTextStream::Ok;
 }
 
@@ -254,9 +254,9 @@ void Label::draw()
 		// определяем координату текущей строки по оси X с учетом горизонтального выравнивания
 		qreal x = 0.0;
 		qreal width = mFont->Advance(Utils::toStdWString(line).c_str());
-		if (mAlignment == FTGL::ALIGN_CENTER)
+		if (mHorzAlignment == HORZ_ALIGN_CENTER)
 			x = (qAbs(mSize.width()) - width) / 2.0;
-		else if (mAlignment == FTGL::ALIGN_RIGHT)
+		else if (mHorzAlignment == HORZ_ALIGN_RIGHT)
 			x = qAbs(mSize.width()) - width;
 
 		// отрисовываем текущую строку

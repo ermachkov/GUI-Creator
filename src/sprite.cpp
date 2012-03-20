@@ -93,7 +93,7 @@ bool Sprite::load(LuaScript &script)
 
 	// загружаем данные спрайта
 	int color;
-	if (!script.getString("texture", mFileName) || !script.getInt("color", color))
+	if (!script.getString("fileName", mFileName) || !script.getInt("color", color))
 		return false;
 	mColor = QColor::fromRgba(color);
 
@@ -112,7 +112,7 @@ bool Sprite::save(QTextStream &stream, int indent)
 		return false;
 
 	// сохраняем свойства спрайта
-	stream << ", texture = \"" << Utils::insertBackslashes(mFileName) << "\", color = 0x" << hex << mColor.rgba() << dec << "}";
+	stream << ", fileName = \"" << Utils::insertBackslashes(mFileName) << "\", color = 0x" << hex << mColor.rgba() << dec << "}";
 	return stream.status() == QTextStream::Ok;
 }
 

@@ -159,7 +159,7 @@ bool BaseLayer::load(LuaScript &script, int depth)
 
 	// загружаем свойства слоя
 	int visibleState, lockState;
-	if (!script.getString("name", mName) || !script.getInt("visible_state", visibleState) || !script.getInt("lock_state", lockState)
+	if (!script.getString("name", mName) || !script.getInt("visibleState", visibleState) || !script.getInt("lockState", lockState)
 		|| !script.getBool("expanded", mExpanded))
 		return false;
 
@@ -172,7 +172,7 @@ bool BaseLayer::load(LuaScript &script, int depth)
 bool BaseLayer::save(QTextStream &stream, int indent)
 {
 	// сохраняем свойства слоя в поток
-	stream << "name = \"" << Utils::insertBackslashes(mName) << "\", visible_state = " << mVisibleState << ", lock_state = " << mLockState
+	stream << "name = \"" << Utils::insertBackslashes(mName) << "\", visibleState = " << mVisibleState << ", lockState = " << mLockState
 		<< ", expanded = " << (mExpanded ? "true" : "false");
 	return stream.status() == QTextStream::Ok;
 }
