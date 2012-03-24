@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "font_manager.h"
-#include "options.h"
+#include "project.h"
 #include "utils.h"
 
 template<> FontManager *Singleton<FontManager>::mSingleton = NULL;
@@ -40,7 +40,7 @@ QSharedPointer<FTFont> FontManager::loadFont(const QString &fileName, int size, 
 
 	// не нашли в кэше - загружаем шрифт из файла
 	QSharedPointer<FTFont> font;
-	QString path = Options::getSingleton().getDataDirectory() + fileName;
+	QString path = Project::getSingleton().getRootDirectory() + fileName;
 	mPrimaryGLWidget->makeCurrent();
 	if (Utils::fileExists(path) && (font = QSharedPointer<FTFont>(new FTTextureFont(path.toStdString().c_str())))->Error() == 0)
 	{

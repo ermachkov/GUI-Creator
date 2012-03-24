@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "font_browser.h"
 #include "font_manager.h"
-#include "options.h"
+#include "project.h"
 #include "utils.h"
 
 FontBrowser::FontBrowser(QWidget *parent)
@@ -17,6 +17,7 @@ FontBrowser::FontBrowser(QWidget *parent)
 	// установка делегата
 	mPreviewListWidget->setItemDelegate(new PreviewItemDelegate(this));
 
+	// загрузка и отображение списка доступных шрифтов
 	scanFonts();
 }
 
@@ -30,7 +31,7 @@ FontBrowser::~FontBrowser()
 
 QString FontBrowser::getRootPath() const
 {
-	return Options::getSingleton().getDataDirectory() + "fonts/";
+	return Project::getSingleton().getRootDirectory() + Project::getSingleton().getFontsDirectory();
 }
 
 void FontBrowser::recreateFrameBuffer(int width, int height)
@@ -47,7 +48,7 @@ void FontBrowser::scanFonts()
 	// всплывающая подсказка с полным путем
 	mFontListWidget->setToolTip(getRootPath());
 
-	// отчистка поля ГУИ иконок
+	// очистка поля ГУИ иконок
 	mFontListWidget->clear();
 
 	QDir currentDir = QDir(getRootPath());
@@ -59,7 +60,7 @@ void FontBrowser::scanFonts()
 
 	foreach (const QString &fileName, listEntries)
 	{
-		// формирование полного пути к иконке
+		// формирование полного пути к ttf файлу
 		QString absoluteFileName = getRootPath() + fileName;
 
 		// создание иконки в ГУИ шрифтов
@@ -70,7 +71,7 @@ void FontBrowser::scanFonts()
 
 		// сохраняем тип и относительный путь к файлу для поддержки перетаскивания
 		item->setData(Qt::UserRole, "Label");
-		item->setData(Qt::UserRole + 1, "fonts/" + fileName);
+		item->setData(Qt::UserRole + 1, Project::getSingleton().getFontsDirectory() + fileName);
 
 		// всплывающая подсказка с несокращенным именем
 		item->setToolTip(fileName);
@@ -79,7 +80,7 @@ void FontBrowser::scanFonts()
 		QString drawingText = fileName;
 
 		// загрузка шрифта во временную переменную
-		QSharedPointer<FTFont> tempFont = FontManager::getSingleton().loadFont("fonts/" + fileName, fontSize, false);
+		QSharedPointer<FTFont> tempFont = FontManager::getSingleton().loadFont(Project::getSingleton().getFontsDirectory() + fileName, fontSize, false);
 
 		if (tempFont.isNull())
 			qDebug() << "Error in FontBrowser::scanFonts()";
@@ -101,7 +102,7 @@ void FontBrowser::scanFonts()
 
 		mFrameBuffer->bind();
 
-		// отчистка
+		// очистка
 		QColor color = palette().base().color();
 		glClearColor(color.redF(), color.greenF(), color.blueF(), 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -141,7 +142,7 @@ void FontBrowser::scanFonts()
 		previewItem->setData(Qt::UserRole, QString("Label"));
 
 		// назначение относительного пути до шрифта /fonts/*.ttf (UserRole + 1)
-		previewItem->setData(Qt::UserRole + 1, "fonts/" + fileName);
+		previewItem->setData(Qt::UserRole + 1, Project::getSingleton().getFontsDirectory() + fileName);
 
 		// назначение размера шрифта ttf (UserRole + 2)
 		previewItem->setData(Qt::UserRole + 2, fontSize);

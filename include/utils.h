@@ -47,6 +47,9 @@ public:
 
 	// Преобразует QString в std::wstring
 	static std::wstring toStdWString(const QString &str);
+
+	// Записывает шапку текстового Lua-файла
+	static void writeFileHeader(QTextStream &stream);
 };
 
 #endif // UTILS_H

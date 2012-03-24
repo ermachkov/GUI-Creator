@@ -15,8 +15,17 @@ public:
 	// Загружает Lua-скрипт
 	bool load(const QString &fileName);
 
+	// Возвращает строковое значение с вершины стека
+	bool getString(QString &value) const;
+
 	// Возвращает строковое значение по имени
 	bool getString(const QString &name, QString &value) const;
+
+	// Возвращает строковое значение по индексу
+	bool getString(int index, QString &value) const;
+
+	// Возвращает целочисленное значение с вершины стека
+	bool getInt(int &value) const;
 
 	// Возвращает целочисленное значение по имени
 	bool getInt(const QString &name, int &value) const;
@@ -24,14 +33,23 @@ public:
 	// Возвращает целочисленное значение по индексу
 	bool getInt(int index, int &value) const;
 
+	// Возвращает вещественное значение с вершины стека
+	bool getReal(qreal &value) const;
+
 	// Возвращает вещественное значение по имени
 	bool getReal(const QString &name, qreal &value) const;
 
 	// Возвращает вещественное значение по индексу
 	bool getReal(int index, qreal &value) const;
 
+	// Возвращает булевское значение с вершины стека
+	bool getBool(bool &value) const;
+
 	// Возвращает булевское значение по имени
 	bool getBool(const QString &name, bool &value) const;
+
+	// Возвращает булевское значение по индексу
+	bool getBool(int index, bool &value) const;
 
 	// Возвращает длину текущей таблицы
 	int getLength() const;

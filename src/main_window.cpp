@@ -6,6 +6,7 @@
 #include "layers_window.h"
 #include "options.h"
 #include "options_dialog.h"
+#include "project.h"
 #include "property_window.h"
 #include "sprite_browser.h"
 #include "texture_manager.h"
@@ -29,8 +30,15 @@ MainWindow::MainWindow()
 	// создаем синглетоны
 	QSettings settings;
 	new Options(settings);
+	new Project();
 	new FontManager(mPrimaryGLWidget);
 	new TextureManager(mPrimaryGLWidget, mSecondaryGLWidget);
+
+	// открываем проект
+	QStringList arguments = QCoreApplication::arguments();
+	if (arguments.size() > 1)
+		if (!Project::getSingleton().open(arguments[1]))
+			QMessageBox::critical(this, "", "Ошибка открытия файла проекта " + arguments[1]);
 
 	// создаем браузер спрайтов
 	mSpriteBrowser = new SpriteBrowser(this);
@@ -191,6 +199,7 @@ MainWindow::~MainWindow()
 	// удаляем синглетоны в последнюю очередь
 	TextureManager::destroy();
 	FontManager::destroy();
+	Project::destroy();
 	Options::destroy();
 }
 
@@ -216,9 +225,12 @@ void MainWindow::timerEvent(QTimerEvent *event)
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-	// закрываем все открытые вкладки и сохраняем настройки приложения перед выходом
+	// закрываем все открытые вкладки и сохраняем текущий открытый проект и настройки приложения перед выходом
 	if (on_mCloseAllAction_triggered())
 	{
+		// сохраняем текущий открытый проект
+		Project::getSingleton().save();
+
 		// сохраняем настройки приложения
 		QSettings settings;
 		Options::getSingleton().save(settings);
@@ -238,7 +250,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
 void MainWindow::on_mNewAction_triggered()
 {
 	// создаем новую вкладку с окном редактора и переключаемся на нее
-	QString fileName = mUntitledIndex == 1 ? "untitled.map" : QString("untitled_%1.map").arg(mUntitledIndex);
+	QString fileName = mUntitledIndex == 1 ? "untitled.lua" : QString("untitled_%1.lua").arg(mUntitledIndex);
 	++mUntitledIndex;
 	EditorWindow *editorWindow = createEditorWindow(fileName);
 	mTabWidget->addTab(editorWindow, fileName);
@@ -250,8 +262,9 @@ void MainWindow::on_mOpenAction_triggered()
 {
 	// показываем диалоговое окно открытия файла
 	QString fileName = qobject_cast<QAction *>(sender())->data().toString();
+	QString filter = "Файлы " + QCoreApplication::applicationName() + " (*.lua);;Все файлы (*)";
 	if (fileName.isEmpty())
-		fileName = QFileDialog::getOpenFileName(this, "Открыть", Options::getSingleton().getLastDirectory(), "Файлы карт (*.map);;Все файлы (*)");
+		fileName = QFileDialog::getOpenFileName(this, "Открыть", Options::getSingleton().getLastOpenedDirectory(), filter);
 	if (!checkFileName(fileName))
 		return;
 
@@ -309,8 +322,9 @@ bool MainWindow::on_mSaveAsAction_triggered()
 {
 	// показываем диалоговое окно сохранения файла
 	EditorWindow *editorWindow = getEditorWindow();
-	QString dir = editorWindow->isSaved() ? editorWindow->getFileName() : Options::getSingleton().getLastDirectory() + editorWindow->getFileName();
-	QString fileName = QFileDialog::getSaveFileName(this, "Сохранить как", dir, "Файлы карт (*.map);;Все файлы (*)");
+	QString dir = editorWindow->isSaved() ? editorWindow->getFileName() : Options::getSingleton().getLastOpenedDirectory() + editorWindow->getFileName();
+	QString filter = "Файлы " + QCoreApplication::applicationName() + " (*.lua);;Все файлы (*)";
+	QString fileName = QFileDialog::getSaveFileName(this, "Сохранить как", dir, filter);
 	if (!checkFileName(fileName))
 		return false;
 
@@ -536,7 +550,7 @@ void MainWindow::on_mTabWidget_currentChanged(int index)
 		// сбрасываем заголовок окна
 		setWindowModified(false);
 		setWindowFilePath("");
-		setWindowTitle(QApplication::applicationName());
+		setWindowTitle(QCoreApplication::applicationName());
 
 		// сбрасываем текущую локацию
 		mLayersWindow->setCurrentLocation(NULL);
@@ -717,18 +731,18 @@ bool MainWindow::checkFileName(const QString &fileName)
 		return false;
 
 	// сохраняем каталог с выбранным файлом
-	Options::getSingleton().setLastDirectory(QFileInfo(fileName).path());
+	Options::getSingleton().setLastOpenedDirectory(QFileInfo(fileName).path());
 
-	// проверяем, что файл находится в каталоге данных
-	QString dataDir = Options::getSingleton().getDataDirectory();
-	if (!fileName.startsWith(dataDir))
+	// проверяем, что файл находится в каталоге с локациями
+	QString locationsDir = Project::getSingleton().getRootDirectory() + Project::getSingleton().getLocationsDirectory();
+	if (!fileName.startsWith(locationsDir))
 	{
-		QMessageBox::warning(this, "", "Неверный путь к файлу " + fileName + "\nСохраняйте все файлы только внутри папки проекта " + dataDir);
+		QMessageBox::warning(this, "", "Неверный путь к файлу " + fileName + "\nВы можете работать с файлами только внутри папки " + locationsDir);
 		return false;
 	}
 
 	// проверяем относительный путь к файлу на валидность
-	QString relativePath = fileName.mid(dataDir.size());
+	QString relativePath = fileName.mid(locationsDir.size());
 	if (!Utils::isFileNameValid(relativePath))
 	{
 		QMessageBox::warning(this, "", "Неверный путь к файлу " + relativePath + "\nПереименуйте файлы и папки так, чтобы они "

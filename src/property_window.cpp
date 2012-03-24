@@ -1,6 +1,7 @@
 #include "property_window.h"
 #include "game_object.h"
 #include "label.h"
+#include "project.h"
 #include "sprite.h"
 #include "utils.h"
 #include <typeinfo>
@@ -10,8 +11,9 @@ PropertyWindow::PropertyWindow(QWidget *parent)
 {
 	setupUi(this);
 
+	// FIXME: delete
 	// запрещение редактирования комбобокса
-	mFileNameComboBox->lineEdit()->setReadOnly(true);
+	//mLabelFileNameComboBox->lineEdit()->setReadOnly(true);
 
 	connect(mRotationAngleComboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(onRotationAngleEditingFinished()));
 
@@ -40,7 +42,8 @@ PropertyWindow::PropertyWindow(QWidget *parent)
 	mScrollArea->setVisible(false);
 	mNoSelectionObjectsLabel->setVisible(true);
 
-
+	// загрузка и отображение списка доступных шрифтов в комбобоксе
+	scanFonts();
 
 	//this->scrollArea->adjustSize();
 
@@ -95,7 +98,11 @@ PropertyWindow::PropertyWindow(QWidget *parent)
 
 void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter)
 {
-	qDebug() << "PropertyWindow::onEditorWindowSelectionChanged";
+	qDebug() << "PropertyWindow::onEditorWindowSelectionChanged" << objects;
+
+	// снятие фокуса
+	if (QApplication::focusWidget() != NULL)
+		QApplication::focusWidget()->clearFocus();
 
 	// сохранение выделенных объектов во внутренний список
 	mCurrentSelectedObjects = objects;
@@ -114,6 +121,8 @@ void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &o
 		mNoSelectionObjectsLabel->setVisible(true);
 		return;
 	}
+
+	Q_ASSERT(!objects.empty());
 
 	// показ свойств
 	mScrollArea->setVisible(true);
@@ -414,10 +423,22 @@ void PropertyWindow::updateLabelWidgets(const QList<GameObject *> &objects)
 			equalLabelOpacity = false;
 	}
 
-
 	mTextLineEdit->setText(equalText ? first->getText() : "");
 
-	mFileNameComboBox->lineEdit()->setText(equalFileName ? first->getFileName() : "");
+	//mLabelFileNameComboBox->lineEdit()->setText(equalFileName ? QFileInfo(first->getFileName()).fileName() : "");
+
+
+	if (equalFileName)
+	{
+		int index = mLabelFileNameComboBox->findText(QFileInfo(first->getFileName()).fileName());
+		if (index != -1)
+			mLabelFileNameComboBox->setCurrentIndex(index);
+	}
+	else
+		//mLabelFileNameComboBox->setEditText("");
+		mLabelFileNameComboBox->setCurrentIndex(-1);
+		//mLabelFileNameComboBox->clearEditText();
+
 
 	mFontSizeComboBox->lineEdit()->setText(equalFontSize ? QString::number(first->getFontSize(), 'g', PRECISION) : "");
 
@@ -463,6 +484,8 @@ void PropertyWindow::updateLabelWidgets(const QList<GameObject *> &objects)
 			break;
 		}
 
+	// FIXME: ВУХДЕ В КОМЮОЮОКСАХ ВЫСТАВЛЯТЬ ИНДЕКС А НЕ СТРОКУ, БЛЕАТЬ!
+	// если индекса нет, то сменить лине едит и текущий индекс = -1
 	mLineSpacingComboBox->lineEdit()->setText(equalLineSpacing ? QString::number(first->getLineSpacing(), 'g', PRECISION) : "");
 
 	if (equalLabelColor)
@@ -494,35 +517,13 @@ void PropertyWindow::updateLabelWidgets(const QList<GameObject *> &objects)
 
 void PropertyWindow::on_mNameLineEdit_editingFinished()
 {
+	// при пустом списке - не обрабатывать
+//	if (mCurrentSelectedObjects.empty())
+//		return;
+
 	foreach (GameObject *obj, mCurrentSelectedObjects)
 		obj->setName(mNameLineEdit->text());
 }
-
-QRectF PropertyWindow::calculateCurrentBoundingRect()
-{
-	Q_ASSERT(!mCurrentSelectedObjects.empty());
-
-	// пересчитываем общий прямоугольник выделения
-	QRectF rect = mCurrentSelectedObjects.front()->getBoundingRect();
-	foreach (GameObject *object, mCurrentSelectedObjects)
-		rect |= object->getBoundingRect();
-	return rect;
-}
-
-QPointF PropertyWindow::calculatePercentPosition(const QRectF &boundingRect, const QPointF &rotationCenter)
-{
-	return QPointF(
-		(rotationCenter.x() - boundingRect.x()) / boundingRect.width(),
-		(rotationCenter.y() - boundingRect.y()) / boundingRect.height());
-}
-
-QPointF PropertyWindow::calculatePosition(const QRectF &boundingRect, const QPointF &percentCenter)
-{
-	return QPointF(
-		boundingRect.x() + boundingRect.width() * percentCenter.x(),
-		boundingRect.y() + boundingRect.height() * percentCenter.y());
-}
-
 void PropertyWindow::on_mTextEditPushButton_clicked(bool checked)
 {
 	qDebug() << "on_mTextEditPushButton_clicked";
@@ -668,26 +669,25 @@ void PropertyWindow::onRotationAngleEditingFinished()
 
 void PropertyWindow::on_mRotationAngleComboBox_currentIndexChanged(const QString &arg)
 {
-	qDebug() << "on_mRotationAngleComboBox_currentIndexChanged";
-}
+	foreach (GameObject *obj, mCurrentSelectedObjects)
+		obj->setRotationAngle(arg.toFloat());
 
+	emit objectsChanged(mRotationCenter);
+}
 
 void PropertyWindow::on_mRotationCenterXLineEdit_editingFinished()
 {
 	qDebug() << "on_mRotationCenterXLineEdit_editingFinished";
 
-	// FIXME: DELETE
-/*
 	float newRotationCenterX = mRotationCenterXLineEdit->text().toFloat();
-	foreach (GameObject *obj, mCurrentSelectedObjects)
+	if (mCurrentSelectedObjects.size() == 1)
 	{
-		QPointF rotationCenter = obj->getRotationCenter();
+		QPointF rotationCenter = mCurrentSelectedObjects.front()->getRotationCenter();
 		rotationCenter.setX(newRotationCenterX);
-		obj->setRotationCenter(rotationCenter);
+		mCurrentSelectedObjects.front()->setRotationCenter(rotationCenter);
 	}
-*/
 
-	QPointF rotationCenter = QPointF(mRotationCenterXLineEdit->text().toFloat(), mRotationCenterYLineEdit->text().toFloat());
+	QPointF rotationCenter = QPointF(newRotationCenterX, mRotationCenterYLineEdit->text().toFloat());
 
 	emit objectsChanged(rotationCenter);
 }
@@ -696,18 +696,15 @@ void PropertyWindow::on_mRotationCenterYLineEdit_editingFinished()
 {
 	qDebug() << "on_mRotationCenterYLineEdit_editingFinished";
 
-	// FIXME: DELETE
-/*
 	float newRotationCenterY = mRotationCenterYLineEdit->text().toFloat();
-	foreach (GameObject *obj, mCurrentSelectedObjects)
+	if (mCurrentSelectedObjects.size() == 1)
 	{
-		QPointF rotationCenter = obj->getRotationCenter();
+		QPointF rotationCenter = mCurrentSelectedObjects.front()->getRotationCenter();
 		rotationCenter.setY(newRotationCenterY);
-		obj->setRotationCenter(rotationCenter);
+		mCurrentSelectedObjects.front()->setRotationCenter(rotationCenter);
 	}
-*/
 
-	QPointF rotationCenter = QPointF(mRotationCenterXLineEdit->text().toFloat(), mRotationCenterYLineEdit->text().toFloat());
+	QPointF rotationCenter = QPointF(mRotationCenterXLineEdit->text().toFloat(), newRotationCenterY);
 
 	emit objectsChanged(rotationCenter);
 }
@@ -740,19 +737,44 @@ void PropertyWindow::on_mSpriteOpacityHorizontalSlider_valueChanged(int value)
 	mSpriteOpacityValueLabel->setText(QString::number(value, 10));
 }
 
-void PropertyWindow::on_mFileNameComboBox_currentIndexChanged(const QString &arg)
+void PropertyWindow::on_mLabelFileNameComboBox_currentIndexChanged(const QString &arg)
 {
-	qDebug() << "on_mFileNameComboBox_currentIndexChanged" << arg;
+	if (arg == "")
+		return;
+
+	foreach (GameObject *obj, mCurrentSelectedObjects)
+	{
+		Label *it = dynamic_cast<Label *>(obj);
+		if (it != NULL)
+			it->setFileName(Project::getSingleton().getFontsDirectory() + arg);
+	}
 }
 
 void PropertyWindow::onFontSizeEditingFinished()
 {
-	qDebug() << "onFontSizeEditingFinished";
+	int fontSize = mFontSizeComboBox->lineEdit()->text().toInt();
+
+	foreach (GameObject *obj, mCurrentSelectedObjects)
+	{
+		Label *it = dynamic_cast<Label *>(obj);
+		if (it != NULL)
+			it->setFontSize(fontSize);
+	}
 }
 
 void PropertyWindow::on_mFontSizeComboBox_currentIndexChanged(const QString &arg)
 {
-	qDebug() << "onFontSizeEditingFinished";
+	if (arg == "")
+		return;
+
+	int fontSize = arg.toInt();
+
+	foreach (GameObject *obj, mCurrentSelectedObjects)
+	{
+		Label *it = dynamic_cast<Label *>(obj);
+		if (it != NULL)
+			it->setFontSize(fontSize);
+	}
 }
 
 void PropertyWindow::onHorzAlignmentClicked(QAbstractButton *button)
@@ -816,11 +838,32 @@ void PropertyWindow::onVertAlignmentClicked(QAbstractButton *button)
 void PropertyWindow::onLineSpacingEditingFinished()
 {
 	qDebug() << "onLineSpacingEditingFinished";
+
+	float lineSpacing = mLineSpacingComboBox->lineEdit()->text().toFloat();
+
+	foreach (GameObject *obj, mCurrentSelectedObjects)
+	{
+		Label *it = dynamic_cast<Label *>(obj);
+		if (it != NULL)
+			it->setLineSpacing(lineSpacing);
+	}
 }
 
 void PropertyWindow::on_mLineSpacingComboBox_currentIndexChanged(const QString &arg)
 {
-	qDebug() << "on_mLineSpacingComboBox_currentIndexChanged";
+	qDebug() << "on_mLineSpacingComboBox_currentIndexChanged" << arg;
+
+	if (arg == "")
+		return;
+
+	float lineSpacing = arg.toFloat();
+
+	foreach (GameObject *obj, mCurrentSelectedObjects)
+	{
+		Label *it = dynamic_cast<Label *>(obj);
+		if (it != NULL)
+			it->setLineSpacing(lineSpacing);
+	}
 }
 
 void PropertyWindow::on_mLabelOpacityHorizontalSlider_valueChanged(int value)
@@ -834,4 +877,54 @@ void PropertyWindow::on_mLabelOpacityHorizontalSlider_valueChanged(int value)
 	}
 
 	mLabelOpacityValueLabel->setText(QString::number(value, 10));
+}
+
+QRectF PropertyWindow::calculateCurrentBoundingRect()
+{
+	Q_ASSERT(!mCurrentSelectedObjects.empty());
+
+	QRectF rect;
+	if (!mCurrentSelectedObjects.empty())
+	{
+		// пересчитываем общий прямоугольник выделения
+		rect = mCurrentSelectedObjects.front()->getBoundingRect();
+		foreach (GameObject *object, mCurrentSelectedObjects)
+			rect |= object->getBoundingRect();
+	}
+
+	return rect;
+}
+
+QPointF PropertyWindow::calculatePercentPosition(const QRectF &boundingRect, const QPointF &rotationCenter)
+{
+	return QPointF(
+		(rotationCenter.x() - boundingRect.x()) / boundingRect.width(),
+		(rotationCenter.y() - boundingRect.y()) / boundingRect.height());
+}
+
+QPointF PropertyWindow::calculatePosition(const QRectF &boundingRect, const QPointF &percentCenter)
+{
+	return QPointF(
+		boundingRect.x() + boundingRect.width() * percentCenter.x(),
+		boundingRect.y() + boundingRect.height() * percentCenter.y());
+}
+
+QString PropertyWindow::getRootPath() const
+{
+	return Project::getSingleton().getRootDirectory() + Project::getSingleton().getFontsDirectory();
+}
+
+void PropertyWindow::scanFonts()
+{
+	// очистка списка комбобокса
+	mLabelFileNameComboBox->clear();
+
+	QDir currentDir = QDir(getRootPath());
+	currentDir.setFilter(QDir::Files);
+	QStringList fileNameFilters;
+	fileNameFilters << "*.ttf";
+	currentDir.setNameFilters(fileNameFilters);
+	QStringList listEntries = currentDir.entryList();
+
+	mLabelFileNameComboBox->addItems(listEntries);
 }

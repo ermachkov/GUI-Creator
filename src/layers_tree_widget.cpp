@@ -63,7 +63,7 @@ void LayersTreeWidget::setCurrentLocation(Location *location)
 	// сохранение текущего слоя
 	BaseLayer *baseCurrent = mCurrentLocation->getActiveLayer();
 
-	// Отчистка окна слоев
+	// Очистка окна слоев
 	clear();
 
 	// связывание с корневым элементом слоёв
@@ -1036,7 +1036,7 @@ QIcon LayersTreeWidget::createLayerIcon(BaseLayer *baseLayer)
 
 	mFrameBuffer->bind();
 
-	// отчистка
+	// очистка
 	QColor color = palette().base().color();
 	glClearColor(color.redF(), color.greenF(), color.blueF(), 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);

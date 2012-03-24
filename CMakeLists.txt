@@ -29,6 +29,7 @@ set(SOURCES
 	src/main_window.cpp
 	src/options.cpp
 	src/options_dialog.cpp
+	src/project.cpp
 	src/property_window.cpp
 	src/sprite.cpp
 	src/sprite_browser.cpp
@@ -53,6 +54,7 @@ set(HEADERS
 	include/main_window.h
 	include/options.h
 	include/options_dialog.h
+	include/project.h
 	include/property_window.h
 	include/singleton.h
 	include/sprite.h

@@ -62,7 +62,7 @@ private slots:
 
 	void on_mSpriteOpacityHorizontalSlider_valueChanged(int value);
 
-	void on_mFileNameComboBox_currentIndexChanged(const QString &arg);
+	void on_mLabelFileNameComboBox_currentIndexChanged(const QString &arg);
 
 	void onFontSizeEditingFinished();
 
@@ -95,6 +95,14 @@ private:
 
 	// просчет расположения центра вращения по процентному
 	QPointF calculatePosition(const QRectF &boundingRect, const QPointF &percentCenter);
+
+	// возврат из опций текущей коренной директории
+	QString getRootPath() const;
+
+	// загрузка и отображение списка доступных шрифтов в комбобоксе
+	void scanFonts();
+
+
 
 	QList<GameObject *> mCurrentSelectedObjects;    // текущие выделенные объекты
 	QPointF             mRotationCenter;            // текущий центр вращения выделенных объектов

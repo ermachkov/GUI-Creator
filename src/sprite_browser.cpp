@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "sprite_browser.h"
-#include "options.h"
+#include "project.h"
 #include "thumbnail_loader.h"
 
 SpriteBrowser::SpriteBrowser(QWidget *parent)
@@ -230,7 +230,7 @@ void SpriteBrowser::onFileChanged(const QString &absoluteFileName)
 
 QString SpriteBrowser::getRootPath() const
 {
-	return Options::getSingleton().getDataDirectory() + "sprites/";
+	return Project::getSingleton().getRootDirectory() + Project::getSingleton().getSpritesDirectory();
 }
 
 // Пересоздание объекта слежения за каталогом
@@ -253,7 +253,7 @@ void SpriteBrowser::update(QString oldPath, QString newPath)
 	// всплывающая подсказка с полным путем
 	mListWidget->setToolTip(getRootPath() + mRelativePath);
 
-	// отчистка поля ГУИ иконок
+	// очистка поля ГУИ иконок
 	mListWidget->clear();
 
 	// (убрано из-за косяка с mWatcher) снятие слежения за текущей директорией
@@ -312,7 +312,7 @@ void SpriteBrowser::update(QString oldPath, QString newPath)
 		foreach (IconWithInfo element, mThumbnailCache)
 			element.setChanged(false);
 
-		// Отчистка списка файлов на загрузку второго потока
+		// Очистка списка файлов на загрузку второго потока
 		mThumbnailLoader->setThumbnailCount(mThumbnailCount);
 	}
 
@@ -402,7 +402,7 @@ void SpriteBrowser::update(QString oldPath, QString newPath)
 
 		// сохраняем тип и относительный путь к файлу для поддержки перетаскивания
 		item->setData(Qt::UserRole, "Sprite");
-		item->setData(Qt::UserRole + 1, "sprites/" + mRelativePath + fileName);
+		item->setData(Qt::UserRole + 1, Project::getSingleton().getSpritesDirectory() + mRelativePath + fileName);
 
 		// всплывающая подсказка с несокращенным именем
 		item->setToolTip(fileName);

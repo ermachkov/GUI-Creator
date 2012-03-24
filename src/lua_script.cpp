@@ -41,10 +41,9 @@ bool LuaScript::load(const QString &fileName)
 	return true;
 }
 
-bool LuaScript::getString(const QString &name, QString &value) const
+bool LuaScript::getString(QString &value) const
 {
-	// читаем значение строковой переменной
-	lua_getfield(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -1, name.toStdString().c_str());
+	// проверяем значение на вершине стека
 	if (lua_isstring(mLuaState, -1) != 0)
 	{
 		value = lua_tostring(mLuaState, -1);
@@ -57,10 +56,22 @@ bool LuaScript::getString(const QString &name, QString &value) const
 	return false;
 }
 
-bool LuaScript::getInt(const QString &name, int &value) const
+bool LuaScript::getString(const QString &name, QString &value) const
 {
-	// читаем значение целочисленной переменной
 	lua_getfield(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -1, name.toStdString().c_str());
+	return getString(value);
+}
+
+bool LuaScript::getString(int index, QString &value) const
+{
+	lua_pushinteger(mLuaState, index);
+	lua_gettable(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -2);
+	return getString(value);
+}
+
+bool LuaScript::getInt(int &value) const
+{
+	// проверяем значение на вершине стека
 	if (lua_isnumber(mLuaState, -1) != 0)
 	{
 		value = lua_tointeger(mLuaState, -1);
@@ -73,14 +84,25 @@ bool LuaScript::getInt(const QString &name, int &value) const
 	return false;
 }
 
+bool LuaScript::getInt(const QString &name, int &value) const
+{
+	lua_getfield(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -1, name.toStdString().c_str());
+	return getInt(value);
+}
+
 bool LuaScript::getInt(int index, int &value) const
 {
-	// читаем значение целочисленной переменной
 	lua_pushinteger(mLuaState, index);
 	lua_gettable(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -2);
+	return getInt(value);
+}
+
+bool LuaScript::getReal(qreal &value) const
+{
+	// проверяем значение на вершине стека
 	if (lua_isnumber(mLuaState, -1) != 0)
 	{
-		value = lua_tointeger(mLuaState, -1);
+		value = lua_tonumber(mLuaState, -1);
 		lua_pop(mLuaState, 1);
 		return true;
 	}
@@ -92,28 +114,23 @@ bool LuaScript::getInt(int index, int &value) const
 
 bool LuaScript::getReal(const QString &name, qreal &value) const
 {
-	// читаем значение вещественной переменной
 	lua_getfield(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -1, name.toStdString().c_str());
-	if (lua_isnumber(mLuaState, -1) != 0)
-	{
-		value = lua_tonumber(mLuaState, -1);
-		lua_pop(mLuaState, 1);
-		return true;
-	}
-
-	// удаляем неверный элемент из стека
-	lua_pop(mLuaState, 1);
-	return false;
+	return getReal(value);
 }
 
 bool LuaScript::getReal(int index, qreal &value) const
 {
-	// читаем значение вещественной переменной
 	lua_pushinteger(mLuaState, index);
 	lua_gettable(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -2);
-	if (lua_isnumber(mLuaState, -1) != 0)
+	return getReal(value);
+}
+
+bool LuaScript::getBool(bool &value) const
+{
+	// проверяем значение на вершине стека
+	if (lua_isboolean(mLuaState, -1) != 0)
 	{
-		value = lua_tonumber(mLuaState, -1);
+		value = lua_toboolean(mLuaState, -1);
 		lua_pop(mLuaState, 1);
 		return true;
 	}
@@ -125,18 +142,15 @@ bool LuaScript::getReal(int index, qreal &value) const
 
 bool LuaScript::getBool(const QString &name, bool &value) const
 {
-	// читаем значение булевской переменной
 	lua_getfield(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -1, name.toStdString().c_str());
-	if (lua_isboolean(mLuaState, -1) != 0)
-	{
-		value = lua_toboolean(mLuaState, -1);
-		lua_pop(mLuaState, 1);
-		return true;
-	}
+	return getBool(value);
+}
 
-	// удаляем неверный элемент из стека
-	lua_pop(mLuaState, 1);
-	return false;
+bool LuaScript::getBool(int index, bool &value) const
+{
+	lua_pushinteger(mLuaState, index);
+	lua_gettable(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -2);
+	return getBool(value);
 }
 
 int LuaScript::getLength() const

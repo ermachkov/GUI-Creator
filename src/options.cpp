@@ -8,8 +8,7 @@ Options::Options(QSettings &settings)
 {
 	// загружаем общие настройки
 	settings.beginGroup("General");
-	mDataDirectory = Utils::addTrailingSlash(settings.value("DataDirectory", QDir::currentPath()).toString());
-	mLastDirectory = Utils::addTrailingSlash(settings.value("LastDirectory", QDir::currentPath()).toString());
+	mLastOpenedDirectory = Utils::addTrailingSlash(settings.value("LastOpenedDirectory", QDir::currentPath()).toString());
 	mRecentFiles = settings.value("RecentFiles").toStringList();
 	settings.endGroup();
 
@@ -35,8 +34,7 @@ void Options::save(QSettings &settings)
 {
 	// сохраняем общие настройки
 	settings.beginGroup("General");
-	settings.setValue("DataDirectory", mDataDirectory);
-	settings.setValue("LastDirectory", mLastDirectory);
+	settings.setValue("LastOpenedDirectory", mLastOpenedDirectory);
 	settings.setValue("RecentFiles", mRecentFiles);
 	settings.endGroup();
 
@@ -58,24 +56,14 @@ void Options::save(QSettings &settings)
 	settings.endGroup();
 }
 
-QString Options::getDataDirectory() const
+QString Options::getLastOpenedDirectory() const
 {
-	return mDataDirectory;
+	return mLastOpenedDirectory;
 }
 
-void Options::setDataDirectory(const QString &dir)
+void Options::setLastOpenedDirectory(const QString &dir)
 {
-	mDataDirectory = Utils::addTrailingSlash(dir);
-}
-
-QString Options::getLastDirectory() const
-{
-	return mLastDirectory;
-}
-
-void Options::setLastDirectory(const QString &dir)
-{
-	mLastDirectory = Utils::addTrailingSlash(dir);
+	mLastOpenedDirectory = Utils::addTrailingSlash(dir);
 }
 
 QStringList Options::getRecentFiles() const

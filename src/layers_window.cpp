@@ -48,7 +48,7 @@ void LayersWindow::setCurrentLocation(Location *location)
 	}
 	else
 	{
-		// отсутствует локация - отчистка
+		// отсутствует локация - очистка
 		mLayersTreeWidget->clear();
 	}
 }

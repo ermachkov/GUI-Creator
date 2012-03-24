@@ -19,7 +19,7 @@ Label::Label(const QString &name, int id, const QPointF &pos, const QString &fil
 	// задаем начальную позицию и размер надписи
 	if (!mFont.isNull())
 	{
-		mSize = QSizeF(qCeil(mFont->Advance(Utils::toStdWString(mText + " ").c_str())), qCeil(mFont->LineHeight()));
+		mSize = QSizeF(qCeil(mFont->Advance(Utils::toStdWString(mText).c_str())) + 1.0, qCeil(mFont->LineHeight()));
 		mPosition = QPointF(qFloor(pos.x() - mSize.width() / 2.0), qFloor(pos.y() - mSize.height() / 2.0));
 	}
 
@@ -225,7 +225,7 @@ void Label::draw()
 			// переносим строку, если ее суммарная ширина превышает ширину текстового прямоугольника
 			if (width >= qAbs(mSize.width()) && oldWidth > 0.0)
 			{
-				lines.push_back(str);
+				lines.push_back(str.left(str.size() - 1));
 				str.clear();
 				width = wordWidth;
 			}
@@ -237,7 +237,7 @@ void Label::draw()
 		}
 
 		// добавляем последнюю строку в список строк
-		lines.push_back(str);
+		lines.push_back(str.left(str.size() - 1));
 	}
 
 	// определяем начальную координату по оси Y с учетом вертикального выравнивания

@@ -16,17 +16,11 @@ public:
 	// Сохраняет текущие настройки
 	void save(QSettings &settings);
 
-	// Возвращает полный путь к каталогу данных
-	QString getDataDirectory() const;
+	// Возвращает путь к последнему открытому каталогу
+	QString getLastOpenedDirectory() const;
 
-	// Устанавливает путь к каталогу данных
-	void setDataDirectory(const QString &dir);
-
-	// Возвращает путь к последнему рабочему каталогу
-	QString getLastDirectory() const;
-
-	// Устанавливает путь к последнему рабочему каталогу
-	void setLastDirectory(const QString &dir);
+	// Устанавливает путь к последнему открытому каталогу
+	void setLastOpenedDirectory(const QString &dir);
 
 	// Возвращает список последних файлов
 	QStringList getRecentFiles() const;
@@ -90,8 +84,7 @@ public:
 
 private:
 
-	QString     mDataDirectory;         // Полный путь к каталогу данных
-	QString     mLastDirectory;         // Последний рабочий каталог
+	QString     mLastOpenedDirectory;   // Последний открытый каталог
 	QStringList mRecentFiles;           // Список последних файлов
 
 	bool        mShowGrid;              // Флаг показа сетки

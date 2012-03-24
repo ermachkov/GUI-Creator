@@ -61,7 +61,7 @@ QSharedPointer<Texture> TextureManager::loadTexture(const QString &fileName, boo
 	// не нашли в кэше - загружаем текстуру из файла
 	QSharedPointer<Texture> texture;
 	QImage image;
-	QString path = Options::getSingleton().getDataDirectory() + fileName;
+	QString path = Project::getSingleton().getRootDirectory() + fileName;
 	if (Utils::fileExists(path) && !(image = QImage(path)).isNull())
 	{
 		// добавляем файл на слежение
@@ -94,7 +94,7 @@ void TextureManager::timerEvent(QTimerEvent *event)
 	TextureCache::iterator it = mTextureCache.begin();
 	while (it != mTextureCache.end())
 	{
-		QString path = Options::getSingleton().getDataDirectory() + it.key();
+		QString path = Project::getSingleton().getRootDirectory() + it.key();
 		if (!it->mTexture.isNull())
 		{
 			if (it->mTexture == mDefaultTexture)
@@ -130,7 +130,7 @@ void TextureManager::timerEvent(QTimerEvent *event)
 void TextureManager::onFileChanged(const QString &path)
 {
 	// проверяем, используется ли текстура игровыми объектами
-	QString fileName = path.mid(Options::getSingleton().getDataDirectory().size());
+	QString fileName = path.mid(Project::getSingleton().getRootDirectory().size());
 	TextureCache::iterator it = mTextureCache.find(fileName);
 	if (it != mTextureCache.end() && !it->mTexture.isNull())
 	{
@@ -149,7 +149,7 @@ void TextureManager::onTextureLoaded(QString fileName, QSharedPointer<Texture> t
 		// добавляем файл на слежение
 		if (!texture.isNull())
 		{
-			QString path = Options::getSingleton().getDataDirectory() + fileName;
+			QString path = Project::getSingleton().getRootDirectory() + fileName;
 			if (!mWatcher->files().contains(path))
 				mWatcher->addPath(path);
 		}
