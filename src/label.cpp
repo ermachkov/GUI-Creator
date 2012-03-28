@@ -3,6 +3,7 @@
 #include "font_manager.h"
 #include "layer.h"
 #include "lua_script.h"
+#include "project.h"
 #include "utils.h"
 
 Label::Label()
@@ -22,6 +23,13 @@ Label::Label(const QString &name, int id, const QPointF &pos, const QString &fil
 		mSize = QSizeF(qCeil(mFont->Advance(Utils::toStdWString(mText).c_str())) + 1.0, qCeil(mFont->LineHeight()));
 		mPosition = QPointF(qFloor(pos.x() - mSize.width() / 2.0), qFloor(pos.y() - mSize.height() / 2.0));
 	}
+
+	// инициализируем локализованные свойства
+	QString language = Project::getSingleton().getDefaultLanguage();
+	mPositionXMap[language] = mPosition.x();
+	mPositionYMap[language] = mPosition.y();
+	mWidthMap[language] = mSize.width();
+	mHeightMap[language] = mSize.height();
 
 	// обновляем текущую трансформацию
 	updateTransform();
@@ -119,6 +127,9 @@ bool Label::load(QDataStream &stream)
 	mHorzAlignment = static_cast<HorzAlignment>(horzAlignment);
 	mVertAlignment = static_cast<VertAlignment>(vertAlignment);
 
+	// устанавливаем текущий язык
+	setCurrentLanguage(Project::getSingleton().getCurrentLanguage());
+
 	// загружаем шрифт надписи
 	mFont = FontManager::getSingleton().loadFont(mFileName, mFontSize);
 	return !mFont.isNull();
@@ -156,6 +167,9 @@ bool Label::load(LuaScript &script)
 	mVertAlignment = static_cast<VertAlignment>(vertAlignment);
 	mColor = QColor::fromRgba(color);
 
+	// устанавливаем текущий язык
+	setCurrentLanguage(Project::getSingleton().getCurrentLanguage());
+
 	// загружаем шрифт надписи
 	mFont = FontManager::getSingleton().loadFont(mFileName, mFontSize);
 	return !mFont.isNull();
@@ -171,8 +185,8 @@ bool Label::save(QTextStream &stream, int indent)
 		return false;
 
 	// сохраняем свойства надписи
-	stream << ", text = \"" << Utils::insertBackslashes(mText) << "\", fileName = \"" << Utils::insertBackslashes(mFileName)
-		<< "\", size = " << mFontSize << ", horzAlignment = " << mHorzAlignment << ", vertAlignment = " << mVertAlignment
+	stream << ", text = " << Utils::quotify(mText) << ", fileName = " << Utils::quotify(mFileName)
+		<< ", size = " << mFontSize << ", horzAlignment = " << mHorzAlignment << ", vertAlignment = " << mVertAlignment
 		<< ", lineSpacing = " << mLineSpacing << ", color = 0x" << hex << mColor.rgba() << dec << "}";
 	return stream.status() == QTextStream::Ok;
 }

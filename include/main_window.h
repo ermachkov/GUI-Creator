@@ -121,6 +121,9 @@ private slots:
 	// Редактирование масштаба вручную закончено в ComboBox
 	void onZoomEditingFinished();
 
+	// Обработчик изменения текущего языка
+	void onLanguageChanged(const QString &language);
+
 	// Обработчик изменения выделения в окне редактирования
 	void onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter);
 
@@ -174,9 +177,6 @@ private:
 
 	// Обновляет пункты меню с последними файлами
 	void updateRecentFilesActions(const QString &fileName);
-
-	// Проверяет имя файла на валидность
-	bool checkFileName(const QString &fileName);
 
 	// Проверяет текущую локацию на наличие отсутствующих файлов
 	void checkMissedFiles();

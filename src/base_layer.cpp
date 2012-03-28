@@ -172,7 +172,7 @@ bool BaseLayer::load(LuaScript &script, int depth)
 bool BaseLayer::save(QTextStream &stream, int indent)
 {
 	// сохраняем свойства слоя в поток
-	stream << "name = \"" << Utils::insertBackslashes(mName) << "\", visibleState = " << mVisibleState << ", lockState = " << mLockState
+	stream << "name = " << Utils::quotify(mName) << ", visibleState = " << mVisibleState << ", lockState = " << mLockState
 		<< ", expanded = " << (mExpanded ? "true" : "false");
 	return stream.status() == QTextStream::Ok;
 }

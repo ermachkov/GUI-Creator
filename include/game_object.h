@@ -91,6 +91,9 @@ public:
 	// Сохраняет объект в текстовый поток
 	virtual bool save(QTextStream &stream, int indent);
 
+	// Устанавливает текущий язык для объекта
+	virtual void setCurrentLanguage(const QString &language);
+
 	// Дублирует объект
 	virtual GameObject *duplicate(Layer *parent = NULL) const = 0;
 
@@ -105,6 +108,10 @@ public:
 
 protected:
 
+	// Типы для локализованных данных
+	typedef QMap<QString, qreal> RealMap;
+	typedef QMap<QString, QString> StringMap;
+
 	// Конвертирует координаты из локальных в мировые
 	QPointF localToWorld(const QPointF &pt) const;
 
@@ -114,6 +121,12 @@ protected:
 	// Обновляет текущую трансформацию объекта
 	void updateTransform();
 
+	// Читает список локализованных вещественных чисел
+	bool readRealMap(LuaScript &script, const QString &name, RealMap &map);
+
+	// Записывает список локализованных вещественных чисел
+	void writeRealMap(QTextStream &stream, RealMap &map);
+
 	QString     mName;              // Имя (текстовое описание) объекта
 	int         mObjectID;          // Идентификатор объекта
 	QPointF     mPosition;          // Мировые координаты объекта
@@ -121,6 +134,11 @@ protected:
 	qreal       mRotationAngle;     // Угол поворота объекта в градусах по часовой стрелке
 	QPointF     mRotationCenter;    // Центр вращения в нормализованных локальных координатах
 	Layer       *mParentLayer;      // Указатель на родительский слой
+
+	RealMap     mPositionXMap;      // Список локализованных координат по оси X
+	RealMap     mPositionYMap;      // Список локализованных координат по оси Y
+	RealMap     mWidthMap;          // Список локализованных ширин
+	RealMap     mHeightMap;         // Список локализованных высот
 
 	QTransform  mTransform;         // Результирующая матрица трансформации
 	QTransform  mInvTransform;      // Обратная матрица трансформации

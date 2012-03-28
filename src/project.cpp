@@ -33,6 +33,10 @@ void Project::close()
 	mLocationsDirectory = "levels/";
 	mSpritesDirectory = "sprites/";
 	mFontsDirectory = "fonts/";
+
+	mLanguages = QStringList("ru");
+	mLanguageNames = QStringList("&Русский");
+	mDefaultLanguage = mCurrentLanguage = "ru";
 }
 
 bool Project::isOpen() const
@@ -65,6 +69,31 @@ QString Project::getFontsDirectory() const
 	return mFontsDirectory;
 }
 
+QStringList Project::getLanguages() const
+{
+	return mLanguages;
+}
+
+QStringList Project::getLanguageNames() const
+{
+	return mLanguageNames;
+}
+
+QString Project::getDefaultLanguage() const
+{
+	return mDefaultLanguage;
+}
+
+QString Project::getCurrentLanguage() const
+{
+	return mCurrentLanguage;
+}
+
+void Project::setCurrentLanguage(const QString &language)
+{
+	mCurrentLanguage = language;
+}
+
 bool Project::loadProjectFile(const QString &fileName)
 {
 	// сохраняем имя файла проекта
@@ -79,7 +108,7 @@ bool Project::loadProjectFile(const QString &fileName)
 		return false;
 
 	// читаем корневую таблицу
-	if (!script.pushTable(Utils::convertToCamelCase(QFileInfo(mFileName).baseName())))
+	if (!script.pushTable(Utils::toCamelCase(QFileInfo(mFileName).baseName())))
 		return false;
 
 	// загружаем относительные пути к ресурсным каталогам
@@ -89,6 +118,42 @@ bool Project::loadProjectFile(const QString &fileName)
 	mLocationsDirectory = Utils::addTrailingSlash(mLocationsDirectory);
 	mSpritesDirectory = Utils::addTrailingSlash(mSpritesDirectory);
 	mFontsDirectory = Utils::addTrailingSlash(mFontsDirectory);
+
+	// загружаем список языков
+	int length = 0;
+	if (!script.pushTable("languages") || (length = script.getLength()) == 0)
+		return false;
+
+	mLanguages.clear();
+	for (int i = 1; i <= length; ++i)
+	{
+		QString str;
+		if (!script.getString(i, str))
+			return false;
+		mLanguages.push_back(str);
+	}
+
+	script.popTable();
+
+	// загружаем список названий языков
+	if (!script.pushTable("languageNames") || script.getLength() != length)
+		return false;
+
+	mLanguageNames.clear();
+	for (int i = 1; i <= length; ++i)
+	{
+		QString str;
+		if (!script.getString(i, str))
+			return false;
+		mLanguageNames.push_back(str);
+	}
+
+	script.popTable();
+
+	// загружаем язык по умолчанию и текущий выбранный язык
+	if (!script.getString("defaultLanguage", mDefaultLanguage) || !mLanguages.contains(mDefaultLanguage)
+		|| !script.getString("currentLanguage", mCurrentLanguage) || !mLanguages.contains(mCurrentLanguage))
+		return false;
 
 	// извлекаем из стека корневую таблицу
 	script.popTable();
@@ -111,14 +176,31 @@ bool Project::saveProjectFile(const QString &fileName)
 
 	// записываем корневую таблицу
 	stream << endl << "-- Project root table. Do not declare global variables with the same name!" << endl;
-	stream << Utils::convertToCamelCase(QFileInfo(fileName).baseName()) << " =" << endl;
+	stream << Utils::toCamelCase(QFileInfo(fileName).baseName()) << " =" << endl;
 	stream << "{" << endl;
 
 	// записываем относительные пути к ресурсным каталогам
 	stream << "\t-- Paths to resource directories relative to the project root directory" << endl;
-	stream << "\tlocationsDirectory = \"" << Utils::insertBackslashes(mLocationsDirectory) << "\"," << endl;
-	stream << "\tspritesDirectory = \"" << Utils::insertBackslashes(mSpritesDirectory) << "\"," << endl;
-	stream << "\tfontsDirectory = \"" << Utils::insertBackslashes(mFontsDirectory) << "\"" << endl;
+	stream << "\tlocationsDirectory = " << Utils::quotify(mLocationsDirectory) << "," << endl;
+	stream << "\tspritesDirectory = " << Utils::quotify(mSpritesDirectory) << "," << endl;
+	stream << "\tfontsDirectory = " << Utils::quotify(mFontsDirectory) << "," << endl;
+
+	// записываем список языков
+	stream << endl << "\t-- List of all available languages" << endl;
+	stream << "\tlanguages = {";
+	for (int i = 0; i < mLanguages.size(); ++i)
+		stream << Utils::quotify(mLanguages[i]) << (i < mLanguages.size() - 1 ? ", " : "");
+	stream << "}," << endl;
+
+	// записываем список названий языков
+	stream << "\tlanguageNames = {";
+	for (int i = 0; i < mLanguageNames.size(); ++i)
+		stream << Utils::quotify(mLanguageNames[i]) << (i < mLanguageNames.size() - 1 ? ", " : "");
+	stream << "}," << endl;
+
+	// записываем язык по умолчанию и текущий выбранный язык
+	stream << "\tdefaultLanguage = " << Utils::quotify(mDefaultLanguage) << "," << endl;
+	stream << "\tcurrentLanguage = " << Utils::quotify(mCurrentLanguage) << endl;
 
 	// записываем закрывающую фигурную скобку корневой таблицы
 	stream << "}" << endl;

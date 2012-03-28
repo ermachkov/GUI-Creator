@@ -41,18 +41,20 @@ bool LuaScript::load(const QString &fileName)
 	return true;
 }
 
-bool LuaScript::getString(QString &value) const
+bool LuaScript::getString(QString &value, bool pop) const
 {
 	// проверяем значение на вершине стека
 	if (lua_isstring(mLuaState, -1) != 0)
 	{
 		value = lua_tostring(mLuaState, -1);
-		lua_pop(mLuaState, 1);
+		if (pop)
+			lua_pop(mLuaState, 1);
 		return true;
 	}
 
 	// удаляем неверный элемент из стека
-	lua_pop(mLuaState, 1);
+	if (pop)
+		lua_pop(mLuaState, 1);
 	return false;
 }
 
@@ -69,18 +71,20 @@ bool LuaScript::getString(int index, QString &value) const
 	return getString(value);
 }
 
-bool LuaScript::getInt(int &value) const
+bool LuaScript::getInt(int &value, bool pop) const
 {
 	// проверяем значение на вершине стека
 	if (lua_isnumber(mLuaState, -1) != 0)
 	{
 		value = lua_tointeger(mLuaState, -1);
-		lua_pop(mLuaState, 1);
+		if (pop)
+			lua_pop(mLuaState, 1);
 		return true;
 	}
 
 	// удаляем неверный элемент из стека
-	lua_pop(mLuaState, 1);
+	if (pop)
+		lua_pop(mLuaState, 1);
 	return false;
 }
 
@@ -97,18 +101,20 @@ bool LuaScript::getInt(int index, int &value) const
 	return getInt(value);
 }
 
-bool LuaScript::getReal(qreal &value) const
+bool LuaScript::getReal(qreal &value, bool pop) const
 {
 	// проверяем значение на вершине стека
 	if (lua_isnumber(mLuaState, -1) != 0)
 	{
 		value = lua_tonumber(mLuaState, -1);
-		lua_pop(mLuaState, 1);
+		if (pop)
+			lua_pop(mLuaState, 1);
 		return true;
 	}
 
 	// удаляем неверный элемент из стека
-	lua_pop(mLuaState, 1);
+	if (pop)
+		lua_pop(mLuaState, 1);
 	return false;
 }
 
@@ -125,18 +131,20 @@ bool LuaScript::getReal(int index, qreal &value) const
 	return getReal(value);
 }
 
-bool LuaScript::getBool(bool &value) const
+bool LuaScript::getBool(bool &value, bool pop) const
 {
 	// проверяем значение на вершине стека
 	if (lua_isboolean(mLuaState, -1) != 0)
 	{
 		value = lua_toboolean(mLuaState, -1);
-		lua_pop(mLuaState, 1);
+		if (pop)
+			lua_pop(mLuaState, 1);
 		return true;
 	}
 
 	// удаляем неверный элемент из стека
-	lua_pop(mLuaState, 1);
+	if (pop)
+		lua_pop(mLuaState, 1);
 	return false;
 }
 
@@ -187,6 +195,16 @@ bool LuaScript::pushTable(int index)
 	// удаляем неверный элемент из стека
 	lua_pop(mLuaState, 1);
 	return false;
+}
+
+void LuaScript::firstEntry()
+{
+	lua_pushnil(mLuaState);
+}
+
+bool LuaScript::nextEntry()
+{
+	return lua_next(mLuaState, -2) != 0;
 }
 
 void LuaScript::popTable()

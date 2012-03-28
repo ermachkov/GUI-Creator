@@ -39,7 +39,32 @@ bool Utils::isFileNameValid(const QString &fileName)
 	return regexp.exactMatch(fileName);
 }
 
-QString Utils::convertToCamelCase(const QString &fileName)
+bool Utils::isFileNameValid(const QString &fileName, const QString &dir, QWidget *parent)
+{
+	// проверяем, что имя не пустое
+	if (fileName.isEmpty())
+		return false;
+
+	// проверяем, что файл находится в заданном каталоге
+	if (!fileName.startsWith(dir))
+	{
+		QMessageBox::warning(parent, "", "Неверный путь к файлу " + fileName + "\nВы можете работать с файлами только внутри папки " + dir);
+		return false;
+	}
+
+	// проверяем относительный путь к файлу на валидность
+	QString relativePath = fileName.mid(dir.size());
+	if (!isFileNameValid(relativePath))
+	{
+		QMessageBox::warning(parent, "", "Неверный путь к файлу " + relativePath + "\nПереименуйте файлы и папки так, чтобы они "
+			"начинались с буквы и состояли только из маленьких латинских букв, цифр и знаков подчеркивания");
+		return false;
+	}
+
+	return true;
+}
+
+QString Utils::toCamelCase(const QString &fileName)
 {
 	// заменяем все вхождения символа '_' и строчной буквы на одну заглавную букву
 	QString name = QFileInfo(fileName).baseName();
@@ -49,10 +74,10 @@ QString Utils::convertToCamelCase(const QString &fileName)
 	return str;
 }
 
-QString Utils::convertToPascalCase(const QString &fileName)
+QString Utils::toPascalCase(const QString &fileName)
 {
 	// конвертируем строку в стиль Camel и меняем первую букву на заглавную
-	QString str = convertToCamelCase(fileName);
+	QString str = toCamelCase(fileName);
 	if (!str.isEmpty())
 		str[0] = str[0].toUpper();
 	return str;
@@ -70,7 +95,7 @@ bool Utils::fileExists(const QString &path)
 	return false;
 }
 
-QString Utils::insertBackslashes(const QString &text)
+QString Utils::quotify(const QString &text)
 {
 	// вставляем обратный слэш перед одинарными и двойными кавычками, а также перед самим обратным слэшем
 	QString str;
@@ -80,16 +105,7 @@ QString Utils::insertBackslashes(const QString &text)
 			str += '\\';
 		str += ch;
 	}
-	return str;
-}
-
-QString Utils::stripBackslashes(const QString &text)
-{
-	// удаляем обратные слэши перед одинарными и двойными кавычками, а также перед самими обратными слэшами
-	QString str;
-	for (int i = 0; i < text.size(); ++i)
-		str += text[i] == '\\' && i < text.size() - 1 && (text[i + 1] == '\'' || text[i + 1] == '\"' || text[i + 1] == '\\') ? text[++i] : text[i];
-	return str;
+	return "\"" + str + "\"";
 }
 
 std::wstring Utils::toStdWString(const QString &str)

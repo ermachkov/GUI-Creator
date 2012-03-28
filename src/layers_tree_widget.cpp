@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "layers_tree_widget.h"
 #include "base_layer.h"
+#include "game_object.h"
 #include "location.h"
 #include "layer.h"
 #include "layer_group.h"
@@ -354,6 +355,11 @@ void LayersTreeWidget::dropEvent(QDropEvent *event)
 	{
 		// дублирование дерева BaseLayer с прикреплением к новому родителю
 		baseAdded = baseSelected->duplicate(baseAddedParent, indexAdded);
+
+		// FIXME:
+		// генерация новых id и objectName для созданных объектов
+		adjustObjectNamesAndIds(baseAdded);
+
 	}
 	else if (currentDropAction == Qt::MoveAction)
 	{
@@ -615,6 +621,10 @@ void LayersTreeWidget::onContextMenuTriggered(QAction *action)
 		// дублирование дерева BaseLayer с прикреплением к новому родителю
 		BaseLayer *baseAdded = baseSelected->duplicate(baseSelectedParent, indexSelected);
 
+		// FIXME:
+		// генерация новых id и objectName для созданных объектов
+		adjustObjectNamesAndIds(baseAdded);
+
 		// модификация имени нового слоя
 		QString newName = generateCopyName(itemSelected->text(DATA_COLUMN));
 		baseAdded->setName(newName);
@@ -870,6 +880,31 @@ QString LayersTreeWidget::generateCopyName(const QString &name)
 		newName = baseName + " копия" + (i > 1 ? " " + QString::number(i) : "");
 
 	return newName;
+}
+
+void LayersTreeWidget::adjustObjectNamesAndIds(BaseLayer *baseLayer)
+{
+	Layer *layer = dynamic_cast<Layer *>(baseLayer);
+
+	if (layer != NULL)
+	{
+		// в слое проход по дочерним объектам
+		foreach(GameObject *object, layer->getGameObjects())
+		{
+			object->setName(mCurrentLocation->generateDuplicateName(object->getName()));
+			object->setObjectID(mCurrentLocation->generateDuplicateObjectID());
+		}
+	}
+	else
+	{
+		// в слое проход по дочерним слоям
+		foreach(BaseLayer *childBaseLayer, baseLayer->getChildLayers())
+		{
+			adjustObjectNamesAndIds(childBaseLayer);
+		}
+	}
+
+
 }
 
 QTreeWidgetItem *LayersTreeWidget::findItemByBaseLayer(BaseLayer *layer, QTreeWidgetItem *item) const

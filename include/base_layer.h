@@ -131,6 +131,9 @@ public:
 	// Привязывает координату по оси Y к игровым объектам
 	virtual void snapYCoord(qreal y, qreal x1, qreal x2, const QList<GameObject *> &excludedObjects, qreal &snappedY, qreal &distance, QLineF &line) const = 0;
 
+	// Устанавливает текущий язык для слоя
+	virtual void setCurrentLanguage(const QString &language) = 0;
+
 	// Дублирует слой
 	virtual BaseLayer *duplicate(BaseLayer *parent = NULL, int index = 0) const = 0;
 

@@ -79,6 +79,9 @@ public:
 	// Перемещает выделенные объекты вниз
 	void moveDown();
 
+	// Устанавливает текущий язык
+	void setCurrentLanguage(const QString &language);
+
 	// Возвращает список отсутствующих файлов в локации
 	QStringList getMissedFiles() const;
 

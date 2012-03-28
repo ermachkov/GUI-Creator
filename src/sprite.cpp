@@ -2,6 +2,7 @@
 #include "sprite.h"
 #include "layer.h"
 #include "lua_script.h"
+#include "project.h"
 #include "texture_manager.h"
 #include "utils.h"
 
@@ -21,6 +22,13 @@ Sprite::Sprite(const QString &name, int id, const QPointF &pos, const QString &f
 		mSize = mTexture->getSize();
 		mPosition = QPointF(qFloor(pos.x() - mSize.width() / 2.0), qFloor(pos.y() - mSize.height() / 2.0));
 	}
+
+	// инициализируем локализованные свойства
+	QString language = Project::getSingleton().getDefaultLanguage();
+	mPositionXMap[language] = mPosition.x();
+	mPositionYMap[language] = mPosition.y();
+	mWidthMap[language] = mSize.width();
+	mHeightMap[language] = mSize.height();
 
 	// обновляем текущую трансформацию
 	updateTransform();
@@ -64,6 +72,9 @@ bool Sprite::load(QDataStream &stream)
 	if (stream.status() != QDataStream::Ok)
 		return false;
 
+	// устанавливаем текущий язык
+	setCurrentLanguage(Project::getSingleton().getCurrentLanguage());
+
 	// загружаем текстуру спрайта
 	mTexture = TextureManager::getSingleton().loadTexture(mFileName);
 	return !mTexture.isNull();
@@ -97,6 +108,9 @@ bool Sprite::load(LuaScript &script)
 		return false;
 	mColor = QColor::fromRgba(color);
 
+	// устанавливаем текущий язык
+	setCurrentLanguage(Project::getSingleton().getCurrentLanguage());
+
 	// загружаем текстуру спрайта
 	mTexture = TextureManager::getSingleton().loadTexture(mFileName);
 	return !mTexture.isNull();
@@ -112,7 +126,7 @@ bool Sprite::save(QTextStream &stream, int indent)
 		return false;
 
 	// сохраняем свойства спрайта
-	stream << ", fileName = \"" << Utils::insertBackslashes(mFileName) << "\", color = 0x" << hex << mColor.rgba() << dec << "}";
+	stream << ", fileName = " << Utils::quotify(mFileName) << ", color = 0x" << hex << mColor.rgba() << dec << "}";
 	return stream.status() == QTextStream::Ok;
 }
 

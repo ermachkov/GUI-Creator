@@ -125,6 +125,9 @@ private:
 	// генерация имени копии по исходному имени
 	QString generateCopyName(const QString &name);
 
+	// генерация новых id и objectName для созданных копий объектов
+	void adjustObjectNamesAndIds(BaseLayer *baseLayer);
+
 	// поиск GUI слоя по BaseLayer * слоя
 	QTreeWidgetItem *findItemByBaseLayer(BaseLayer *layer, QTreeWidgetItem *item = NULL) const;
 

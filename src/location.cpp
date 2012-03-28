@@ -34,7 +34,7 @@ bool Location::load(const QString &fileName)
 	mRootLayer = new LayerGroup();
 
 	// читаем корневую таблицу
-	if (!script.pushTable(Utils::convertToCamelCase(QFileInfo(fileName).baseName())))
+	if (!script.pushTable(Utils::toCamelCase(QFileInfo(fileName).baseName())))
 		return false;
 
 	// читаем таблицу слоев
@@ -116,7 +116,7 @@ bool Location::save(const QString &fileName)
 
 	// записываем корневую таблицу
 	stream << endl << "-- Location root table. Do not declare global variables with the same name!" << endl;
-	stream << Utils::convertToCamelCase(QFileInfo(fileName).baseName()) << " =" << endl;
+	stream << Utils::toCamelCase(QFileInfo(fileName).baseName()) << " =" << endl;
 	stream << "{" << endl;
 
 	// сохраняем слои
@@ -230,6 +230,9 @@ GameObject *Location::loadGameObject(QDataStream &stream)
 
 QString Location::generateDuplicateName(const QString &name) const
 {
+	// FIXME: удалить
+	qDebug() << mRootLayer->getChildLayers().size();
+
 	// выделяем базовую часть имени
 	QString baseName = name;
 	int index = 0;

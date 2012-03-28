@@ -298,6 +298,23 @@ void EditorWindow::moveDown()
 	}
 }
 
+void EditorWindow::setCurrentLanguage(const QString &language)
+{
+	// устанавливаем новый язык
+	mLocation->getRootLayer()->setCurrentLanguage(language);
+
+	// пересчитываем прямоугольник выделения и центр вращения
+	if (!mSelectedObjects.empty())
+	{
+		QPointF scale((mOriginalCenter.x() - mOriginalRect.left()) / mOriginalRect.width(),
+			(mOriginalCenter.y() - mOriginalRect.top()) / mOriginalRect.height());
+		selectGameObjects(mSelectedObjects);
+		QPointF rotationCenter(mOriginalRect.width() * scale.x() + mOriginalRect.left(),
+			mOriginalRect.height() * scale.y() + mOriginalRect.top());
+		mOriginalCenter = mSnappedCenter = mSelectedObjects.size() == 1 ? mSelectedObjects.front()->getRotationCenter() : rotationCenter;
+	}
+}
+
 QStringList EditorWindow::getMissedFiles() const
 {
 	return mLocation->getRootLayer()->getMissedFiles();

@@ -30,20 +30,20 @@ public:
 	// Проверяет относительный путь к файлу на валидность
 	static bool isFileNameValid(const QString &fileName);
 
+	// Проверяет имя файла на валидность и выдает диалоговое окно в случае ошибки
+	static bool isFileNameValid(const QString &fileName, const QString &dir, QWidget *parent);
+
 	// Конвертирует правильное имя файла в стиль Camel
-	static QString convertToCamelCase(const QString &fileName);
+	static QString toCamelCase(const QString &fileName);
 
 	// Конвертирует правильное имя файла в стиль Pascal
-	static QString convertToPascalCase(const QString &fileName);
+	static QString toPascalCase(const QString &fileName);
 
 	// Проверяет существование файла с чувствительностью к регистру
 	static bool fileExists(const QString &path);
 
-	// Экранирует специальные символы в строке обратными слэшами
-	static QString insertBackslashes(const QString &text);
-
-	// Удаляет обратные слэши из строки
-	static QString stripBackslashes(const QString &text);
+	// Заключает строку в кавычки и экранирует специальные символы обратными слэшами
+	static QString quotify(const QString &text);
 
 	// Преобразует QString в std::wstring
 	static std::wstring toStdWString(const QString &str);

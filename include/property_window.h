@@ -56,9 +56,7 @@ private slots:
 
 	void on_mRotationCenterYLineEdit_editingFinished();
 
-	void on_mFileNameLineEdit_editingFinished();
-
-	void on_mFileNameBrowsePushButton_clicked();
+	void on_mSpriteFileNameBrowsePushButton_clicked();
 
 	void on_mSpriteOpacityHorizontalSlider_valueChanged(int value);
 
@@ -83,9 +81,9 @@ private:
 	const int PRECISION;
 
 	// отображение значений параметров объектов в виджетах ГУИ
-	void updateCommonWidgets(const QList<GameObject *> &objects, const QPointF &rotationCenter);
-	void updateSpriteWidgets(const QList<GameObject *> &objects);
-	void updateLabelWidgets(const QList<GameObject *> &objects);
+	void updateCommonWidgets();
+	void updateSpriteWidgets();
+	void updateLabelWidgets();
 
 	// просчет текущего общего ограничевающего прямоугольника
 	QRectF calculateCurrentBoundingRect();
@@ -99,12 +97,14 @@ private:
 	// возврат из опций текущей коренной директории
 	QString getRootPath() const;
 
+	QString getSpritesPath() const;
+
+	QString getFontsPath() const;
+
 	// загрузка и отображение списка доступных шрифтов в комбобоксе
 	void scanFonts();
 
-
-
-	QList<GameObject *> mCurrentSelectedObjects;    // текущие выделенные объекты
+	QList<GameObject *> mSelectedObjects;           // текущие выделенные объекты
 	QPointF             mRotationCenter;            // текущий центр вращения выделенных объектов
 
 	QButtonGroup        *mHorzAlignmentButtonGroup; // группировка кнопок горизонтального выравнивания

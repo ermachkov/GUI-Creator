@@ -205,6 +205,13 @@ void Layer::snapYCoord(qreal y, qreal x1, qreal x2, const QList<GameObject *> &e
 			object->snapYCoord(y, x1, x2, snappedY, distance, line);
 }
 
+void Layer::setCurrentLanguage(const QString &language)
+{
+	// устанавливаем текущий язык для всех дочерних игровых объектов
+	foreach (GameObject *object, mGameObjects)
+		object->setCurrentLanguage(language);
+}
+
 BaseLayer *Layer::duplicate(BaseLayer *parent, int index) const
 {
 	// создаем свою копию и добавляем ее к родительскому слою

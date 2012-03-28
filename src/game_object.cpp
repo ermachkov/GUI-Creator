@@ -2,6 +2,7 @@
 #include "game_object.h"
 #include "layer.h"
 #include "lua_script.h"
+#include "project.h"
 #include "utils.h"
 
 GameObject::GameObject()
@@ -19,7 +20,8 @@ GameObject::GameObject(const QString &name, int id, Layer *parent)
 
 GameObject::GameObject(const GameObject &object)
 : mName(object.mName), mObjectID(object.mObjectID), mPosition(object.mPosition), mSize(object.mSize),
-  mRotationAngle(object.mRotationAngle), mRotationCenter(object.mRotationCenter), mParentLayer(NULL)
+  mRotationAngle(object.mRotationAngle), mRotationCenter(object.mRotationCenter), mParentLayer(NULL),
+  mPositionXMap(object.mPositionXMap), mPositionYMap(object.mPositionYMap), mWidthMap(object.mWidthMap), mHeightMap(object.mHeightMap)
 {
 	// обновляем текущую трансформацию
 	updateTransform();
@@ -59,8 +61,14 @@ QPointF GameObject::getPosition() const
 
 void GameObject::setPosition(const QPointF &position)
 {
+	// устанавливаем новую позицию
 	mPosition = position;
 	updateTransform();
+
+	// записываем локализованные координаты для текущего языка
+	QString language = Project::getSingleton().getCurrentLanguage();
+	mPositionXMap[language] = mPosition.x();
+	mPositionYMap[language] = mPosition.y();
 }
 
 QSizeF GameObject::getSize() const
@@ -70,8 +78,14 @@ QSizeF GameObject::getSize() const
 
 void GameObject::setSize(const QSizeF &size)
 {
+	// устанавливаем новый размер
 	mSize = size;
 	updateTransform();
+
+	// записываем локализованные размеры для текущего языка
+	QString language = Project::getSingleton().getCurrentLanguage();
+	mWidthMap[language] = mSize.width();
+	mHeightMap[language] = mSize.height();
 }
 
 qreal GameObject::getRotationAngle() const
@@ -183,19 +197,14 @@ void GameObject::snapYCoord(qreal y, qreal x1, qreal x2, qreal &snappedY, qreal 
 bool GameObject::load(QDataStream &stream)
 {
 	// загружаем свойства объекта из потока
-	stream >> mName >> mObjectID >> mPosition >> mSize >> mRotationAngle >> mRotationCenter;
-	if (stream.status() != QDataStream::Ok)
-		return false;
-
-	// обновляем текущую трансформацию
-	updateTransform();
-	return true;
+	stream >> mName >> mObjectID >> mPositionXMap >> mPositionYMap >> mWidthMap >> mHeightMap >> mRotationAngle >> mRotationCenter;
+	return stream.status() == QDataStream::Ok;
 }
 
 bool GameObject::save(QDataStream &stream)
 {
 	// сохраняем данные в поток
-	stream << mName << mObjectID << mPosition << mSize << mRotationAngle << mRotationCenter;
+	stream << mName << mObjectID << mPositionXMap << mPositionYMap << mWidthMap << mHeightMap << mRotationAngle << mRotationCenter;
 	return stream.status() == QDataStream::Ok;
 }
 
@@ -203,26 +212,41 @@ bool GameObject::load(LuaScript &script)
 {
 	// загружаем свойства объекта из Lua скрипта
 	if (!script.getString("name", mName) || !script.getInt("id", mObjectID)
-		|| !script.getReal("posX", mPosition.rx()) || !script.getReal("posY", mPosition.ry())
-		|| !script.getReal("width", mSize.rwidth()) || !script.getReal("height", mSize.rheight())
+		|| !readRealMap(script, "posX", mPositionXMap) || !readRealMap(script, "posY", mPositionYMap)
+		|| !readRealMap(script, "width", mWidthMap) || !readRealMap(script, "height", mHeightMap)
 		|| !script.getReal("angle", mRotationAngle)
 		|| !script.getReal("centerX", mRotationCenter.rx()) || !script.getReal("centerY", mRotationCenter.ry()))
 		return false;
-
-	// обновляем текущую трансформацию
-	updateTransform();
 	return true;
 }
 
 bool GameObject::save(QTextStream &stream, int indent)
 {
 	// сохраняем свойства объекта в поток
-	stream << "name = \"" << Utils::insertBackslashes(mName) << "\", id = " << mObjectID
-		<< ", posX = " << mPosition.x() << ", posY = " << mPosition.y()
-		<< ", width = " << mSize.width() << ", height = " << mSize.height()
-		<< ", angle = " << mRotationAngle
-		<< ", centerX = " << mRotationCenter.x() << ", centerY = " << mRotationCenter.y();
+	stream << "name = " << Utils::quotify(mName) << ", id = " << mObjectID;
+	stream << ", posX = ";
+	writeRealMap(stream, mPositionXMap);
+	stream << ", posY = ";
+	writeRealMap(stream, mPositionYMap);
+	stream << ", width = ";
+	writeRealMap(stream, mWidthMap);
+	stream << ", height = ";
+	writeRealMap(stream, mHeightMap);
+	stream << ", angle = " << mRotationAngle << ", centerX = " << mRotationCenter.x() << ", centerY = " << mRotationCenter.y();
 	return stream.status() == QTextStream::Ok;
+}
+
+void GameObject::setCurrentLanguage(const QString &language)
+{
+	// устанавливаем новые значения позиции и размера для текущего языка
+	QString defaultLanguage = Project::getSingleton().getDefaultLanguage();
+	mPosition = QPointF(mPositionXMap[mPositionXMap.contains(language) ? language : defaultLanguage],
+		mPositionYMap[mPositionYMap.contains(language) ? language : defaultLanguage]);
+	mSize = QSizeF(mWidthMap[mWidthMap.contains(language) ? language : defaultLanguage],
+		mHeightMap[mHeightMap.contains(language) ? language : defaultLanguage]);
+
+	// обновляем текущую трансформацию
+	updateTransform();
 }
 
 QPointF GameObject::localToWorld(const QPointF &pt) const
@@ -257,5 +281,70 @@ void GameObject::updateTransform()
 		mBoundingRect.setTop(qMin(mBoundingRect.top(), mVertices[i].y()));
 		mBoundingRect.setRight(qMax(mBoundingRect.right(), mVertices[i].x()));
 		mBoundingRect.setBottom(qMax(mBoundingRect.bottom(), mVertices[i].y()));
+	}
+}
+
+bool GameObject::readRealMap(LuaScript &script, const QString &name, RealMap &map)
+{
+	// очищаем список локализации
+	map.clear();
+
+	// пробуем получить одиночное значение
+	qreal value;
+	if (script.getReal(name, value))
+	{
+		map[Project::getSingleton().getDefaultLanguage()] = value;
+		return true;
+	}
+
+	// пробуем получить таблицу с локализованными значениями
+	if (script.pushTable(name))
+	{
+		// получаем все элементы таблицы
+		script.firstEntry();
+		while (script.nextEntry())
+		{
+			QString key;
+			if (!script.getReal(value) || !script.getString(key, false))
+				return false;
+			map[key] = value;
+		}
+
+		// извлекаем таблицу из стека
+		script.popTable();
+
+		// проверяем, что в списке есть язык по умолчанию
+		return map.contains(Project::getSingleton().getDefaultLanguage());
+	}
+
+	return false;
+}
+
+void GameObject::writeRealMap(QTextStream &stream, RealMap &map)
+{
+	// удаляем дубликаты дефолтного значения из списка локализации
+	QString defaultLanguage = Project::getSingleton().getDefaultLanguage();
+	qreal defaultValue = map[defaultLanguage];
+	for (RealMap::iterator it = map.begin(); it != map.end();)
+	{
+		if (it.key() != defaultLanguage && Utils::isEqual(*it, defaultValue))
+			map.erase(it++);
+		else
+			++it;
+	}
+
+	// записываем значение свойства
+	if (map.size() > 1)
+	{
+		// записываем таблицу
+		stream << "{";
+		for (RealMap::const_iterator it = map.begin(); it != map.end(); ++it)
+			stream << "[" << Utils::quotify(it.key()) << "] = " << *it << (it != --map.end() ? ", " : "");
+		stream << "}";
+	}
+	else
+	{
+		// записываем одиночное значение
+		stream << defaultValue;
 	}
 }

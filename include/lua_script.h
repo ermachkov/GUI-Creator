@@ -16,7 +16,7 @@ public:
 	bool load(const QString &fileName);
 
 	// Возвращает строковое значение с вершины стека
-	bool getString(QString &value) const;
+	bool getString(QString &value, bool pop = true) const;
 
 	// Возвращает строковое значение по имени
 	bool getString(const QString &name, QString &value) const;
@@ -25,7 +25,7 @@ public:
 	bool getString(int index, QString &value) const;
 
 	// Возвращает целочисленное значение с вершины стека
-	bool getInt(int &value) const;
+	bool getInt(int &value, bool pop = true) const;
 
 	// Возвращает целочисленное значение по имени
 	bool getInt(const QString &name, int &value) const;
@@ -34,7 +34,7 @@ public:
 	bool getInt(int index, int &value) const;
 
 	// Возвращает вещественное значение с вершины стека
-	bool getReal(qreal &value) const;
+	bool getReal(qreal &value, bool pop = true) const;
 
 	// Возвращает вещественное значение по имени
 	bool getReal(const QString &name, qreal &value) const;
@@ -43,7 +43,7 @@ public:
 	bool getReal(int index, qreal &value) const;
 
 	// Возвращает булевское значение с вершины стека
-	bool getBool(bool &value) const;
+	bool getBool(bool &value, bool pop = true) const;
 
 	// Возвращает булевское значение по имени
 	bool getBool(const QString &name, bool &value) const;
@@ -59,6 +59,12 @@ public:
 
 	// Помещает таблицу в стек по индексу
 	bool pushTable(int index);
+
+	// Начинает обход таблицы
+	void firstEntry();
+
+	// Помещает в стек следующий элемент таблицы
+	bool nextEntry();
 
 	// Извлекает таблицу из стека
 	void popTable();

@@ -97,6 +97,31 @@ MainWindow::MainWindow()
 	mViewMenu->insertAction(zoomAction, mLayersWindow->toggleViewAction());
 	mViewMenu->insertSeparator(zoomAction);
 
+	// добавляем в меню Язык все доступные языки
+	QStringList languages = Project::getSingleton().getLanguages();
+	QStringList languageNames = Project::getSingleton().getLanguageNames();
+	QActionGroup *languagesActionGroup = new QActionGroup(this);
+	QSignalMapper *languagesSignalMapper = new QSignalMapper(this);
+	for (int i = 0; i < languages.size(); ++i)
+	{
+		// создаем пункт меню
+		QAction *action = new QAction(languageNames[i], this);
+		action->setCheckable(true);
+		mLanguageMenu->addAction(action);
+		languagesActionGroup->addAction(action);
+
+		// устанавливаем галочку для пункта меню с текущим языком
+		if (languages[i] == Project::getSingleton().getCurrentLanguage())
+			action->setChecked(true);
+
+		// добавляем в маппер сигнал от пункта меню
+		languagesSignalMapper->setMapping(action, languages[i]);
+		connect(action, SIGNAL(triggered()), languagesSignalMapper, SLOT(map()));
+	}
+
+	// связываем сигнал об изменении текущего языка
+	connect(languagesSignalMapper, SIGNAL(mapped(const QString &)), this, SLOT(onLanguageChanged(const QString &)));
+
 	// создаем текстовое поле для координат мыши
 	mMousePosLabel = new QLabel(this);
 	mStatusBar->addWidget(mMousePosLabel);
@@ -115,7 +140,7 @@ MainWindow::MainWindow()
 	QActionGroup *zoomActionGroup = new QActionGroup(this);
 
 	// для перенаправления сигналов от нескольких пунктов меню масштаба на один слот
-	QSignalMapper *zoomMapper = new QSignalMapper(this);
+	QSignalMapper *zoomSignalMapper = new QSignalMapper(this);
 
 	// создаем список масштабов
 	const qreal ZOOM_LIST[] = {0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0};
@@ -152,12 +177,12 @@ MainWindow::MainWindow()
 			action->setChecked(true);
 
 		// добавляем в маппер сигнал от пункта меню
-		zoomMapper->setMapping(action, zoomStr);
-		connect(action, SIGNAL(triggered()), zoomMapper, SLOT(map()));
+		zoomSignalMapper->setMapping(action, zoomStr);
+		connect(action, SIGNAL(triggered()), zoomSignalMapper, SLOT(map()));
 	}
 
 	// связываем сигналы изменения масштаба от пунктов меню и комбобокса
-	connect(zoomMapper, SIGNAL(mapped(const QString &)), this, SLOT(onZoomChanged(const QString &)));
+	connect(zoomSignalMapper, SIGNAL(mapped(const QString &)), this, SLOT(onZoomChanged(const QString &)));
 	connect(mZoomComboBox, SIGNAL(currentIndexChanged(const QString &)), this, SLOT(onZoomChanged(const QString &)));
 	connect(mZoomComboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(onZoomEditingFinished()));
 
@@ -265,8 +290,11 @@ void MainWindow::on_mOpenAction_triggered()
 	QString filter = "Файлы " + QCoreApplication::applicationName() + " (*.lua);;Все файлы (*)";
 	if (fileName.isEmpty())
 		fileName = QFileDialog::getOpenFileName(this, "Открыть", Options::getSingleton().getLastOpenedDirectory(), filter);
-	if (!checkFileName(fileName))
+	if (!Utils::isFileNameValid(fileName, Project::getSingleton().getRootDirectory() + Project::getSingleton().getLocationsDirectory(), this))
 		return;
+
+	// сохраняем каталог с выбранным файлом
+	Options::getSingleton().setLastOpenedDirectory(QFileInfo(fileName).path());
 
 	// проверяем, не открыт ли уже этот файл
 	for (int i = 0; i < mTabWidget->count(); ++i)
@@ -325,8 +353,11 @@ bool MainWindow::on_mSaveAsAction_triggered()
 	QString dir = editorWindow->isSaved() ? editorWindow->getFileName() : Options::getSingleton().getLastOpenedDirectory() + editorWindow->getFileName();
 	QString filter = "Файлы " + QCoreApplication::applicationName() + " (*.lua);;Все файлы (*)";
 	QString fileName = QFileDialog::getSaveFileName(this, "Сохранить как", dir, filter);
-	if (!checkFileName(fileName))
+	if (!Utils::isFileNameValid(fileName, Project::getSingleton().getRootDirectory() + Project::getSingleton().getLocationsDirectory(), this))
 		return false;
+
+	// сохраняем каталог с выбранным файлом
+	Options::getSingleton().setLastOpenedDirectory(QFileInfo(fileName).path());
 
 	// сохраняем файл
 	if (!editorWindow->save(fileName))
@@ -589,6 +620,19 @@ void MainWindow::onZoomEditingFinished()
 	onZoomChanged(zoomStr);
 }
 
+void MainWindow::onLanguageChanged(const QString &language)
+{
+	// устанавливаем текущий язык
+	Project::getSingleton().setCurrentLanguage(language);
+	for (int i = 0; i < mTabWidget->count(); ++i)
+		getEditorWindow(i)->setCurrentLanguage(language);
+
+	// обновляем окно свойств
+	EditorWindow *editorWindow = getEditorWindow();
+	if (editorWindow != NULL)
+		mPropertyWindow->onEditorWindowSelectionChanged(editorWindow->getSelectedObjects(), editorWindow->getRotationCenter());
+}
+
 void MainWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter)
 {
 	// разрешаем/запрещаем нужные пункты меню
@@ -722,35 +766,6 @@ void MainWindow::updateRecentFilesActions(const QString &fileName)
 
 	// показываем разделитель, если есть последние файлы
 	mRecentFilesSeparator->setVisible(numRecentFiles != 0);
-}
-
-bool MainWindow::checkFileName(const QString &fileName)
-{
-	// проверяем, что имя не пустое
-	if (fileName.isEmpty())
-		return false;
-
-	// сохраняем каталог с выбранным файлом
-	Options::getSingleton().setLastOpenedDirectory(QFileInfo(fileName).path());
-
-	// проверяем, что файл находится в каталоге с локациями
-	QString locationsDir = Project::getSingleton().getRootDirectory() + Project::getSingleton().getLocationsDirectory();
-	if (!fileName.startsWith(locationsDir))
-	{
-		QMessageBox::warning(this, "", "Неверный путь к файлу " + fileName + "\nВы можете работать с файлами только внутри папки " + locationsDir);
-		return false;
-	}
-
-	// проверяем относительный путь к файлу на валидность
-	QString relativePath = fileName.mid(locationsDir.size());
-	if (!Utils::isFileNameValid(relativePath))
-	{
-		QMessageBox::warning(this, "", "Неверный путь к файлу " + relativePath + "\nПереименуйте файлы и папки так, чтобы они "
-			"начинались с буквы и состояли только из маленьких латинских букв, цифр и знаков подчеркивания");
-		return false;
-	}
-
-	return true;
 }
 
 void MainWindow::checkMissedFiles()
