@@ -87,6 +87,9 @@ public:
 	// Сохраняет объект в текстовый поток
 	virtual bool save(QTextStream &stream, int indent);
 
+	// Устанавливает текущий язык для объекта
+	virtual void setCurrentLanguage(const QString &language);
+
 	// Дублирует объект
 	virtual GameObject *duplicate(Layer *parent = NULL) const;
 
@@ -101,6 +104,9 @@ public:
 
 private:
 
+	// Тип для списка локализованных шрифтов
+	typedef QMap<QString, QSharedPointer<FTFont> > FontMap;
+
 	QString                 mText;          // Текст надписи
 	QString                 mFileName;      // Имя файла со шрифтом
 	int                     mFontSize;      // Размер шрифта в пунктах
@@ -109,6 +115,10 @@ private:
 	VertAlignment           mVertAlignment; // Вертикальное выравнивание текста
 	qreal                   mLineSpacing;   // Межстрочный интервал
 	QColor                  mColor;         // Цвет текста
+
+	StringMap               mFileNameMap;   // Список локализованных имен файлов
+	RealMap                 mFontSizeMap;   // Список локализованных размеров шрифтов в пунктах
+	FontMap                 mFontMap;       // Список локализованных шрифтов
 };
 
 #endif // LABEL_H

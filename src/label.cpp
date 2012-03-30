@@ -31,6 +31,10 @@ Label::Label(const QString &name, int id, const QPointF &pos, const QString &fil
 	mWidthMap[language] = mSize.width();
 	mHeightMap[language] = mSize.height();
 
+	mFileNameMap[language] = mFileName;
+	mFontSizeMap[language] = mFontSize;
+	mFontMap[language] = mFont;
+
 	// обновляем текущую трансформацию
 	updateTransform();
 }
@@ -58,8 +62,14 @@ QString Label::getFileName() const
 
 void Label::setFileName(const QString &fileName)
 {
+	// устанавливаем новое имя файла и загружаем шрифт
 	mFileName = fileName;
 	mFont = FontManager::getSingleton().loadFont(mFileName, mFontSize);
+
+	// записываем локализованное имя файла и шрифт для текущего языка
+	QString language = Project::getSingleton().getCurrentLanguage();
+	mFileNameMap[language] = mFileName;
+	mFontMap[language] = mFont;
 }
 
 int Label::getFontSize() const
@@ -69,8 +79,14 @@ int Label::getFontSize() const
 
 void Label::setFontSize(int size)
 {
+	// устанавливаем новый размер шрифта и загружаем шрифт
 	mFontSize = size;
 	mFont = FontManager::getSingleton().loadFont(mFileName, mFontSize);
+
+	// записываем локализованный размер шрифта и шрифт для текущего языка
+	QString language = Project::getSingleton().getCurrentLanguage();
+	mFontSizeMap[language] = mFontSize;
+	mFontMap[language] = mFont;
 }
 
 Label::HorzAlignment Label::getHorzAlignment() const
@@ -121,18 +137,27 @@ bool Label::load(QDataStream &stream)
 
 	// загружаем данные надписи
 	int horzAlignment, vertAlignment;
-	stream >> mText >> mFileName >> mFontSize >> horzAlignment >> vertAlignment >> mLineSpacing >> mColor;
+	stream >> mText >> mFileNameMap >> mFontSizeMap >> horzAlignment >> vertAlignment >> mLineSpacing >> mColor;
 	if (stream.status() != QDataStream::Ok)
 		return false;
 	mHorzAlignment = static_cast<HorzAlignment>(horzAlignment);
 	mVertAlignment = static_cast<VertAlignment>(vertAlignment);
 
+	// загружаем локализованные шрифты
+	mFontMap.clear();
+	QStringList languages(mFileNameMap.keys() + mFontSizeMap.keys());
+	languages.removeDuplicates();
+	QString defaultLanguage = Project::getSingleton().getDefaultLanguage();
+	foreach (const QString &language, languages)
+	{
+		QString fileName = mFileNameMap[mFileNameMap.contains(language) ? language : defaultLanguage];
+		int size = static_cast<int>(mFontSizeMap[mFontSizeMap.contains(language) ? language : defaultLanguage]);
+		mFontMap[language] = FontManager::getSingleton().loadFont(fileName, size);
+	}
+
 	// устанавливаем текущий язык
 	setCurrentLanguage(Project::getSingleton().getCurrentLanguage());
-
-	// загружаем шрифт надписи
-	mFont = FontManager::getSingleton().loadFont(mFileName, mFontSize);
-	return !mFont.isNull();
+	return true;
 }
 
 bool Label::save(QDataStream &stream)
@@ -147,7 +172,7 @@ bool Label::save(QDataStream &stream)
 		return false;
 
 	// сохраняем данные надписи
-	stream << mText << mFileName << mFontSize << mHorzAlignment << mVertAlignment << mLineSpacing << mColor;
+	stream << mText << mFileNameMap << mFontSizeMap << mHorzAlignment << mVertAlignment << mLineSpacing << mColor;
 	return stream.status() == QDataStream::Ok;
 }
 
@@ -159,7 +184,7 @@ bool Label::load(LuaScript &script)
 
 	// загружаем данные надписи
 	int horzAlignment, vertAlignment, color;
-	if (!script.getString("text", mText) || !script.getString("fileName", mFileName) || !script.getInt("size", mFontSize)
+	if (!script.getString("text", mText) || !readStringMap(script, "fileName", mFileNameMap) || !readRealMap(script, "size", mFontSizeMap)
 		|| !script.getInt("horzAlignment", horzAlignment) || !script.getInt("vertAlignment", vertAlignment)
 		|| !script.getReal("lineSpacing", mLineSpacing) || !script.getInt("color", color))
 		return false;
@@ -167,12 +192,21 @@ bool Label::load(LuaScript &script)
 	mVertAlignment = static_cast<VertAlignment>(vertAlignment);
 	mColor = QColor::fromRgba(color);
 
+	// загружаем локализованные шрифты
+	mFontMap.clear();
+	QStringList languages(mFileNameMap.keys() + mFontSizeMap.keys());
+	languages.removeDuplicates();
+	QString defaultLanguage = Project::getSingleton().getDefaultLanguage();
+	foreach (const QString &language, languages)
+	{
+		QString fileName = mFileNameMap[mFileNameMap.contains(language) ? language : defaultLanguage];
+		int size = static_cast<int>(mFontSizeMap[mFontSizeMap.contains(language) ? language : defaultLanguage]);
+		mFontMap[language] = FontManager::getSingleton().loadFont(fileName, size);
+	}
+
 	// устанавливаем текущий язык
 	setCurrentLanguage(Project::getSingleton().getCurrentLanguage());
-
-	// загружаем шрифт надписи
-	mFont = FontManager::getSingleton().loadFont(mFileName, mFontSize);
-	return !mFont.isNull();
+	return true;
 }
 
 bool Label::save(QTextStream &stream, int indent)
@@ -185,10 +219,25 @@ bool Label::save(QTextStream &stream, int indent)
 		return false;
 
 	// сохраняем свойства надписи
-	stream << ", text = " << Utils::quotify(mText) << ", fileName = " << Utils::quotify(mFileName)
-		<< ", size = " << mFontSize << ", horzAlignment = " << mHorzAlignment << ", vertAlignment = " << mVertAlignment
+	stream << ", text = " << Utils::quotify(mText) << ", fileName = ";
+	writeStringMap(stream, mFileNameMap);
+	stream << ", size = ";
+	writeRealMap(stream, mFontSizeMap);
+	stream << ", horzAlignment = " << mHorzAlignment << ", vertAlignment = " << mVertAlignment
 		<< ", lineSpacing = " << mLineSpacing << ", color = 0x" << hex << mColor.rgba() << dec << "}";
 	return stream.status() == QTextStream::Ok;
+}
+
+void Label::setCurrentLanguage(const QString &language)
+{
+	// устанавливаем язык для игрового объекта
+	GameObject::setCurrentLanguage(language);
+
+	// устанавливаем новые значения для имени файла, размера шрифта и объекта шрифта
+	QString defaultLanguage = Project::getSingleton().getDefaultLanguage();
+	mFileName = mFileNameMap[mFileNameMap.contains(language) ? language : defaultLanguage];
+	mFontSize = static_cast<int>(mFontSizeMap[mFontSizeMap.contains(language) ? language : defaultLanguage]);
+	mFont = mFontMap[mFontMap.contains(language) ? language : defaultLanguage];
 }
 
 GameObject *Label::duplicate(Layer *parent) const
@@ -202,8 +251,12 @@ GameObject *Label::duplicate(Layer *parent) const
 
 QStringList Label::getMissedFiles() const
 {
-	// возвращаем имя шрифта, если он дефолтный
-	return mFont == FontManager::getSingleton().getDefaultFont() ? QStringList(mFileName) : QStringList();
+	// возвращаем имена незагруженных шрифтов
+	QStringList missedFiles;
+	for (StringMap::const_iterator it = mFileNameMap.begin(); it != mFileNameMap.end(); ++it)
+		if (mFontMap[it.key()] == FontManager::getSingleton().getDefaultFont())
+			missedFiles.push_back(*it);
+	return missedFiles;
 }
 
 bool Label::changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture)
@@ -256,7 +309,7 @@ void Label::draw()
 
 	// определяем начальную координату по оси Y с учетом вертикального выравнивания
 	qreal y = 0.0;
-	qreal height = lines.size() * mFont->LineHeight() * mLineSpacing;
+	qreal height = ((lines.size() - 1) * mLineSpacing + 1.0) * mFont->LineHeight();
 	if (mVertAlignment == VERT_ALIGN_CENTER)
 		y = (qAbs(mSize.height()) - height) / 2.0;
 	else if (mVertAlignment == VERT_ALIGN_BOTTOM)

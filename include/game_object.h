@@ -127,6 +127,12 @@ protected:
 	// Записывает список локализованных вещественных чисел
 	void writeRealMap(QTextStream &stream, RealMap &map);
 
+	// Читает список локализованных строк
+	bool readStringMap(LuaScript &script, const QString &name, StringMap &map);
+
+	// Записывает список локализованных строк
+	void writeStringMap(QTextStream &stream, StringMap &map);
+
 	QString     mName;              // Имя (текстовое описание) объекта
 	int         mObjectID;          // Идентификатор объекта
 	QPointF     mPosition;          // Мировые координаты объекта

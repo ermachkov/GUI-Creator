@@ -30,6 +30,9 @@ Sprite::Sprite(const QString &name, int id, const QPointF &pos, const QString &f
 	mWidthMap[language] = mSize.width();
 	mHeightMap[language] = mSize.height();
 
+	mFileNameMap[language] = mFileName;
+	mTextureMap[language] = mTexture;
+
 	// обновляем текущую трансформацию
 	updateTransform();
 }
@@ -47,8 +50,14 @@ QString Sprite::getFileName() const
 
 void Sprite::setFileName(const QString &fileName)
 {
+	// устанавливаем новое имя файла и загружаем текстуру
 	mFileName = fileName;
 	mTexture = TextureManager::getSingleton().loadTexture(mFileName);
+
+	// записываем локализованное имя файла и текстуру для текущего языка
+	QString language = Project::getSingleton().getCurrentLanguage();
+	mFileNameMap[language] = mFileName;
+	mTextureMap[language] = mTexture;
 }
 
 QColor Sprite::getColor() const
@@ -68,16 +77,18 @@ bool Sprite::load(QDataStream &stream)
 		return false;
 
 	// загружаем данные спрайта
-	stream >> mFileName >> mColor;
+	stream >> mFileNameMap >> mColor;
 	if (stream.status() != QDataStream::Ok)
 		return false;
 
+	// загружаем локализованные текстуры
+	mTextureMap.clear();
+	for (StringMap::const_iterator it = mFileNameMap.begin(); it != mFileNameMap.end(); ++it)
+		mTextureMap[it.key()] = TextureManager::getSingleton().loadTexture(*it);
+
 	// устанавливаем текущий язык
 	setCurrentLanguage(Project::getSingleton().getCurrentLanguage());
-
-	// загружаем текстуру спрайта
-	mTexture = TextureManager::getSingleton().loadTexture(mFileName);
-	return !mTexture.isNull();
+	return true;
 }
 
 bool Sprite::save(QDataStream &stream)
@@ -92,7 +103,7 @@ bool Sprite::save(QDataStream &stream)
 		return false;
 
 	// сохраняем данные спрайта
-	stream << mFileName << mColor;
+	stream << mFileNameMap << mColor;
 	return stream.status() == QDataStream::Ok;
 }
 
@@ -104,16 +115,18 @@ bool Sprite::load(LuaScript &script)
 
 	// загружаем данные спрайта
 	int color;
-	if (!script.getString("fileName", mFileName) || !script.getInt("color", color))
+	if (!readStringMap(script, "fileName", mFileNameMap) || !script.getInt("color", color))
 		return false;
 	mColor = QColor::fromRgba(color);
 
+	// загружаем локализованные текстуры
+	mTextureMap.clear();
+	for (StringMap::const_iterator it = mFileNameMap.begin(); it != mFileNameMap.end(); ++it)
+		mTextureMap[it.key()] = TextureManager::getSingleton().loadTexture(*it);
+
 	// устанавливаем текущий язык
 	setCurrentLanguage(Project::getSingleton().getCurrentLanguage());
-
-	// загружаем текстуру спрайта
-	mTexture = TextureManager::getSingleton().loadTexture(mFileName);
-	return !mTexture.isNull();
+	return true;
 }
 
 bool Sprite::save(QTextStream &stream, int indent)
@@ -126,8 +139,21 @@ bool Sprite::save(QTextStream &stream, int indent)
 		return false;
 
 	// сохраняем свойства спрайта
-	stream << ", fileName = " << Utils::quotify(mFileName) << ", color = 0x" << hex << mColor.rgba() << dec << "}";
+	stream << ", fileName = ";
+	writeStringMap(stream, mFileNameMap);
+	stream << ", color = 0x" << hex << mColor.rgba() << dec << "}";
 	return stream.status() == QTextStream::Ok;
+}
+
+void Sprite::setCurrentLanguage(const QString &language)
+{
+	// устанавливаем язык для игрового объекта
+	GameObject::setCurrentLanguage(language);
+
+	// устанавливаем новые значения для имени файла и текстуры
+	QString defaultLanguage = Project::getSingleton().getDefaultLanguage();
+	mFileName = mFileNameMap[mFileNameMap.contains(language) ? language : defaultLanguage];
+	mTexture = mTextureMap[mTextureMap.contains(language) ? language : defaultLanguage];
 }
 
 GameObject *Sprite::duplicate(Layer *parent) const
@@ -141,20 +167,27 @@ GameObject *Sprite::duplicate(Layer *parent) const
 
 QStringList Sprite::getMissedFiles() const
 {
-	// возвращаем имя текстуры, если она дефолтная
-	return mTexture == TextureManager::getSingleton().getDefaultTexture() ? QStringList(mFileName) : QStringList();
+	// возвращаем имена незагруженных текстур
+	QStringList missedFiles;
+	for (StringMap::const_iterator it = mFileNameMap.begin(); it != mFileNameMap.end(); ++it)
+		if (mTextureMap[it.key()] == TextureManager::getSingleton().getDefaultTexture())
+			missedFiles.push_back(*it);
+	return missedFiles;
 }
 
 bool Sprite::changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture)
 {
-	// заменяем текстуру спрайта, если она совпадает с текущей
-	if (mFileName == fileName)
-	{
-		mTexture = texture;
-		return true;
-	}
-
-	return false;
+	// заменяем старую текстуру спрайта на новую
+	bool changed = false;
+	for (StringMap::const_iterator it = mFileNameMap.begin(); it != mFileNameMap.end(); ++it)
+		if (*it == fileName)
+		{
+			mTextureMap[it.key()] = texture;
+			if (it.key() == Project::getSingleton().getCurrentLanguage())
+				mTexture = texture;
+			changed = true;
+		}
+	return changed;
 }
 
 void Sprite::draw()

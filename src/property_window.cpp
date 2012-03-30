@@ -98,9 +98,10 @@ PropertyWindow::PropertyWindow(QWidget *parent)
 
 void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter)
 {
-	// снятие фокуса
-	if (QApplication::focusWidget() != NULL)
-		QApplication::focusWidget()->clearFocus();
+	QWidget *widgetWithFocus = QApplication::focusWidget();
+	for (QWidget *widget = widgetWithFocus; widget != NULL; widget = widget->parentWidget())
+		if (widget == this)
+			widgetWithFocus->clearFocus();
 
 	// сохранение выделенных объектов во внутренний список
 	mSelectedObjects = objects;

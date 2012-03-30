@@ -348,3 +348,68 @@ void GameObject::writeRealMap(QTextStream &stream, RealMap &map)
 		stream << defaultValue;
 	}
 }
+
+bool GameObject::readStringMap(LuaScript &script, const QString &name, StringMap &map)
+{
+	// очищаем список локализации
+	map.clear();
+
+	// пробуем получить одиночное значение
+	QString value;
+	if (script.getString(name, value))
+	{
+		map[Project::getSingleton().getDefaultLanguage()] = value;
+		return true;
+	}
+
+	// пробуем получить таблицу с локализованными значениями
+	if (script.pushTable(name))
+	{
+		// получаем все элементы таблицы
+		script.firstEntry();
+		while (script.nextEntry())
+		{
+			QString key;
+			if (!script.getString(value) || !script.getString(key, false))
+				return false;
+			map[key] = value;
+		}
+
+		// извлекаем таблицу из стека
+		script.popTable();
+
+		// проверяем, что в списке есть язык по умолчанию
+		return map.contains(Project::getSingleton().getDefaultLanguage());
+	}
+
+	return false;
+}
+
+void GameObject::writeStringMap(QTextStream &stream, StringMap &map)
+{
+	// удаляем дубликаты дефолтного значения из списка локализации
+	QString defaultLanguage = Project::getSingleton().getDefaultLanguage();
+	QString defaultValue = map[defaultLanguage];
+	for (StringMap::iterator it = map.begin(); it != map.end();)
+	{
+		if (it.key() != defaultLanguage && *it == defaultValue)
+			map.erase(it++);
+		else
+			++it;
+	}
+
+	// записываем значение свойства
+	if (map.size() > 1)
+	{
+		// записываем таблицу
+		stream << "{";
+		for (StringMap::const_iterator it = map.begin(); it != map.end(); ++it)
+			stream << "[" << Utils::quotify(it.key()) << "] = " << Utils::quotify(*it) << (it != --map.end() ? ", " : "");
+		stream << "}";
+	}
+	else
+	{
+		// записываем одиночное значение
+		stream << Utils::quotify(defaultValue);
+	}
+}

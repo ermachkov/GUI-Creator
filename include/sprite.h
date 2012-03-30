@@ -42,6 +42,9 @@ public:
 	// Сохраняет объект в текстовый поток
 	virtual bool save(QTextStream &stream, int indent);
 
+	// Устанавливает текущий язык для объекта
+	virtual void setCurrentLanguage(const QString &language);
+
 	// Дублирует объект
 	virtual GameObject *duplicate(Layer *parent = NULL) const;
 
@@ -56,9 +59,15 @@ public:
 
 private:
 
-	QString                 mFileName;  // Имя файла с текстурой
-	QSharedPointer<Texture> mTexture;   // Текстура спрайта
-	QColor                  mColor;     // Цвет спрайта
+	// Тип для списка локализованных текстур
+	typedef QMap<QString, QSharedPointer<Texture> > TextureMap;
+
+	QString                 mFileName;      // Имя файла с текстурой
+	QSharedPointer<Texture> mTexture;       // Текстура спрайта
+	QColor                  mColor;         // Цвет спрайта
+
+	StringMap               mFileNameMap;   // Список локализованных имен файлов
+	TextureMap              mTextureMap;    // Список локализованных текстур
 };
 
 #endif // SPRITE_H

@@ -1232,6 +1232,9 @@ void EditorWindow::dropEvent(QDropEvent *event)
 	updateMouseCursor(pos);
 	emitLayerChangedSignals(getParentLayers());
 
+	// устанавливаем фокус на окне редактирования
+	setFocus();
+
 	// принимаем перетаскивание
 	event->acceptProposedAction();
 }
