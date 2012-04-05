@@ -212,6 +212,13 @@ void Layer::setCurrentLanguage(const QString &language)
 		object->setCurrentLanguage(language);
 }
 
+void Layer::loadTranslations(LuaScript *script)
+{
+	// загружаем переводы для всех дочерних игровых объектов
+	foreach (GameObject *object, mGameObjects)
+		object->loadTranslations(script);
+}
+
 BaseLayer *Layer::duplicate(BaseLayer *parent, int index) const
 {
 	// создаем свою копию и добавляем ее к родительскому слою

@@ -14,13 +14,16 @@ class EditorWindow : public QGLWidget
 public:
 
 	// Конструктор
-	EditorWindow(QWidget *parent, QGLWidget *shareWidget, const QString &fileName);
+	EditorWindow(QWidget *parent, QGLWidget *shareWidget, const QString &fileName, QWidget *spriteWidget, QWidget *fontWidget);
 
 	// Загружает локацию из файла
 	bool load(const QString &fileName);
 
 	// Сохраняет локацию в файл
 	bool save(const QString &fileName);
+
+	// Загружает файл переводов
+	bool loadTranslationFile(const QString &fileName);
 
 	// Возвращает указатель на редактируемую игровую локацию
 	Location *getLocation() const;
@@ -251,6 +254,9 @@ private:
 	QPointF             mSnappedCenter;     // Текущий центр вращения, привязанный к сетке
 	QVector2D           mRotationVector;    // Начальный вектор вращения
 	QCursor             mRotateCursor;      // Курсор поворота
+
+	QWidget             *mSpriteWidget;     // Указатель на виджет спрайтов для перетаскивания
+	QWidget             *mFontWidget;       // Указатель на виджет шрифтов для перетаскивания
 };
 
 #endif // EDITOR_WINDOW_H

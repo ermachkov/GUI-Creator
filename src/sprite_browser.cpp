@@ -57,6 +57,11 @@ SpriteBrowser::~SpriteBrowser()
 	delete mThumbnailLoader;
 }
 
+QWidget *SpriteBrowser::getSpriteWidget() const
+{
+	return mListWidget;
+}
+
 void SpriteBrowser::timerEvent(QTimerEvent *event)
 {
 	for (ThumbnailCache::iterator it = mThumbnailCache.begin(); it != mThumbnailCache.end(); ++it)
@@ -400,9 +405,8 @@ void SpriteBrowser::update(QString oldPath, QString newPath)
 		QListWidgetItem *item = new QListWidgetItem(fileName, mListWidget);
 		item->setIcon(iterTC->getIcon());
 
-		// сохраняем тип и относительный путь к файлу для поддержки перетаскивания
-		item->setData(Qt::UserRole, "Sprite");
-		item->setData(Qt::UserRole + 1, Project::getSingleton().getSpritesDirectory() + mRelativePath + fileName);
+		// сохраняем полный путь к файлу для поддержки перетаскивания
+		item->setData(Qt::UserRole, getRootPath() + mRelativePath + fileName);
 
 		// всплывающая подсказка с несокращенным именем
 		item->setToolTip(fileName);

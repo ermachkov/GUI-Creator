@@ -249,6 +249,10 @@ void GameObject::setCurrentLanguage(const QString &language)
 	updateTransform();
 }
 
+void GameObject::loadTranslations(LuaScript *script)
+{
+}
+
 QPointF GameObject::localToWorld(const QPointF &pt) const
 {
 	return mTransform.map(pt);

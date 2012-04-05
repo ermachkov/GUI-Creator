@@ -98,16 +98,16 @@
     <addaction name="mMoveUpAction"/>
     <addaction name="mMoveDownAction"/>
    </widget>
-   <widget class="QMenu" name="mLanguageMenu">
+   <widget class="QMenu" name="mLocalizationMenu">
     <property name="title">
-     <string>&amp;Язык</string>
+     <string>&amp;Локализация</string>
     </property>
    </widget>
    <addaction name="mFileMenu"/>
    <addaction name="mEditMenu"/>
    <addaction name="mViewMenu"/>
    <addaction name="mObjectMenu"/>
-   <addaction name="mLanguageMenu"/>
+   <addaction name="mLocalizationMenu"/>
   </widget>
   <widget class="QStatusBar" name="mStatusBar"/>
   <widget class="QToolBar" name="mFileToolBar">

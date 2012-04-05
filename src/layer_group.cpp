@@ -173,6 +173,13 @@ void LayerGroup::setCurrentLanguage(const QString &language)
 		layer->setCurrentLanguage(language);
 }
 
+void LayerGroup::loadTranslations(LuaScript *script)
+{
+	// загружаем переводы для всех дочерних слоев
+	foreach (BaseLayer *layer, mChildLayers)
+		layer->loadTranslations(script);
+}
+
 BaseLayer *LayerGroup::duplicate(BaseLayer *parent, int index) const
 {
 	// создаем свою копию и добавляем ее к родительскому слою

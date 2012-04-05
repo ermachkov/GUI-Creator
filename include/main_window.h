@@ -124,6 +124,9 @@ private slots:
 	// Обработчик изменения текущего языка
 	void onLanguageChanged(const QString &language);
 
+	// Обработчик изменения файла переводов
+	void onTranslationFileChanged(const QString &path);
+
 	// Обработчик изменения выделения в окне редактирования
 	void onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter);
 
@@ -150,6 +153,23 @@ private slots:
 
 private:
 
+	// Структура с информацией о файле переводов
+	struct TranslationFileInfo
+	{
+		// Конструктор
+		TranslationFileInfo(EditorWindow *editorWindow)
+		: mEditorWindow(editorWindow), mChanged(false)
+		{
+		}
+
+		EditorWindow    *mEditorWindow;     // Указатель на соответствующее окно редактирования
+		bool            mChanged;           // Флаг изменения файла переводов
+		QElapsedTimer   mTimer;             // Таймер для отсчета времени с момента последнего изменения файла переводов
+	};
+
+	// Тип для списка файлов переводов
+	typedef QMap<QString, TranslationFileInfo> TranslationFilesMap;
+
 	// Валидатор формата int с процентом на конце
 	class PercentIntValidator : public QIntValidator
 	{
@@ -172,6 +192,9 @@ private:
 	// Создает новое окно редактирования
 	EditorWindow *createEditorWindow(const QString &fileName);
 
+	// Определяет имя файла переводов по имени файла локации
+	QString getTranslationFileName(const QString &fileName) const;
+
 	// Обновляет состояния пунктов главного меню
 	void updateMainMenuActions();
 
@@ -181,19 +204,23 @@ private:
 	// Проверяет текущую локацию на наличие отсутствующих файлов
 	void checkMissedFiles();
 
-	SpriteBrowser       *mSpriteBrowser;        // Браузер спрайтов
-	FontBrowser         *mFontBrowser;          // Браузер шрифтов
-	PropertyWindow      *mPropertyWindow;       // Окно свойств объекта
-	LayersWindow        *mLayersWindow;         // Окно слоев
-	int                 mUntitledIndex;         // Текущий номер для новых файлов
+	SpriteBrowser       *mSpriteBrowser;            // Браузер спрайтов
+	FontBrowser         *mFontBrowser;              // Браузер шрифтов
+	PropertyWindow      *mPropertyWindow;           // Окно свойств объекта
+	LayersWindow        *mLayersWindow;             // Окно слоев
+	int                 mUntitledIndex;             // Текущий номер для новых файлов
 
-	QGLWidget           *mPrimaryGLWidget;      // OpenGL виджет для загрузки текстур в главном потоке
-	QGLWidget           *mSecondaryGLWidget;    // OpenGL виджет для загрузки текстур в фоновом потоке
-	QLabel              *mMousePosLabel;        // Текстовое поле для координат мыши в строке статуса
-	QComboBox           *mZoomComboBox;         // Выпадающий список масштабов
-	QList<qreal>        mZoomList;              // Список масштабов
-	QList<QAction *>    mRecentFilesActions;    // Список пунктов меню с последними файлами
-	QAction             *mRecentFilesSeparator; // Разделитель для пунктов меню с последними файлами
+	QGLWidget           *mPrimaryGLWidget;          // OpenGL виджет для загрузки текстур в главном потоке
+	QGLWidget           *mSecondaryGLWidget;        // OpenGL виджет для загрузки текстур в фоновом потоке
+	QLabel              *mMousePosLabel;            // Текстовое поле для координат мыши в строке статуса
+	QComboBox           *mZoomComboBox;             // Выпадающий список масштабов
+	QList<qreal>        mZoomList;                  // Список масштабов
+	QList<QAction *>    mRecentFilesActions;        // Список пунктов меню с последними файлами
+	QAction             *mRecentFilesSeparator;     // Разделитель для пунктов меню с последними файлами
+
+	QFileSystemWatcher  *mTranslationFilesWatcher;  // Объект слежения за файлами переводов
+	TranslationFilesMap mTranslationFilesMap;       // Список файлов переводов, поставленных на слежение
+	int                 mTranslationCounter;        // Счетчик для перезагрузки файлов переводов по таймеру
 };
 
 #endif // MAIN_WINDOW_H

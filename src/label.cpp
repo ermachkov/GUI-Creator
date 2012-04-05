@@ -20,7 +20,7 @@ Label::Label(const QString &name, int id, const QPointF &pos, const QString &fil
 	// задаем начальную позицию и размер надписи
 	if (!mFont.isNull())
 	{
-		mSize = QSizeF(qCeil(mFont->Advance(Utils::toStdWString(mText).c_str())) + 1.0, qCeil(mFont->LineHeight()));
+		mSize = QSizeF(qCeil(mFont->Advance(Utils::toStdWString(getText()).c_str())) + 1.0, qCeil(mFont->LineHeight()));
 		mPosition = QPointF(qFloor(pos.x() - mSize.width() / 2.0), qFloor(pos.y() - mSize.height() / 2.0));
 	}
 
@@ -47,7 +47,8 @@ Label::~Label()
 
 QString Label::getText() const
 {
-	return mText;
+	StringMap::const_iterator it = mTranslationMap.find(Project::getSingleton().getCurrentLanguage());
+	return it != mTranslationMap.end() ? *it : mText;
 }
 
 void Label::setText(const QString &text)
@@ -240,6 +241,32 @@ void Label::setCurrentLanguage(const QString &language)
 	mFont = mFontMap[mFontMap.contains(language) ? language : defaultLanguage];
 }
 
+void Label::loadTranslations(LuaScript *script)
+{
+	// очищаем таблицу переводов
+	mTranslationMap.clear();
+
+	// выходим, если скрипт не задан
+	if (script == NULL)
+		return;
+
+	// ищем таблицу с переводами в скрипте по ID объекта
+	if (!script->pushTable(mObjectID))
+		return;
+
+	// читаем таблицу переводов
+	script->firstEntry();
+	while (script->nextEntry())
+	{
+		QString key, value;
+		if (script->getString(value) && script->getString(key, false))
+			mTranslationMap[key] = value;
+	}
+
+	// извлекаем таблицу переводов из стека
+	script->popTable();
+}
+
 GameObject *Label::duplicate(Layer *parent) const
 {
 	// создаем свою копию и добавляем ее к родительскому слою
@@ -278,7 +305,7 @@ void Label::draw()
 	// разбиваем текст на строки
 	QStringList lines;
 	qreal spaceWidth = mFont->Advance(L" ");
-	foreach (const QString &line, mText.split("\n"))
+	foreach (const QString &line, getText().split("\n"))
 	{
 		// разбиваем строку на слова
 		qreal width = 0.0, oldWidth = 0.0;

@@ -90,6 +90,9 @@ public:
 	// Устанавливает текущий язык для объекта
 	virtual void setCurrentLanguage(const QString &language);
 
+	// Загружает переводы из Lua скрипта
+	virtual void loadTranslations(LuaScript *script);
+
 	// Дублирует объект
 	virtual GameObject *duplicate(Layer *parent = NULL) const;
 
@@ -107,18 +110,20 @@ private:
 	// Тип для списка локализованных шрифтов
 	typedef QMap<QString, QSharedPointer<FTFont> > FontMap;
 
-	QString                 mText;          // Текст надписи
-	QString                 mFileName;      // Имя файла со шрифтом
-	int                     mFontSize;      // Размер шрифта в пунктах
-	QSharedPointer<FTFont>  mFont;          // Шрифт надписи
-	HorzAlignment           mHorzAlignment; // Горизонтальное выравнивание текста
-	VertAlignment           mVertAlignment; // Вертикальное выравнивание текста
-	qreal                   mLineSpacing;   // Межстрочный интервал
-	QColor                  mColor;         // Цвет текста
+	QString                 mText;              // Текст надписи
+	QString                 mFileName;          // Имя файла со шрифтом
+	int                     mFontSize;          // Размер шрифта в пунктах
+	QSharedPointer<FTFont>  mFont;              // Шрифт надписи
+	HorzAlignment           mHorzAlignment;     // Горизонтальное выравнивание текста
+	VertAlignment           mVertAlignment;     // Вертикальное выравнивание текста
+	qreal                   mLineSpacing;       // Межстрочный интервал
+	QColor                  mColor;             // Цвет текста
 
-	StringMap               mFileNameMap;   // Список локализованных имен файлов
-	RealMap                 mFontSizeMap;   // Список локализованных размеров шрифтов в пунктах
-	FontMap                 mFontMap;       // Список локализованных шрифтов
+	StringMap               mFileNameMap;       // Список локализованных имен файлов
+	RealMap                 mFontSizeMap;       // Список локализованных размеров шрифтов в пунктах
+	FontMap                 mFontMap;           // Список локализованных шрифтов
+
+	StringMap               mTranslationMap;    // Таблица переводов для надписи
 };
 
 #endif // LABEL_H

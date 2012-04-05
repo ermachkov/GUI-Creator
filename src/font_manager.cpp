@@ -42,7 +42,7 @@ QSharedPointer<FTFont> FontManager::loadFont(const QString &fileName, int size, 
 	QSharedPointer<FTFont> font;
 	QString path = Project::getSingleton().getRootDirectory() + fileName;
 	mPrimaryGLWidget->makeCurrent();
-	if (Utils::fileExists(path) && (font = QSharedPointer<FTFont>(new FTTextureFont(path.toStdString().c_str())))->Error() == 0)
+	if (Utils::fileExists(path) && (font = QSharedPointer<FTFont>(new FTTextureFont(Utils::toStdString(path).c_str())))->Error() == 0)
 	{
 		// настраиваем загруженный шрифт и добавляем его в кэш
 		font->GlyphLoadFlags(FT_LOAD_DEFAULT);
@@ -55,6 +55,11 @@ QSharedPointer<FTFont> FontManager::loadFont(const QString &fileName, int size, 
 		// возвращаем шрифт по умолчанию
 		font = mDefaultFont;
 		mFontCache.push_back(FontInfo(fileName, size, font));
+	}
+	else
+	{
+		// очищаем указатель на шрифт в случае ошибки
+		font.clear();
 	}
 
 	return font;

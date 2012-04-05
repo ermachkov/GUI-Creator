@@ -15,7 +15,8 @@ public:
 	// Деструктор
 	virtual ~FontBrowser();
 
-
+	// Возвращает указатель на виджет со списком шрифтов
+	QWidget *getFontWidget() const;
 
 private slots:
 
@@ -34,24 +35,28 @@ private:
 		PreviewItemDelegate(QObject *parent = NULL);
 
 		// произвольная отрисовка
-//		virtual void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index ) const;
+		virtual void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index ) const;
 
 		// возврат размеров элемента
-//		virtual QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const;
+		virtual QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const;
 	};
 
-	// возврат из опций коренной директории для шрифтов
+	// возврат поддиректории для шрифтов
 	QString getFontPath() const;
+
+	// возврат коренной директории
+	QString getRootPath() const;
 
 	// пересоздание фреймбуфера
 	void recreateFrameBuffer(int width, int height);
 
 	// загрузка и отображение списка доступных шрифтов
-	void scanFonts();
+	void scanFonts(const QString &path);
 
-	QFileSystemModel      *mFileModel;
-	QGLFramebufferObject  *mFrameBuffer;   // фреймбуфер для отрисовки иконки предпросмотра шрифта
-	QIcon                 mIconDrawText;   // иконка в браузере текста
+	QFileSystemModel       *mFileModel;     // модель файловой системы для шрифтов
+	QGLFramebufferObject   *mFrameBuffer;   // фреймбуфер для отрисовки иконки предпросмотра шрифта
+//	QIcon                  mIconDrawText;   // иконка в браузере текста
+	QMap<QString, QImage>  mImages;         // иконки предпросмотра текста
 
 };
 

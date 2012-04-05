@@ -134,6 +134,9 @@ public:
 	// Устанавливает текущий язык для слоя
 	virtual void setCurrentLanguage(const QString &language) = 0;
 
+	// Загружает переводы из Lua скрипта
+	virtual void loadTranslations(LuaScript *script) = 0;
+
 	// Дублирует слой
 	virtual BaseLayer *duplicate(BaseLayer *parent = NULL, int index = 0) const = 0;
 

@@ -42,6 +42,17 @@ PropertyWindow::PropertyWindow(QWidget *parent)
 	mScrollArea->setVisible(false);
 	mNoSelectionObjectsLabel->setVisible(true);
 
+	// установка валидаторов
+	mPositionXLineEdit->setValidator(new QDoubleValidator(-10000, +10000, 6, this));
+	mPositionYLineEdit->setValidator(new QDoubleValidator(-10000, +10000, 6, this));
+	mSizeWLineEdit->setValidator(new QDoubleValidator(1, +10000, 6, this));
+	mSizeHLineEdit->setValidator(new QDoubleValidator(1, +10000, 6, this));
+	mRotationAngleComboBox->setValidator(new QDoubleValidator(-360, +360, 6, this));
+	mRotationCenterXLineEdit->setValidator(new QDoubleValidator(-10000, +10000, 6, this));
+	mRotationCenterYLineEdit->setValidator(new QDoubleValidator(-10000, +10000, 6, this));
+	mFontSizeComboBox->setValidator(new QIntValidator(1, +1000, this));
+	mLineSpacingComboBox->setValidator(new QDoubleValidator(-100, +100, 6, this));
+
 	// загрузка и отображение списка доступных шрифтов в комбобоксе
 	scanFonts();
 

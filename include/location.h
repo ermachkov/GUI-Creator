@@ -24,6 +24,9 @@ public:
 	// Сохраняет локацию в файл
 	bool save(const QString &fileName);
 
+	// Загружает файл переводов
+	bool loadTranslationFile(const QString &fileName);
+
 	// Возвращает корневой слой
 	BaseLayer *getRootLayer() const;
 

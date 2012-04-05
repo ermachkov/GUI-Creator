@@ -108,6 +108,11 @@ QString Utils::quotify(const QString &text)
 	return "\"" + str + "\"";
 }
 
+std::string Utils::toStdString(const QString &str)
+{
+	return QTextCodec::codecForName("System")->fromUnicode(str).data();
+}
+
 std::wstring Utils::toStdWString(const QString &str)
 {
 #ifdef _MSC_VER

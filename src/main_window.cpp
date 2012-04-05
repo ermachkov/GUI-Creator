@@ -13,7 +13,7 @@
 #include "utils.h"
 
 MainWindow::MainWindow()
-: mUntitledIndex(1)
+: mUntitledIndex(1), mTranslationCounter(0)
 {
 	setupUi(this);
 
@@ -107,7 +107,7 @@ MainWindow::MainWindow()
 		// создаем пункт меню
 		QAction *action = new QAction(languageNames[i], this);
 		action->setCheckable(true);
-		mLanguageMenu->addAction(action);
+		mLocalizationMenu->addAction(action);
 		languagesActionGroup->addAction(action);
 
 		// устанавливаем галочку для пункта меню с текущим языком
@@ -121,6 +121,10 @@ MainWindow::MainWindow()
 
 	// связываем сигнал об изменении текущего языка
 	connect(languagesSignalMapper, SIGNAL(mapped(const QString &)), this, SLOT(onLanguageChanged(const QString &)));
+
+	// создаем ватчер для слежения за файлами переводов
+	mTranslationFilesWatcher = new QFileSystemWatcher(this);
+	connect(mTranslationFilesWatcher, SIGNAL(fileChanged(const QString &)), this, SLOT(onTranslationFileChanged(const QString &)));
 
 	// создаем текстовое поле для координат мыши
 	mMousePosLabel = new QLabel(this);
@@ -244,6 +248,33 @@ void MainWindow::timerEvent(QTimerEvent *event)
 	if (mTabWidget->currentWidget() != NULL)
 		mTabWidget->currentWidget()->update();
 
+	// обновляем состояния файлов переводов
+	if (++mTranslationCounter >= 15)
+	{
+		mTranslationCounter = 0;
+		for (TranslationFilesMap::iterator it = mTranslationFilesMap.begin(); it != mTranslationFilesMap.end(); ++it)
+			if (it->mChanged)
+			{
+				// если с момента последнего изменения файла переводов прошло достаточно много времени, загружаем его
+				if (it->mTimer.hasExpired(250))
+				{
+					it->mChanged = false;
+					it->mEditorWindow->loadTranslationFile(it.key());
+					if (!mTranslationFilesWatcher->files().contains(it.key()) && Utils::fileExists(it.key()))
+						mTranslationFilesWatcher->addPath(it.key());
+				}
+			}
+			else if (!mTranslationFilesWatcher->files().contains(it.key()))
+			{
+				// если файл переводов был удален, а потом восстановлен, загружаем его
+				if (Utils::fileExists(it.key()))
+				{
+					it->mEditorWindow->loadTranslationFile(it.key());
+					mTranslationFilesWatcher->addPath(it.key());
+				}
+			}
+	}
+
 	// обрабатываем все события в очереди
 	QCoreApplication::processEvents();
 }
@@ -316,6 +347,15 @@ void MainWindow::on_mOpenAction_triggered()
 		QMessageBox::critical(this, "", "Ошибка открытия файла " + fileName);
 		return;
 	}
+
+	// загружаем файл переводов
+	QString translationFileName = getTranslationFileName(fileName);
+	editorWindow->loadTranslationFile(translationFileName);
+
+	// добавляем файл переводов на слежение
+	mTranslationFilesMap.insert(translationFileName, TranslationFileInfo(editorWindow));
+	if (!mTranslationFilesWatcher->files().contains(translationFileName) && Utils::fileExists(translationFileName))
+		mTranslationFilesWatcher->addPath(translationFileName);
 
 	// создаем новую вкладку и переключаемся на нее
 	mTabWidget->addTab(editorWindow, QFileInfo(fileName).fileName());
@@ -524,6 +564,15 @@ bool MainWindow::on_mTabWidget_tabCloseRequested(int index)
 		mLayersWindow->setCurrentLocation(NULL);
 		mPropertyWindow->onEditorWindowSelectionChanged(QList<GameObject *>(), QPointF());
 
+		// удаляем файл переводов из списка слежения
+		if (editorWindow->isSaved())
+		{
+			QString translationFileName = getTranslationFileName(editorWindow->getFileName());
+			mTranslationFilesMap.remove(translationFileName);
+			if (mTranslationFilesWatcher->files().contains(translationFileName))
+				mTranslationFilesWatcher->removePath(translationFileName);
+		}
+
 		// удаляем вкладку и окно редактора
 		mTabWidget->removeTab(index);
 		delete editorWindow;
@@ -633,6 +682,17 @@ void MainWindow::onLanguageChanged(const QString &language)
 		mPropertyWindow->onEditorWindowSelectionChanged(editorWindow->getSelectedObjects(), editorWindow->getRotationCenter());
 }
 
+void MainWindow::onTranslationFileChanged(const QString &path)
+{
+	// помечаем файл переводов как измененный
+	TranslationFilesMap::iterator it = mTranslationFilesMap.find(path);
+	if (it != mTranslationFilesMap.end())
+	{
+		it->mChanged = true;
+		it->mTimer.start();
+	}
+}
+
 void MainWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter)
 {
 	// разрешаем/запрещаем нужные пункты меню
@@ -697,7 +757,7 @@ void MainWindow::onClipboardDataChanged()
 EditorWindow *MainWindow::createEditorWindow(const QString &fileName)
 {
 	// создаем новое окно редактора
-	EditorWindow *editorWindow = new EditorWindow(this, mPrimaryGLWidget, fileName);
+	EditorWindow *editorWindow = new EditorWindow(this, mPrimaryGLWidget, fileName, mSpriteBrowser->getSpriteWidget(), mFontBrowser->getFontWidget());
 
 	// связываем сигналы от окна редактирования с соответствующими слотами
 	connect(editorWindow, SIGNAL(zoomChanged(const QString &)), this, SLOT(onZoomChanged(const QString &)));
@@ -727,6 +787,14 @@ EditorWindow *MainWindow::createEditorWindow(const QString &fileName)
 
 	// возвращаем указатель на созданное окно редактирования
 	return editorWindow;
+}
+
+QString MainWindow::getTranslationFileName(const QString &fileName) const
+{
+	Project &project = Project::getSingleton();
+	QString locationsDir = project.getRootDirectory() + project.getLocationsDirectory();
+	QString localizationDir = project.getRootDirectory() + project.getLocalizationDirectory();
+	return localizationDir + fileName.mid(locationsDir.size());
 }
 
 void MainWindow::updateMainMenuActions()

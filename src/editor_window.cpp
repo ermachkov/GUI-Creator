@@ -4,11 +4,12 @@
 #include "layer.h"
 #include "location.h"
 #include "options.h"
+#include "project.h"
 #include "utils.h"
 
-EditorWindow::EditorWindow(QWidget *parent, QGLWidget *shareWidget, const QString &fileName)
-: QGLWidget(shareWidget->format(), parent, shareWidget), mFileName(fileName), mChanged(false), mSaved(false),
-  mEditorState(STATE_IDLE), mCameraPos(0.0, 0.0), mZoom(1.0), mRotationMode(false)
+EditorWindow::EditorWindow(QWidget *parent, QGLWidget *shareWidget, const QString &fileName, QWidget *spriteWidget, QWidget *fontWidget)
+: QGLWidget(shareWidget->format(), parent, shareWidget), mFileName(fileName), mChanged(false), mSaved(false), mEditorState(STATE_IDLE),
+  mCameraPos(0.0, 0.0), mZoom(1.0), mRotationMode(false), mSpriteWidget(spriteWidget), mFontWidget(fontWidget)
 {
 	// разрешаем события клавиатуры и перемещения мыши
 	setFocusPolicy(Qt::StrongFocus);
@@ -56,6 +57,11 @@ bool EditorWindow::save(const QString &fileName)
 	}
 
 	return false;
+}
+
+bool EditorWindow::loadTranslationFile(const QString &fileName)
+{
+	return mLocation->loadTranslationFile(fileName);
 }
 
 Location *EditorWindow::getLocation() const
@@ -1165,20 +1171,8 @@ void EditorWindow::dragEnterEvent(QDragEnterEvent *event)
 	if (mLocation->getAvailableLayer() == NULL)
 		return;
 
-	// проверяем, что перетаскивается элемент из QListWidget/QTreeWidget
-	QByteArray data = event->mimeData()->data("application/x-qabstractitemmodeldatalist");
-	if (data.isEmpty())
-		return;
-
-	// распаковываем полученные данные
-	int row, col;
-	QMap<int, QVariant> roles;
-	QDataStream stream(data);
-	stream >> row >> col >> roles;
-
-	// проверяем тип объекта в UserRole
-	QString type = roles.value(Qt::UserRole).toString();
-	if (type == "Sprite" || type == "Label")
+	// проверяем, что перетаскивается элемент из браузера спрайтов или шрифтов
+	if (event->source() == mSpriteWidget || event->source() == mFontWidget)
 		event->acceptProposedAction();
 }
 
@@ -1188,42 +1182,60 @@ void EditorWindow::dropEvent(QDropEvent *event)
 	if (mLocation->getAvailableLayer() == NULL)
 		return;
 
-	// проверяем, что перетаскивается элемент из QListWidget/QTreeWidget
-	QByteArray data = event->mimeData()->data("application/x-qabstractitemmodeldatalist");
-	if (data.isEmpty())
-		return;
-
-	// распаковываем полученные данные
-	int row, col;
-	QMap<int, QVariant> roles;
-	QDataStream stream(data);
-	stream >> row >> col >> roles;
-
-	// создаем игровой объект по типу в UserRole
-	GameObject *object;
-	QPointF pos = windowToWorld(event->pos());
-	QString type = roles.value(Qt::UserRole).toString();
-	if (type == "Sprite" || type == "Label")
+	// получаем полный путь к ресурсному файлу
+	QString path;
+	if (event->source() == mSpriteWidget)
 	{
-		// проверяем имя файла
-		QString fileName = roles.value(Qt::UserRole + 1).toString();
-		if (!Utils::isFileNameValid(fileName))
-		{
-			QMessageBox::warning(this, "", "Неверный путь к файлу " + fileName + "\nПереименуйте файлы и папки так, чтобы они "
-				"начинались с буквы и состояли только из маленьких латинских букв, цифр и знаков подчеркивания");
+		// получаем MIME-закодированные данные для перетаскиваемого элемента
+		QByteArray data = event->mimeData()->data("application/x-qabstractitemmodeldatalist");
+		if (data.isEmpty())
 			return;
-		}
 
-		// создаем нужный игровой объект в окне редактора
-		if (type == "Sprite")
-			object = mLocation->createSprite(pos, fileName);
-		else
-			object = mLocation->createLabel(pos, fileName, roles.value(Qt::UserRole + 2).toInt() > 0 ? roles.value(Qt::UserRole + 2).toInt() : 32);
+		// распаковываем полученные данные
+		int row, col;
+		QMap<int, QVariant> roles;
+		QDataStream stream(data);
+		stream >> row >> col >> roles;
+
+		// извлекаем путь к ресурсному файлу из UserRole
+		path = roles.value(Qt::UserRole).toString();
+	}
+	else if (event->source() == mFontWidget)
+	{
+		// получаем список URL для перетаскиваемого элемента
+		QList<QUrl> urls = event->mimeData()->urls();
+		if (urls.empty())
+			return;
+
+		// извлекаем путь к ресурсному файлу из первого URL в списке
+		path = urls.front().toLocalFile();
 	}
 	else
 	{
 		return;
 	}
+
+	// определяем имя файла относительно корневого каталога
+	QString rootDirectory = Project::getSingleton().getRootDirectory();
+	if (!path.startsWith(rootDirectory))
+		return;
+	QString fileName = path.mid(rootDirectory.size());
+
+	// проверяем имя файла на валидность
+	if (!Utils::isFileNameValid(fileName))
+	{
+		QMessageBox::warning(this, "", "Неверный путь к файлу " + fileName + "\nПереименуйте файлы и папки так, чтобы они "
+			"начинались с буквы и состояли только из маленьких латинских букв, цифр и знаков подчеркивания");
+		return;
+	}
+
+	// создаем объект нужного типа в окне редактора
+	GameObject *object;
+	QPointF pos = windowToWorld(event->pos());
+	if (event->source() == mSpriteWidget)
+		object = mLocation->createSprite(pos, fileName);
+	else
+		object = mLocation->createLabel(pos, fileName, 32);
 
 	// выделяем созданный объект
 	selectGameObject(object);

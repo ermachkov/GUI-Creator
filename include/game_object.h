@@ -94,6 +94,9 @@ public:
 	// Устанавливает текущий язык для объекта
 	virtual void setCurrentLanguage(const QString &language);
 
+	// Загружает переводы из Lua скрипта
+	virtual void loadTranslations(LuaScript *script);
+
 	// Дублирует объект
 	virtual GameObject *duplicate(Layer *parent = NULL) const = 0;
 

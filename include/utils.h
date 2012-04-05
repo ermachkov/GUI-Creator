@@ -45,6 +45,9 @@ public:
 	// Заключает строку в кавычки и экранирует специальные символы обратными слэшами
 	static QString quotify(const QString &text);
 
+	// Преобразует QString в std::string с учетом местной кодировки
+	static std::string toStdString(const QString &str);
+
 	// Преобразует QString в std::wstring
 	static std::wstring toStdWString(const QString &str);
 

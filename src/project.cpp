@@ -31,12 +31,13 @@ void Project::close()
 	mFileName = "";
 	mRootDirectory = Utils::addTrailingSlash(QDir::currentPath());
 	mLocationsDirectory = "levels/";
+	mLocalizationDirectory = "l10n/";
 	mSpritesDirectory = "sprites/";
 	mFontsDirectory = "fonts/";
 
-	mLanguages = QStringList("ru");
-	mLanguageNames = QStringList("&Русский");
-	mDefaultLanguage = mCurrentLanguage = "ru";
+	mLanguages = QStringList("en");
+	mLanguageNames = QStringList("&Английский");
+	mDefaultLanguage = mCurrentLanguage = "en";
 }
 
 bool Project::isOpen() const
@@ -57,6 +58,11 @@ QString Project::getRootDirectory() const
 QString Project::getLocationsDirectory() const
 {
 	return mLocationsDirectory;
+}
+
+QString Project::getLocalizationDirectory() const
+{
+	return mLocalizationDirectory;
 }
 
 QString Project::getSpritesDirectory() const
@@ -112,10 +118,11 @@ bool Project::loadProjectFile(const QString &fileName)
 		return false;
 
 	// загружаем относительные пути к ресурсным каталогам
-	if (!script.getString("locationsDirectory", mLocationsDirectory) || !script.getString("spritesDirectory", mSpritesDirectory)
-		|| !script.getString("fontsDirectory", mFontsDirectory))
+	if (!script.getString("locationsDirectory", mLocationsDirectory) || !script.getString("localizationDirectory", mLocalizationDirectory)
+		|| !script.getString("spritesDirectory", mSpritesDirectory) || !script.getString("fontsDirectory", mFontsDirectory))
 		return false;
 	mLocationsDirectory = Utils::addTrailingSlash(mLocationsDirectory);
+	mLocalizationDirectory = Utils::addTrailingSlash(mLocalizationDirectory);
 	mSpritesDirectory = Utils::addTrailingSlash(mSpritesDirectory);
 	mFontsDirectory = Utils::addTrailingSlash(mFontsDirectory);
 
@@ -182,6 +189,7 @@ bool Project::saveProjectFile(const QString &fileName)
 	// записываем относительные пути к ресурсным каталогам
 	stream << "\t-- Paths to resource directories relative to the project root directory" << endl;
 	stream << "\tlocationsDirectory = " << Utils::quotify(mLocationsDirectory) << "," << endl;
+	stream << "\tlocalizationDirectory = " << Utils::quotify(mLocalizationDirectory) << "," << endl;
 	stream << "\tspritesDirectory = " << Utils::quotify(mSpritesDirectory) << "," << endl;
 	stream << "\tfontsDirectory = " << Utils::quotify(mFontsDirectory) << "," << endl;
 

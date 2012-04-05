@@ -71,13 +71,13 @@ QSharedPointer<Texture> TextureManager::loadTexture(const QString &fileName, boo
 		// создаем текстуру и добавляем ее в кэш
 		mPrimaryGLWidget->makeCurrent();
 		texture = QSharedPointer<Texture>(new Texture(image));
-		mTextureCache.insert(fileName, texture);
+		mTextureCache.insert(fileName, TextureInfo(texture));
 	}
 	else if (useDefaultTexture)
 	{
 		// возвращаем текстуру по умолчанию
 		texture = mDefaultTexture;
-		mTextureCache.insert(fileName, texture);
+		mTextureCache.insert(fileName, TextureInfo(texture));
 	}
 
 	return texture;

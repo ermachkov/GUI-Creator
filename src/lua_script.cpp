@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "lua_script.h"
+#include "utils.h"
 
 LuaScript::LuaScript()
 : mLuaState(NULL), mTableIndex(0)
@@ -14,16 +15,6 @@ LuaScript::~LuaScript()
 
 bool LuaScript::load(const QString &fileName)
 {
-	// открываем файл скрипта
-	QFile file(fileName);
-	if (!file.open(QIODevice::ReadOnly))
-		return false;
-
-	// считываем его содержимое
-	QByteArray buf = file.readAll();
-	if (buf.isEmpty())
-		return false;
-
 	// создаем и инициализируем новое состояние Lua
 	mLuaState = luaL_newstate();
 	if (mLuaState == NULL)
@@ -31,7 +22,7 @@ bool LuaScript::load(const QString &fileName)
 	luaL_openlibs(mLuaState);
 
 	// загружаем и выполняем скрипт
-	if (luaL_loadbuffer(mLuaState, buf.data(), buf.size(), fileName.toStdString().c_str()) != 0 || lua_pcall(mLuaState, 0, 0, 0) != 0)
+	if (luaL_loadfile(mLuaState, Utils::toStdString(fileName).c_str()) != 0 || lua_pcall(mLuaState, 0, 0, 0) != 0)
 	{
 		qDebug() << lua_tostring(mLuaState, -1);
 		lua_pop(mLuaState, 1);

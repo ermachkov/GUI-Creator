@@ -159,6 +159,32 @@ bool Location::save(const QString &fileName)
 	return stream.status() == QTextStream::Ok;
 }
 
+bool Location::loadTranslationFile(const QString &fileName)
+{
+	// загружаем Lua скрипт
+	LuaScript script;
+	if (!script.load(fileName))
+	{
+		mRootLayer->loadTranslations(NULL);
+		return false;
+	}
+
+	// читаем корневую таблицу
+	if (!script.pushTable(Utils::toCamelCase(QFileInfo(fileName).baseName()) + "_translations"))
+	{
+		mRootLayer->loadTranslations(NULL);
+		return false;
+	}
+
+	// загружаем переводы из Lua скрипта
+	mRootLayer->loadTranslations(&script);
+
+	// извлекаем из стека корневую таблицу
+	script.popTable();
+
+	return true;
+}
+
 BaseLayer *Location::getRootLayer() const
 {
 	return mRootLayer;
