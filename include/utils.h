@@ -24,6 +24,9 @@ public:
 	// Сравнение дробных чисел с необходимой точностью
 	static bool isEqual(qreal value1, qreal value2, qreal eps = EPS);
 
+	// Проверяет, что все координаты линии нулевые
+	static bool isNull(const QLineF &line);
+
 	// Дополняет путь прямым слешем
 	static QString addTrailingSlash(const QString &path);
 

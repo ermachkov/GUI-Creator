@@ -42,11 +42,11 @@ MainWindow::MainWindow()
 
 	// создаем браузер спрайтов
 	mSpriteBrowser = new SpriteBrowser(this);
-	addDockWidget(Qt::LeftDockWidgetArea, mSpriteBrowser);
+	addDockWidget(Qt::RightDockWidgetArea, mSpriteBrowser);
 
 	// создаем браузер шрифтов
 	mFontBrowser = new FontBrowser(this);
-	addDockWidget(Qt::LeftDockWidgetArea, mFontBrowser);
+	addDockWidget(Qt::RightDockWidgetArea, mFontBrowser);
 
 	// создаем окно свойств объекта
 	mPropertyWindow = new PropertyWindow(this);
@@ -58,6 +58,7 @@ MainWindow::MainWindow()
 
 	// наложение плавающих окон друг на друга
 	tabifyDockWidget(mSpriteBrowser, mFontBrowser);
+	tabifyDockWidget(mSpriteBrowser, mPropertyWindow);
 
 	// установка нулевого индекса для всех таббаров
 	QList<QTabBar *> tabBars = findChildren<QTabBar *>();

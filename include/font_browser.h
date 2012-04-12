@@ -20,7 +20,7 @@ public:
 
 private slots:
 
-	void onDirectoryLoaded(const QString &path);
+	void onDirectoryLoaded(const QString &);
 	void onFileRenamed(const QString &path, const QString &oldName, const QString &newName);
 	void onRootPathChanged(const QString &newPath);
 
@@ -28,17 +28,44 @@ private slots:
 
 private:
 
+	struct Images
+	{
+		QImage mNormal;	              // невыделенный текст
+		QImage mHighlighted;          // выделенный текст с фокусом
+		QImage mHighlightedInactive;  // выделенный текст без фокуса
+	};
+
 	class PreviewItemDelegate : public QItemDelegate
 	{
 	public:
 
-		PreviewItemDelegate(QObject *parent = NULL);
+		PreviewItemDelegate(QObject *parent, QFileSystemModel *fileModel);
 
-		// произвольная отрисовка
-		virtual void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index ) const;
+		~PreviewItemDelegate();
+
+		virtual void drawDisplay(QPainter *painter,
+			const QStyleOptionViewItem &option, const QRect &rect, const QString &text) const;
 
 		// возврат размеров элемента
 		virtual QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const;
+
+		// пересоздание фреймбуфера
+		void recreateFrameBuffer(int width, int height) const;
+
+		// создание
+		void createImage(const QStyleOptionViewItem &option, const QString &text) const;
+
+		// ф-ция возврата нужного image
+		QImage getImage(const QStyleOptionViewItem &option, const QString &text) const;
+
+		// очистка сгенерированных предпросмотров шрифтов
+		void clearAllImages();
+
+	private:
+
+		QFileSystemModel               *mFileModel;   // указатель на модель файловой системы
+		mutable QGLFramebufferObject   *mFrameBuffer; // фреймбуфер для отрисовки иконок предпросмотра шрифтов
+		mutable QMap<QString, Images>  mImages;       // иконки предпросмотра
 	};
 
 	// возврат поддиректории для шрифтов
@@ -47,17 +74,8 @@ private:
 	// возврат коренной директории
 	QString getRootPath() const;
 
-	// пересоздание фреймбуфера
-	void recreateFrameBuffer(int width, int height);
-
-	// загрузка и отображение списка доступных шрифтов
-	void scanFonts(const QString &path);
-
-	QFileSystemModel       *mFileModel;     // модель файловой системы для шрифтов
-	QGLFramebufferObject   *mFrameBuffer;   // фреймбуфер для отрисовки иконки предпросмотра шрифта
-//	QIcon                  mIconDrawText;   // иконка в браузере текста
-	QMap<QString, QImage>  mImages;         // иконки предпросмотра текста
-
+	QFileSystemModel       *mFileModel;           // модель файловой системы для шрифтов
+	PreviewItemDelegate    *mPreviewItemDelegate; // делегат
 };
 
 #endif // FONT_BROWSER_H

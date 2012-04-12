@@ -28,6 +28,11 @@ bool Utils::isEqual(qreal value1, qreal value2, qreal eps)
 	return qAbs(value1 - value2) <= eps;
 }
 
+bool Utils::isNull(const QLineF &line)
+{
+	return line.p1().isNull() && line.p2().isNull();
+}
+
 QString Utils::addTrailingSlash(const QString &path)
 {
 	return !path.endsWith('/') && !path.endsWith('\\') ? path + '/' : path;

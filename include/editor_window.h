@@ -134,6 +134,9 @@ protected:
 	// Обработчик нажатия клавиши клавиатуры
 	virtual void keyPressEvent(QKeyEvent *event);
 
+	// Обработчик отпускания клавиши клавиатуры
+	virtual void keyReleaseEvent(QKeyEvent *event);
+
 	// Вызывается при начале перетаскивания объекта над окном редактора
 	virtual void dragEnterEvent(QDragEnterEvent *event);
 
@@ -145,6 +148,7 @@ private:
 	static const int MIN_GRID_SPACING = 8;      // Минимальный шаг сетки в пикселях
 	static const int GRID_SPACING_COEFF = 4;    // Множитель динамического изменения шага сетки
 	static const int MARKER_SIZE = 9;           // Размер маркера выделения в пикселях
+	static const int ROTATE_SIZE = 13;          // Размер маркера поворота в пикселях
 	static const int CENTER_SIZE = 13;          // Размер перекрестья центра вращения в пикселях
 	static const int RULER_SIZE = 20;           // Размер линейки в пикселях
 	static const int DIVISION_SIZE = 6;         // Длина одного деления линейки в пикселях
@@ -215,7 +219,7 @@ private:
 	void emitLayerChangedSignals(const QSet<BaseLayer *> &layers);
 
 	// Ищет маркер выделения
-	SelectionMarker findSelectionMarker(const QPointF &pos) const;
+	SelectionMarker findSelectionMarker(const QPointF &pos, qreal size) const;
 
 	// Рисует маркер выделения
 	void drawSelectionMarker(qreal x, qreal y, QPainter &painter);
@@ -234,26 +238,25 @@ private:
 	QPoint              mFirstPos;          // Начальные оконные координаты мыши
 	QPoint              mLastPos;           // Последние оконные координаты мыши
 	bool                mEnableEdit;        // Флаг разрешения редактирования
+	QRectF              mSelectionRect;     // Рамка выделения
 
 	QList<GameObject *> mSelectedObjects;   // Список выделенных объектов, отсортированный по глубине
 	QList<QPointF>      mOriginalPositions; // Список исходных координат объектов
 	QList<QSizeF>       mOriginalSizes;     // Список исходных размеров объектов
 	QList<qreal>        mOriginalAngles;    // Список исходных углов поворота объектов
-	bool                mHasRotatedObjects; // Флаг наличия повернутых объектов в текущем выделении
-	bool                mFirstTimeSelected; // Флаг выделения объекта в первый раз
+	bool                mKeepProportions;   // Флаг принудительного сохранения пропорций при масштабировании
 	SelectionMarker     mSelectionMarker;   // Текущий маркер выделения
 	QRectF              mOriginalRect;      // Исходный ограничивающий прямоугольник выделенных объектов
 	QRectF              mSnappedRect;       // Текущий ограничивающий прямоугольник, привязанный к сетке
-	QRectF              mSelectionRect;     // Рамка выделения
-	qreal               mGuideIndex;        // Индекс текущей направляющей
-	QLineF              mHorzSnapLine;      // Горизонтальная линия привязки
-	QLineF              mVertSnapLine;      // Вертикальная линия привязки
 
-	bool                mRotationMode;      // Текущий режим поворота
 	QPointF             mOriginalCenter;    // Исходный центр вращения
 	QPointF             mSnappedCenter;     // Текущий центр вращения, привязанный к сетке
 	QVector2D           mRotationVector;    // Начальный вектор вращения
 	QCursor             mRotateCursor;      // Курсор поворота
+
+	qreal               mGuideIndex;        // Индекс текущей направляющей
+	QLineF              mHorzSnapLine;      // Горизонтальная линия привязки
+	QLineF              mVertSnapLine;      // Вертикальная линия привязки
 
 	QWidget             *mSpriteWidget;     // Указатель на виджет спрайтов для перетаскивания
 	QWidget             *mFontWidget;       // Указатель на виджет шрифтов для перетаскивания
