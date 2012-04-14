@@ -35,6 +35,14 @@
         <file>images/send_to_back.png</file>
         <file>images/default_texture.jpg</file>
         <file>default_font.ttf</file>
-        <file>images/draw_text.png</file>
+        <file>images/reset_property.png</file>
+        <file>images/horz_align_left.png</file>
+        <file>images/horz_align_center.png</file>
+        <file>images/horz_align_right.png</file>
+        <file>images/vert_align_top.png</file>
+        <file>images/vert_align_center.png</file>
+        <file>images/vert_align_bottom.png</file>
+        <file>images/browse.png</file>
+        <file>images/edit.png</file>
     </qresource>
 </RCC>

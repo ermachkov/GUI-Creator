@@ -23,12 +23,12 @@ public slots:
 	// обработчик изменения выделения объектов
 	void onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter);
 
-	// обработчик изменеия свойств объекта
+	// обработчик изменения свойств объекта
 	void onEditorWindowObjectsChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter);
 
 protected:
 
-	bool eventFilter(QObject *watched, QEvent *event);
+	virtual bool eventFilter(QObject *watched, QEvent *event);
 
 private slots:
 
@@ -58,7 +58,7 @@ private slots:
 
 	void on_mSpriteFileNameBrowsePushButton_clicked();
 
-	void on_mSpriteOpacityHorizontalSlider_valueChanged(int value);
+	void on_mSpriteOpacitySlider_valueChanged(int value);
 
 	void on_mLabelFileNameComboBox_currentIndexChanged(const QString &arg);
 
@@ -74,11 +74,11 @@ private slots:
 
 	void on_mLineSpacingComboBox_currentIndexChanged(const QString &arg);
 
-	void on_mLabelOpacityHorizontalSlider_valueChanged(int value);
+	void on_mLabelOpacitySlider_valueChanged(int value);
 
 private:
 
-	const int PRECISION;
+	static const int PRECISION = 8;
 
 	// отображение значений параметров объектов в виджетах ГУИ
 	void updateCommonWidgets();

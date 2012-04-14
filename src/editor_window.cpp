@@ -654,7 +654,7 @@ void EditorWindow::mousePressEvent(QMouseEvent *event)
 			// переходим в режим перетаскивания вертикальной направляющей
 			mEditorState = STATE_VERT_GUIDE;
 		}
-		else if (QRectF(mSnappedCenter.x() - offset, mSnappedCenter.y() - offset, size, size).contains(pos))
+		else if (!mSelectedObjects.empty() && QRectF(mSnappedCenter.x() - offset, mSnappedCenter.y() - offset, size, size).contains(pos))
 		{
 			// переходим в состояние перетаскивания центра вращения
 			mEditorState = STATE_MOVE_CENTER;
@@ -1583,7 +1583,7 @@ void EditorWindow::updateMouseCursor(const QPointF &pos)
 			// курсор над вертикальной направляющей
 			setCursor(Qt::SplitHCursor);
 		}
-		else if (QRectF(mSnappedCenter.x() - offset, mSnappedCenter.y() - offset, size, size).contains(pos))
+		else if (!mSelectedObjects.empty() && QRectF(mSnappedCenter.x() - offset, mSnappedCenter.y() - offset, size, size).contains(pos))
 		{
 			// курсор над центром вращения
 			setCursor(Qt::CrossCursor);

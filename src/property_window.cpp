@@ -7,13 +7,9 @@
 #include <typeinfo>
 
 PropertyWindow::PropertyWindow(QWidget *parent)
-: QDockWidget(parent), PRECISION(8)
+: QDockWidget(parent)
 {
 	setupUi(this);
-
-	// FIXME: delete
-	// запрещение редактирования комбобокса
-	//mLabelFileNameComboBox->lineEdit()->setReadOnly(true);
 
 	connect(mRotationAngleComboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(onRotationAngleEditingFinished()));
 
@@ -38,7 +34,6 @@ PropertyWindow::PropertyWindow(QWidget *parent)
 	connect(mVertAlignmentButtonGroup, SIGNAL(buttonClicked(QAbstractButton *)), this, SLOT(onVertAlignmentClicked(QAbstractButton *)));
 
 	// по умолчанию окно свойств пустое
-	mStackedWidget->setVisible(false);
 	mScrollArea->setVisible(false);
 	mNoSelectionObjectsLabel->setVisible(true);
 
@@ -55,56 +50,6 @@ PropertyWindow::PropertyWindow(QWidget *parent)
 
 	// загрузка и отображение списка доступных шрифтов в комбобоксе
 	scanFonts();
-
-	//this->scrollArea->adjustSize();
-
-	//setSizeConstraint(QLayout::SetMinimumSize);
-	//dockWidgetContents->setSizeConstraint(QLayout::SetMinimumSize);
-	//layout->setSizeConstraint(QLayout::SetMinimumSize);
-	//scrollArea->adjustSize();
-
-	//stackedWidget->adjustSize();
-/*
-	QSize s;
-
-	stackedWidget->setCurrentIndex(0);
-	page->adjustSize();
-	qDebug() << page->size();
-	page->setFixedSize(page->size());
-
-	qDebug() << " area:" << stackedWidget->size();
-
-//	s = page->size();
-//	page->setMinimumSize(s);
-//	stackedWidget->resize(page->size());
-
-
-	stackedWidget->setCurrentIndex(1);
-	page->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
-	page_2->adjustSize();
-	qDebug() << page_2->size();
-	page_2->setFixedSize(page_2->size());
-
-//	s = page_2->size();
-//	page_2->setMinimumSize(s);
-//	stackedWidget->resize(page_2->size());
-
-	qDebug() << " area:" << stackedWidget->size();
-
-
-	//scrollAreaWidgetContents->resize(QSize(195, 23));
-	//page->resize(QSize(95, 23));
-	//page_2->resize(QSize(95, 23));
-
-	scrollArea->updateGeometry();
-*/
-//	stackedWidget->setVisible(false);
-
-//	stackedWidget->setCurrentIndex(0);
-//	stackedWidget->setCurrentIndex(1);
-
-
-	//scrollAreaWidgetContents->adjustSize();
 }
 
 void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter)
@@ -123,16 +68,12 @@ void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &o
 	// нет выделенных объектов
 	if (objects.empty())
 	{
-		// установка минимального набора общих свойств
-		mStackedWidget->setVisible(false);
 		// установка отсутствия свойств
 		mScrollArea->setVisible(false);
 		// показ надписи об отсутствии выделенных объектов
 		mNoSelectionObjectsLabel->setVisible(true);
 		return;
 	}
-
-	Q_ASSERT(!objects.empty());
 
 	// показ свойств
 	mScrollArea->setVisible(true);
@@ -162,30 +103,26 @@ void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &o
 
 	if (dynamic_cast<Sprite *>(objects.front()) != NULL)
 	{
-		// установка ГУИ для спрайта
-
-		// установка размера виджета для дополнительных свойств
-		//mSpritePage->adjustSize();
-		//QSize size = mSpritePage->size();
-		//mSpritePage->setMinimumSize(size);
-
 		// установка страницы для специфических настроек спрайта
 		mStackedWidget->setCurrentIndex(0);
+
+		// подгоняем размер StackedWidget под размер страницы спрайтов
+		mLabelPage->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+		mSpritePage->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+		mStackedWidget->adjustSize();
 
 		// отображение свойств спрайтов
 		updateSpriteWidgets();
 	}
 	else if (dynamic_cast<Label *>(objects.front()) != NULL)
 	{
-		// установка ГУИ для текста
-
-		// установка размера виджета для дополнительных свойств
-		//mLabelPage->adjustSize();
-		//QSize size = mLabelPage->size();
-		//mLabelPage->setMinimumSize(size);
-
 		// установка страницы для специфических настроек текста
 		mStackedWidget->setCurrentIndex(1);
+
+		// подгоняем размер StackedWidget под размер страницы шрифтов
+		mSpritePage->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+		mLabelPage->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+		mStackedWidget->adjustSize();
 
 		// отображение свойств спрайтов
 		updateLabelWidgets();
@@ -197,7 +134,6 @@ void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &o
 	{
 		qWarning() << "Error can't find type of object";
 	}
-
 }
 
 void PropertyWindow::onEditorWindowObjectsChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter)
@@ -233,8 +169,6 @@ bool PropertyWindow::eventFilter(QObject *object, QEvent *event)
 					QPalette palette = mSpriteColorFrame->palette();
 					palette.setColor(QPalette::Window, color);
 					mSpriteColorFrame->setPalette(palette);
-					mSpriteColorFrame->setAutoFillBackground(true);
-					//mSpriteColorFrame->setForegroundRole(palette);
 
 					// установка выбранного цвета выбранным объектам
 					foreach (GameObject *obj, mSelectedObjects)
@@ -260,8 +194,6 @@ bool PropertyWindow::eventFilter(QObject *object, QEvent *event)
 					QPalette palette = mLabelColorFrame->palette();
 					palette.setColor(QPalette::Window, color);
 					mLabelColorFrame->setPalette(palette);
-					mLabelColorFrame->setAutoFillBackground(true);
-					//mLabelColorFrame->setForegroundRole(palette);
 
 					// установка выбранного цвета выбранным объектам
 					foreach (GameObject *obj, mSelectedObjects)
@@ -270,7 +202,6 @@ bool PropertyWindow::eventFilter(QObject *object, QEvent *event)
 						color.setAlpha(it->getColor().alpha());
 						it->setColor(color);
 					}
-
 				}
 
 				return true;
@@ -416,19 +347,17 @@ void PropertyWindow::updateSpriteWidgets()
 		palette.setColor(QPalette::Window, Qt::black);
 	}
 	mSpriteColorFrame->setPalette(palette);
-	mSpriteColorFrame->setAutoFillBackground(true);
-	//mSpriteColorFrame->setForegroundRole(palette);
 
 	if (equalSpriteOpacity)
 	{
 		int alpha = first->getColor().alpha();
 		alpha = alpha * 100 / 255;
-		mSpriteOpacityHorizontalSlider->setSliderPosition(alpha);
-		mSpriteOpacityValueLabel->setText(QString::number(alpha, 10));
+		mSpriteOpacitySlider->setSliderPosition(alpha);
+		mSpriteOpacityValueLabel->setText(QString::number(alpha) + "%");
 	}
 	else
 	{
-		mSpriteOpacityHorizontalSlider->setSliderPosition(0);
+		mSpriteOpacitySlider->setSliderPosition(0);
 		mSpriteOpacityValueLabel->setText("");
 	}
 }
@@ -457,7 +386,7 @@ void PropertyWindow::updateLabelWidgets()
 			equalText = false;
 
 		if (it->getFileName() != first->getFileName())
-			 equalFileName = false;
+			equalFileName = false;
 
 		if (it->getFontSize() != first->getFontSize())
 			 equalFontSize = false;
@@ -571,24 +500,20 @@ void PropertyWindow::updateLabelWidgets()
 		palette.setColor(QPalette::Window, Qt::black);
 	}
 	mLabelColorFrame->setPalette(palette);
-	mLabelColorFrame->setAutoFillBackground(true);
-	//mLabelColorFrame->setForegroundRole(palette);
 
 	if (equalLabelOpacity)
 	{
 		int alpha = first->getColor().alpha();
 		alpha = alpha * 100 / 255;
-		mLabelOpacityHorizontalSlider->setSliderPosition(alpha);
-		mLabelOpacityValueLabel->setText(QString::number(alpha, 10));
+		mLabelOpacitySlider->setSliderPosition(alpha);
+		mLabelOpacityValueLabel->setText(QString::number(alpha) + "%");
 	}
 	else
 	{
-		mLabelOpacityHorizontalSlider->setSliderPosition(0);
+		mLabelOpacitySlider->setSliderPosition(0);
 		mLabelOpacityValueLabel->setText("");
 	}
-
 }
-
 
 void PropertyWindow::on_mNameLineEdit_editingFinished()
 {
@@ -906,7 +831,7 @@ void PropertyWindow::on_mSpriteFileNameBrowsePushButton_clicked()
 	updateCommonWidgets();
 }
 
-void PropertyWindow::on_mSpriteOpacityHorizontalSlider_valueChanged(int value)
+void PropertyWindow::on_mSpriteOpacitySlider_valueChanged(int value)
 {
 	foreach (GameObject *obj, mSelectedObjects)
 	{
@@ -916,7 +841,7 @@ void PropertyWindow::on_mSpriteOpacityHorizontalSlider_valueChanged(int value)
 		it->setColor(color);
 	}
 
-	mSpriteOpacityValueLabel->setText(QString::number(value, 10));
+	mSpriteOpacityValueLabel->setText(QString::number(value) + "%");
 }
 
 void PropertyWindow::on_mLabelFileNameComboBox_currentIndexChanged(const QString &arg)
@@ -1037,7 +962,7 @@ void PropertyWindow::on_mLineSpacingComboBox_currentIndexChanged(const QString &
 	}
 }
 
-void PropertyWindow::on_mLabelOpacityHorizontalSlider_valueChanged(int value)
+void PropertyWindow::on_mLabelOpacitySlider_valueChanged(int value)
 {
 	foreach (GameObject *obj, mSelectedObjects)
 	{
@@ -1047,7 +972,7 @@ void PropertyWindow::on_mLabelOpacityHorizontalSlider_valueChanged(int value)
 		it->setColor(color);
 	}
 
-	mLabelOpacityValueLabel->setText(QString::number(value, 10));
+	mLabelOpacityValueLabel->setText(QString::number(value) + "%");
 }
 
 QRectF PropertyWindow::calculateCurrentBoundingRect()
