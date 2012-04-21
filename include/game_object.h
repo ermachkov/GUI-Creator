@@ -128,13 +128,13 @@ protected:
 	bool readRealMap(LuaScript &script, const QString &name, RealMap &map);
 
 	// Записывает список локализованных вещественных чисел
-	void writeRealMap(QTextStream &stream, RealMap &map);
+	void writeRealMap(QTextStream &stream, const RealMap &map);
 
 	// Читает список локализованных строк
 	bool readStringMap(LuaScript &script, const QString &name, StringMap &map);
 
 	// Записывает список локализованных строк
-	void writeStringMap(QTextStream &stream, StringMap &map);
+	void writeStringMap(QTextStream &stream, const StringMap &map);
 
 	QString     mName;              // Имя (текстовое описание) объекта
 	int         mObjectID;          // Идентификатор объекта

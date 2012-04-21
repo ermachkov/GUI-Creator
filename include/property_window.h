@@ -28,7 +28,7 @@ public slots:
 
 protected:
 
-	virtual bool eventFilter(QObject *watched, QEvent *event);
+	virtual bool eventFilter(QObject *object, QEvent *event);
 
 private slots:
 
@@ -79,6 +79,21 @@ private slots:
 private:
 
 	static const int PRECISION = 8;
+
+	// Устанавливает видимость для виджетов со свойствами спрайтов
+	void setSpriteWidgetsVisible(bool visible);
+
+	// Устанавливает видимость для виджетов со свойствами надписей
+	void setLabelWidgetsVisible(bool visible);
+
+	// Устанавливает видимость для заданного диапазона строк в грид лейауте
+	void setGridLayoutRowsVisible(QGridLayout *layout, int firstRow, int numRows, bool visible);
+
+	// Устанавливает видимость для элемента лейаута
+	void setLayoutItemVisible(QLayoutItem *item, bool visible);
+
+	// Активирует/деактивирует items
+	void setLayoutItemEnabled(QLayoutItem *item, bool enable);
 
 	// отображение значений параметров объектов в виджетах ГУИ
 	void updateCommonWidgets();

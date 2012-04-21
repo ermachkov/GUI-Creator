@@ -38,6 +38,12 @@ public:
 	// Удаляет игровой объект
 	void removeGameObject(int index);
 
+	// Загружает слой из бинарного потока
+	virtual bool load(QDataStream &stream);
+
+	// Сохраняет слой в бинарный поток
+	virtual bool save(QDataStream &stream);
+
 	// Загружает слой из Lua скрипта
 	virtual bool load(LuaScript &script, int depth);
 

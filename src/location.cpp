@@ -37,7 +37,7 @@ bool Location::load(const QString &fileName)
 	if (!script.pushTable(Utils::toCamelCase(QFileInfo(fileName).baseName())))
 		return false;
 
-	// читаем таблицу слоев
+	// загружаем слои
 	QString type;
 	if (!script.pushTable("layers") || script.getLength() == 0 || !script.getString("type", type) || type != "LayerGroup" || !mRootLayer->load(script, 0))
 		return false;
@@ -52,7 +52,7 @@ bool Location::load(const QString &fileName)
 	for (int i = 1; i <= length; ++i)
 	{
 		int index;
-		if (!script.getInt(i, index) || index >= mActiveLayer->getNumChildLayers())
+		if (!script.getInt(i, index) || index < 0 || index >= mActiveLayer->getNumChildLayers())
 			return false;
 		mActiveLayer = mActiveLayer->getChildLayer(index);
 	}
@@ -256,9 +256,6 @@ GameObject *Location::loadGameObject(QDataStream &stream)
 
 QString Location::generateDuplicateName(const QString &name) const
 {
-	// FIXME: удалить
-	qDebug() << mRootLayer->getChildLayers().size();
-
 	// выделяем базовую часть имени
 	QString baseName = name;
 	int index = 0;
@@ -332,4 +329,59 @@ void Location::removeGuide(bool horz, int index)
 {
 	QList<qreal> &guides = horz ? mHorzGuides : mVertGuides;
 	guides.removeAt(index);
+}
+
+bool Location::load(QDataStream &stream)
+{
+	// пересоздаем корневой слой
+	delete mRootLayer;
+	mRootLayer = new LayerGroup();
+
+	// загружаем слои
+	QString type;
+	stream >> type;
+	if (stream.status() != QDataStream::Ok || type != "LayerGroup" || !mRootLayer->load(stream) || mRootLayer->getNumChildLayers() == 0)
+		return false;
+
+	// устанавливаем активный слой
+	QList<int> indices;
+	stream >> indices;
+	if (stream.status() != QDataStream::Ok || indices.empty())
+		return false;
+
+	mActiveLayer = mRootLayer;
+	foreach (int index, indices)
+	{
+		if (index < 0 || index >= mActiveLayer->getNumChildLayers())
+			return false;
+		mActiveLayer = mActiveLayer->getChildLayer(index);
+	}
+
+	// загружаем счетчики для генерации имен
+	stream >> mObjectIndex >> mLayerIndex >> mLayerGroupIndex >> mSpriteIndex >> mLabelIndex;
+
+	// загружаем направляющие
+	stream >> mHorzGuides >> mVertGuides;
+
+	return stream.status() == QDataStream::Ok;
+}
+
+bool Location::save(QDataStream &stream)
+{
+	// сохраняем слои
+	mRootLayer->save(stream);
+
+	// сохраняем последовательность индексов, ведущую к активному слою
+	QList<int> indices;
+	for (BaseLayer *layer = mActiveLayer; layer != mRootLayer; layer = layer->getParentLayer())
+		indices.push_front(layer->getParentLayer()->indexOfChildLayer(layer));
+	stream << indices;
+
+	// сохраняем счетчики для генерации имен
+	stream << mObjectIndex << mLayerIndex << mLayerGroupIndex << mSpriteIndex << mLabelIndex;
+
+	// сохраняем направляющие
+	stream << mHorzGuides << mVertGuides;
+
+	return stream.status() == QDataStream::Ok;
 }

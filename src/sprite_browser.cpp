@@ -122,8 +122,6 @@ void SpriteBrowser::on_mListWidget_itemActivated(QListWidgetItem *item)
 
 void SpriteBrowser::onThumbnailLoaded(QString absoluteFileName, QImage image)
 {
-	// qDebug() << "loaded:" << absoluteFileName;
-
 	// иконка должна быть в буфере
 	ThumbnailCache::iterator iterTC = mThumbnailCache.find(absoluteFileName);
 	Q_ASSERT(iterTC != mThumbnailCache.end());
@@ -165,8 +163,6 @@ void SpriteBrowser::onThumbnailLoaded(QString absoluteFileName, QImage image)
 
 void SpriteBrowser::onDirectoryChanged(const QString &path)
 {
-	qDebug() << "onDirectoryChanged: " << path;
-
 	// если измененный путь совпадает с текущим путем
 	if (path == getRootPath() + mRelativePath)
 	{
@@ -198,11 +194,8 @@ void SpriteBrowser::onDirectoryChanged(const QString &path)
 	}
 }
 
-// слот об изменении файла внутри текущей директории
 void SpriteBrowser::onFileChanged(const QString &absoluteFileName)
 {
-	qDebug() << "onFileChanged: " << absoluteFileName;
-
 	// фильтр т.к. удаление/добавление/переименование обрабатывается в onDirectoryChanged
 	if (!QFile::exists(absoluteFileName))
 	{
@@ -238,7 +231,6 @@ QString SpriteBrowser::getRootPath() const
 	return Project::getSingleton().getRootDirectory() + Project::getSingleton().getSpritesDirectory();
 }
 
-// Пересоздание объекта слежения за каталогом
 void SpriteBrowser::recreateWatcher()
 {
 	// удаление объекта слежения
@@ -252,7 +244,6 @@ void SpriteBrowser::recreateWatcher()
 	connect(mWatcher, SIGNAL(fileChanged(const QString &)), this, SLOT(onFileChanged(const QString &)));
 }
 
-// Обновление отображения текущего каталога
 void SpriteBrowser::update(QString oldPath, QString newPath)
 {
 	// всплывающая подсказка с полным путем

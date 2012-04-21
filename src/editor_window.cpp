@@ -314,7 +314,7 @@ void EditorWindow::setCurrentLanguage(const QString &language)
 	mLocation->getRootLayer()->setCurrentLanguage(language);
 
 	// пересчитываем прямоугольник выделения и центр вращения
-	if (!mSelectedObjects.empty())
+	if (mEditorState == STATE_IDLE && !mSelectedObjects.empty())
 	{
 		QPointF scale((mOriginalCenter.x() - mOriginalRect.left()) / mOriginalRect.width(),
 			(mOriginalCenter.y() - mOriginalRect.top()) / mOriginalRect.height());
@@ -322,6 +322,7 @@ void EditorWindow::setCurrentLanguage(const QString &language)
 		QPointF rotationCenter(mOriginalRect.width() * scale.x() + mOriginalRect.left(),
 			mOriginalRect.height() * scale.y() + mOriginalRect.top());
 		mOriginalCenter = mSnappedCenter = mSelectedObjects.size() == 1 ? mSelectedObjects.front()->getRotationCenter() : rotationCenter;
+		updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
 	}
 }
 
@@ -334,6 +335,18 @@ void EditorWindow::changeTexture(const QString &fileName, const QSharedPointer<T
 {
 	// заменяем текстуры во всех объектах
 	QList<GameObject *> objects = mLocation->getRootLayer()->changeTexture(fileName, texture);
+
+	// пересчитываем прямоугольник выделения и центр вращения
+	if (mEditorState == STATE_IDLE && !mSelectedObjects.empty())
+	{
+		QPointF scale((mOriginalCenter.x() - mOriginalRect.left()) / mOriginalRect.width(),
+			(mOriginalCenter.y() - mOriginalRect.top()) / mOriginalRect.height());
+		selectGameObjects(mSelectedObjects);
+		QPointF rotationCenter(mOriginalRect.width() * scale.x() + mOriginalRect.left(),
+			mOriginalRect.height() * scale.y() + mOriginalRect.top());
+		mOriginalCenter = mSnappedCenter = mSelectedObjects.size() == 1 ? mSelectedObjects.front()->getRotationCenter() : rotationCenter;
+		updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
+	}
 
 	// формируем список измененных слоев
 	QSet<BaseLayer *> layers;
@@ -352,6 +365,7 @@ void EditorWindow::updateSelection(const QPointF &rotationCenter)
 	{
 		selectGameObjects(mSelectedObjects);
 		mOriginalCenter = mSnappedCenter = mSelectedObjects.size() == 1 ? mSelectedObjects.front()->getRotationCenter() : rotationCenter;
+		updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
 	}
 }
 

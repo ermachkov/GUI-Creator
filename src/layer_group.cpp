@@ -12,9 +12,72 @@ LayerGroup::LayerGroup(const QString &name, BaseLayer *parent, int index)
 {
 }
 
+bool LayerGroup::load(QDataStream &stream)
+{
+	// загружаем общие свойства базового слоя
+	if (!BaseLayer::load(stream))
+		return false;
+
+	// загружаем количество дочерних слоев
+	int numChildLayers;
+	stream >> numChildLayers;
+	if (stream.status() != QDataStream::Ok)
+		return false;
+
+	// загружаем дочерние слои
+	for (int i = 0; i < numChildLayers; ++i)
+	{
+		// читаем тип слоя
+		QString type;
+		stream >> type;
+		if (stream.status() != QDataStream::Ok)
+			return false;
+
+		// создаем дочерний слой
+		BaseLayer *layer;
+		if (type == "Layer")
+			layer = new Layer();
+		else if (type == "LayerGroup")
+			layer = new LayerGroup();
+		else
+			return false;
+
+		// добавляем созданный слой в список дочерних слоев
+		addChildLayer(layer);
+
+		// загружаем дочерний слой
+		if (!layer->load(stream))
+			return false;
+	}
+
+	return true;
+}
+
+bool LayerGroup::save(QDataStream &stream)
+{
+	// сохраняем тип слоя
+	stream << QString("LayerGroup");
+	if (stream.status() != QDataStream::Ok)
+		return false;
+
+	// сохраняем общие свойства базового слоя
+	if (!BaseLayer::save(stream))
+		return false;
+
+	// сохраняем количество дочерних слоев
+	stream << mChildLayers.size();
+
+	// сохраняем дочерние слои
+	foreach (BaseLayer *layer, mChildLayers)
+		if (!layer->save(stream))
+			return false;
+
+	return stream.status() == QDataStream::Ok;
+}
+
 bool LayerGroup::load(LuaScript &script, int depth)
 {
-	// загружаем общие свойства слоя
+	// загружаем общие свойства базового слоя
 	if (!BaseLayer::load(script, depth))
 		return false;
 
@@ -56,7 +119,7 @@ bool LayerGroup::save(QTextStream &stream, int indent)
 	QString tabs(indent, '\t');
 	stream << tabs << "{type = \"LayerGroup\", ";
 
-	// сохраняем общие данные базового слоя
+	// сохраняем общие свойства базового слоя
 	if (!BaseLayer::save(stream, indent))
 		return false;
 

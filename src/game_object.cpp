@@ -203,7 +203,7 @@ bool GameObject::load(QDataStream &stream)
 
 bool GameObject::save(QDataStream &stream)
 {
-	// сохраняем данные в поток
+	// сохраняем свойства объекта в поток
 	stream << mName << mObjectID << mPositionXMap << mPositionYMap << mWidthMap << mHeightMap << mRotationAngle << mRotationCenter;
 	return stream.status() == QDataStream::Ok;
 }
@@ -324,19 +324,8 @@ bool GameObject::readRealMap(LuaScript &script, const QString &name, RealMap &ma
 	return false;
 }
 
-void GameObject::writeRealMap(QTextStream &stream, RealMap &map)
+void GameObject::writeRealMap(QTextStream &stream, const RealMap &map)
 {
-	// удаляем дубликаты дефолтного значения из списка локализации
-	QString defaultLanguage = Project::getSingleton().getDefaultLanguage();
-	qreal defaultValue = map[defaultLanguage];
-	for (RealMap::iterator it = map.begin(); it != map.end();)
-	{
-		if (it.key() != defaultLanguage && Utils::isEqual(*it, defaultValue))
-			map.erase(it++);
-		else
-			++it;
-	}
-
 	// записываем значение свойства
 	if (map.size() > 1)
 	{
@@ -349,7 +338,7 @@ void GameObject::writeRealMap(QTextStream &stream, RealMap &map)
 	else
 	{
 		// записываем одиночное значение
-		stream << defaultValue;
+		stream << *map.begin();
 	}
 }
 
@@ -389,19 +378,8 @@ bool GameObject::readStringMap(LuaScript &script, const QString &name, StringMap
 	return false;
 }
 
-void GameObject::writeStringMap(QTextStream &stream, StringMap &map)
+void GameObject::writeStringMap(QTextStream &stream, const StringMap &map)
 {
-	// удаляем дубликаты дефолтного значения из списка локализации
-	QString defaultLanguage = Project::getSingleton().getDefaultLanguage();
-	QString defaultValue = map[defaultLanguage];
-	for (StringMap::iterator it = map.begin(); it != map.end();)
-	{
-		if (it.key() != defaultLanguage && *it == defaultValue)
-			map.erase(it++);
-		else
-			++it;
-	}
-
 	// записываем значение свойства
 	if (map.size() > 1)
 	{
@@ -414,6 +392,6 @@ void GameObject::writeStringMap(QTextStream &stream, StringMap &map)
 	else
 	{
 		// записываем одиночное значение
-		stream << Utils::quotify(defaultValue);
+		stream << Utils::quotify(*map.begin());
 	}
 }

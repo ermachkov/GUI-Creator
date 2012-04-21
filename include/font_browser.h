@@ -9,6 +9,13 @@ class FontBrowser : public QDockWidget, private Ui::FontBrowser
 
 public:
 
+	struct Images
+	{
+		QImage mNormal;	              // невыделенный текст
+		QImage mHighlighted;          // выделенный текст с фокусом
+		QImage mHighlightedInactive;  // выделенный текст без фокуса
+	};
+
 	// Конструктор
 	explicit FontBrowser(QWidget *parent = 0);
 
@@ -17,6 +24,9 @@ public:
 
 	// Возвращает указатель на виджет со списком шрифтов
 	QWidget *getFontWidget() const;
+
+	// определение загруженности файла
+	bool isImageLoaded(const QModelIndex &index) const;
 
 private slots:
 
@@ -28,18 +38,24 @@ private slots:
 
 private:
 
-	struct Images
+	class FontFileSystemModel : public QFileSystemModel
 	{
-		QImage mNormal;	              // невыделенный текст
-		QImage mHighlighted;          // выделенный текст с фокусом
-		QImage mHighlightedInactive;  // выделенный текст без фокуса
+	public:
+
+		explicit FontFileSystemModel(FontBrowser *parent);
+
+		Qt::ItemFlags flags(const QModelIndex &index) const;
+
+	private:
+
+		FontBrowser *mFontBrowser;
 	};
 
 	class PreviewItemDelegate : public QItemDelegate
 	{
 	public:
 
-		PreviewItemDelegate(QObject *parent, QFileSystemModel *fileModel);
+		PreviewItemDelegate(QObject *parent, FontFileSystemModel *fileModel);
 
 		~PreviewItemDelegate();
 
@@ -52,18 +68,20 @@ private:
 		// пересоздание фреймбуфера
 		void recreateFrameBuffer(int width, int height) const;
 
-		// создание
+		// создание предпросмотра шрифта
 		void createImage(const QStyleOptionViewItem &option, const QString &text) const;
 
-		// ф-ция возврата нужного image
+		// ф-ция возврата нужного image предпросмотра шрифта
 		QImage getImage(const QStyleOptionViewItem &option, const QString &text) const;
 
 		// очистка сгенерированных предпросмотров шрифтов
 		void clearAllImages();
 
+		const QMap<QString, Images> &getImages() const;
+
 	private:
 
-		QFileSystemModel               *mFileModel;   // указатель на модель файловой системы
+		FontFileSystemModel            *mFileModel;   // указатель на модель файловой системы
 		mutable QGLFramebufferObject   *mFrameBuffer; // фреймбуфер для отрисовки иконок предпросмотра шрифтов
 		mutable QMap<QString, Images>  mImages;       // иконки предпросмотра
 	};
@@ -74,7 +92,7 @@ private:
 	// возврат коренной директории
 	QString getRootPath() const;
 
-	QFileSystemModel       *mFileModel;           // модель файловой системы для шрифтов
+	FontFileSystemModel    *mFileModel;           // модель файловой системы для шрифтов
 	PreviewItemDelegate    *mPreviewItemDelegate; // делегат
 };
 

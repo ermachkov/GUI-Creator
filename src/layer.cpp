@@ -62,9 +62,72 @@ void Layer::removeGameObject(int index)
 	mGameObjects.takeAt(index)->setParentLayer(NULL);
 }
 
+bool Layer::load(QDataStream &stream)
+{
+	// загружаем общие свойства базового слоя
+	if (!BaseLayer::load(stream))
+		return false;
+
+	// загружаем количество дочерних объектов
+	int numGameObjects;
+	stream >> numGameObjects;
+	if (stream.status() != QDataStream::Ok)
+		return false;
+
+	// загружаем дочерние объекты
+	for (int i = 0; i < numGameObjects; ++i)
+	{
+		// читаем тип объекта
+		QString type;
+		stream >> type;
+		if (stream.status() != QDataStream::Ok)
+			return false;
+
+		// создаем дочерний объект
+		GameObject *object;
+		if (type == "Sprite")
+			object = new Sprite();
+		else if (type == "Label")
+			object = new Label();
+		else
+			return false;
+
+		// добавляем созданный объект в список дочерних объектов
+		addGameObject(object);
+
+		// загружаем дочерний объект
+		if (!object->load(stream))
+			return false;
+	}
+
+	return true;
+}
+
+bool Layer::save(QDataStream &stream)
+{
+	// сохраняем тип слоя
+	stream << QString("Layer");
+	if (stream.status() != QDataStream::Ok)
+		return false;
+
+	// сохраняем общие свойства базового слоя
+	if (!BaseLayer::save(stream))
+		return false;
+
+	// сохраняем количество дочерних объектов
+	stream << mGameObjects.size();
+
+	// сохраняем дочерние объекты
+	foreach (GameObject *object, mGameObjects)
+		if (!object->save(stream))
+			return false;
+
+	return stream.status() == QDataStream::Ok;
+}
+
 bool Layer::load(LuaScript &script, int depth)
 {
-	// загружаем общие свойства слоя
+	// загружаем общие свойства базового слоя
 	if (!BaseLayer::load(script, depth))
 		return false;
 
@@ -106,7 +169,7 @@ bool Layer::save(QTextStream &stream, int indent)
 	QString tabs(indent, '\t');
 	stream << tabs << "{type = \"Layer\", ";
 
-	// сохраняем общие данные базового слоя
+	// сохраняем общие свойства базового слоя
 	if (!BaseLayer::save(stream, indent))
 		return false;
 

@@ -151,6 +151,23 @@ void BaseLayer::removeChildLayer(int index)
 	mChildLayers.takeAt(index)->setParentLayer(NULL);
 }
 
+bool BaseLayer::load(QDataStream &stream)
+{
+	// загружаем свойства слоя из потока
+	int visibleState, lockState;
+	stream >> mName >> visibleState >> lockState >> mExpanded;
+	mVisibleState = static_cast<VisibleState>(visibleState);
+	mLockState = static_cast<LockState>(lockState);
+	return stream.status() == QDataStream::Ok;
+}
+
+bool BaseLayer::save(QDataStream &stream)
+{
+	// сохраняем свойства слоя в поток
+	stream << mName << mVisibleState << mLockState << mExpanded;
+	return stream.status() == QDataStream::Ok;
+}
+
 bool BaseLayer::load(LuaScript &script, int depth)
 {
 	// проверяем уровень вложенности

@@ -145,19 +145,7 @@ bool Label::load(QDataStream &stream)
 	mVertAlignment = static_cast<VertAlignment>(vertAlignment);
 
 	// загружаем локализованные шрифты
-	mFontMap.clear();
-	QStringList languages(mFileNameMap.keys() + mFontSizeMap.keys());
-	languages.removeDuplicates();
-	QString defaultLanguage = Project::getSingleton().getDefaultLanguage();
-	foreach (const QString &language, languages)
-	{
-		QString fileName = mFileNameMap[mFileNameMap.contains(language) ? language : defaultLanguage];
-		int size = static_cast<int>(mFontSizeMap[mFontSizeMap.contains(language) ? language : defaultLanguage]);
-		mFontMap[language] = FontManager::getSingleton().loadFont(fileName, size);
-	}
-
-	// устанавливаем текущий язык
-	setCurrentLanguage(Project::getSingleton().getCurrentLanguage());
+	loadFonts();
 	return true;
 }
 
@@ -194,19 +182,7 @@ bool Label::load(LuaScript &script)
 	mColor = QColor::fromRgba(color);
 
 	// загружаем локализованные шрифты
-	mFontMap.clear();
-	QStringList languages(mFileNameMap.keys() + mFontSizeMap.keys());
-	languages.removeDuplicates();
-	QString defaultLanguage = Project::getSingleton().getDefaultLanguage();
-	foreach (const QString &language, languages)
-	{
-		QString fileName = mFileNameMap[mFileNameMap.contains(language) ? language : defaultLanguage];
-		int size = static_cast<int>(mFontSizeMap[mFontSizeMap.contains(language) ? language : defaultLanguage]);
-		mFontMap[language] = FontManager::getSingleton().loadFont(fileName, size);
-	}
-
-	// устанавливаем текущий язык
-	setCurrentLanguage(Project::getSingleton().getCurrentLanguage());
+	loadFonts();
 	return true;
 }
 
@@ -366,4 +342,22 @@ void Label::draw()
 
 	// восстанавливаем матрицу трансформации
 	glPopMatrix();
+}
+
+void Label::loadFonts()
+{
+	// загружаем локализованные шрифты
+	mFontMap.clear();
+	QStringList languages(mFileNameMap.keys() + mFontSizeMap.keys());
+	languages.removeDuplicates();
+	QString defaultLanguage = Project::getSingleton().getDefaultLanguage();
+	foreach (const QString &language, languages)
+	{
+		QString fileName = mFileNameMap[mFileNameMap.contains(language) ? language : defaultLanguage];
+		int size = static_cast<int>(mFontSizeMap[mFontSizeMap.contains(language) ? language : defaultLanguage]);
+		mFontMap[language] = FontManager::getSingleton().loadFont(fileName, size);
+	}
+
+	// устанавливаем текущий язык
+	setCurrentLanguage(Project::getSingleton().getCurrentLanguage());
 }

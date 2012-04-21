@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "property_window.h"
 #include "game_object.h"
 #include "label.h"
@@ -12,9 +13,7 @@ PropertyWindow::PropertyWindow(QWidget *parent)
 	setupUi(this);
 
 	connect(mRotationAngleComboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(onRotationAngleEditingFinished()));
-
 	connect(mFontSizeComboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(onFontSizeEditingFinished()));
-
 	connect(mLineSpacingComboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(onLineSpacingEditingFinished()));
 
 	// для обработки сигнала щелчка по QFrame-ам
@@ -54,6 +53,8 @@ PropertyWindow::PropertyWindow(QWidget *parent)
 
 void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter)
 {
+	// принудительно снимаем фокус с активного виджета, если он находится в окне свойств
+	// чтобы он выдал сигнал editingFinished для завершения редактирования и применения изменений
 	QWidget *widgetWithFocus = QApplication::focusWidget();
 	for (QWidget *widget = widgetWithFocus; widget != NULL; widget = widget->parentWidget())
 		if (widget == this)
@@ -81,6 +82,26 @@ void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &o
 	// скрытие надписи об отсутствии выделенных объектов
 	mNoSelectionObjectsLabel->setVisible(false);
 
+	// FIXME:
+	// логика скрытия в зависимости от выбранного языка
+
+
+
+	// FIXME:
+/*
+	if (mScrollAreaLayout->count() == 1)
+	{
+		;
+	}
+	else
+	{
+		// деактивируем все ячейки грида окна свойств
+		for (int line = 0; line < mScrollAreaLayout->count(); ++line)
+			setLayoutItemEnabled(mScrollAreaLayout->itemAt(line), false);
+
+		// активируем нужные ячейки грида окна свойств
+	}
+*/
 	// отображение общих свойств
 	updateCommonWidgets();
 
@@ -90,56 +111,38 @@ void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &o
 		types.push_back(typeid(*object).name());
 	if (types.count(types.front()) != types.size())
 	{
-		// выделенные объекты не идентичны
-
-		// установка минимального набора общих свойств
-		mStackedWidget->setVisible(false);
-
+		// если выделенные объекты имеют разные типы, скрываем специфичные свойства
+		setSpriteWidgetsVisible(false);
+		setLabelWidgetsVisible(false);
 		return;
 	}
 
-	// установка дополнительного набора специфических свойств
-	mStackedWidget->setVisible(true);
-
 	if (dynamic_cast<Sprite *>(objects.front()) != NULL)
 	{
-		// установка страницы для специфических настроек спрайта
-		mStackedWidget->setCurrentIndex(0);
-
-		// подгоняем размер StackedWidget под размер страницы спрайтов
-		mLabelPage->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
-		mSpritePage->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
-		mStackedWidget->adjustSize();
-
 		// отображение свойств спрайтов
+		setSpriteWidgetsVisible(true);
+		setLabelWidgetsVisible(false);
 		updateSpriteWidgets();
 	}
 	else if (dynamic_cast<Label *>(objects.front()) != NULL)
 	{
-		// установка страницы для специфических настроек текста
-		mStackedWidget->setCurrentIndex(1);
-
-		// подгоняем размер StackedWidget под размер страницы шрифтов
-		mSpritePage->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
-		mLabelPage->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
-		mStackedWidget->adjustSize();
-
-		// отображение свойств спрайтов
+		// отображение свойств надписей
+		setLabelWidgetsVisible(true);
+		setSpriteWidgetsVisible(false);
 		updateLabelWidgets();
 	}
-//	else if (dynamic_cast<"your type here">(objects.front()) != NULL)
-//	{
-//	}
 	else
 	{
 		qWarning() << "Error can't find type of object";
 	}
+
+	// запрещаем дальнейшее сжатие последней колонки
+	int width = qMax(mScrollAreaLayout->columnMinimumWidth(5), mScrollAreaLayout->cellRect(0, 5).width());
+	mScrollAreaLayout->setColumnMinimumWidth(5, width);
 }
 
 void PropertyWindow::onEditorWindowObjectsChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter)
 {
-	qDebug() << "PropertyWindow::onEditorWindowObjectsChanged";
-
 	// сохранение выделенных объектов во внутренний список
 	mSelectedObjects = objects;
 
@@ -147,7 +150,8 @@ void PropertyWindow::onEditorWindowObjectsChanged(const QList<GameObject *> &obj
 	mRotationCenter = rotationCenter;
 
 	// считывание заново общих свойств
-	updateCommonWidgets();
+	if (!objects.empty())
+		updateCommonWidgets();
 }
 
 bool PropertyWindow::eventFilter(QObject *object, QEvent *event)
@@ -159,8 +163,10 @@ bool PropertyWindow::eventFilter(QObject *object, QEvent *event)
 		{
 			if (object == mSpriteColorFrame)
 			{
-				// вызов диалогового окна выбора цвета
 				QColorDialog colorDialog;
+				colorDialog.setCurrentColor(mSpriteColorFrame->palette().color(QPalette::Window));
+
+				// вызов диалогового окна выбора цвета
 				if (colorDialog.exec() == colorDialog.Accepted)
 				{
 					QColor color = colorDialog.currentColor();
@@ -183,9 +189,10 @@ bool PropertyWindow::eventFilter(QObject *object, QEvent *event)
 			}
 			else if (object == mLabelColorFrame)
 			{
-				// вызов диалогового окна выбора цвета
 				QColorDialog colorDialog;
+				colorDialog.setCurrentColor(mLabelColorFrame->palette().color(QPalette::Window));
 
+				// вызов диалогового окна выбора цвета
 				if (colorDialog.exec() == colorDialog.Accepted)
 				{
 					QColor color = colorDialog.currentColor();
@@ -212,311 +219,19 @@ bool PropertyWindow::eventFilter(QObject *object, QEvent *event)
 	return QObject::eventFilter(object, event);
 }
 
-void PropertyWindow::updateCommonWidgets()
-{
-	// флаги идентичности значений свойств объектов в группе
-	bool equalName = true;
-	bool equalPosition = true;
-	bool equalSize = true;
-	bool isPositiveWSize = true;
-	bool isNegativeWSize = true;
-	bool isPositiveHSize = true;
-	bool isNegativeHSize = true;
-	bool equalRotationAngle = true;
-
-	Q_ASSERT(!mSelectedObjects.empty());
-
-	GameObject *first = mSelectedObjects.front();
-
-	foreach (GameObject *obj, mSelectedObjects)
-	{
-		GameObject *it = obj;
-
-		if (it->getName() != mSelectedObjects.front()->getName())
-			equalName = false;
-
-		if (!Utils::isEqual(it->getPosition().x(), first->getPosition().x()) ||
-			!Utils::isEqual(it->getPosition().y(), first->getPosition().y()))
-			equalPosition = false;
-
-		if (!Utils::isEqual(it->getSize().width(), first->getSize().width()) ||
-			!Utils::isEqual(it->getSize().height(), first->getSize().height()))
-			equalSize = false;
-
-		if (it->getSize().width() < 0)
-			isPositiveWSize = false;
-		if (it->getSize().width() >= 0)
-			isNegativeWSize = false;
-		if (it->getSize().height() < 0)
-			isPositiveHSize = false;
-		if (it->getSize().height() >= 0)
-			isNegativeHSize = false;
-
-		if (!Utils::isEqual(it->getRotationAngle(), first->getRotationAngle()))
-			equalRotationAngle = false;
-	}
-
-	mNameLineEdit->setText(equalName ? first->getName() : "");
-
-	// отображение id объекта(-ов)
-	QString strId;
-	foreach (GameObject *obj, mSelectedObjects)
-	{
-		if (obj == first)
-			strId += QString::number(obj->getObjectID());
-		else
-			strId += ", " + QString::number(obj->getObjectID());
-	}
-	mObjectIDLineEdit->setText(strId);
-
-	mPositionXLineEdit->setText(equalPosition ? QString::number(first->getPosition().x(), 'g', PRECISION) : "");
-	mPositionYLineEdit->setText(equalPosition ? QString::number(first->getPosition().y(), 'g', PRECISION) : "");
-
-	mSizeWLineEdit->setText(equalSize ? QString::number(qAbs(first->getSize().width()), 'g', PRECISION) : "");
-	mSizeHLineEdit->setText(equalSize ? QString::number(qAbs(first->getSize().height()), 'g', PRECISION) : "");
-
-	if (isPositiveWSize)
-		mFlipXCheckBox->setCheckState(Qt::Unchecked);
-	else if (isNegativeWSize)
-		mFlipXCheckBox->setCheckState(Qt::Checked);
-	else
-		mFlipXCheckBox->setCheckState(Qt::PartiallyChecked);
-
-	if (isPositiveHSize)
-		mFlipYCheckBox->setCheckState(Qt::Unchecked);
-	else if (isNegativeHSize)
-		mFlipYCheckBox->setCheckState(Qt::Checked);
-	else
-		mFlipYCheckBox->setCheckState(Qt::PartiallyChecked);
-
-	mRotationAngleComboBox->lineEdit()->setText(equalRotationAngle ? QString::number(first->getRotationAngle(), 'g', PRECISION) : "");
-
-	if (equalRotationAngle)
-	{
-		int index = mRotationAngleComboBox->findText(QString::number(first->getRotationAngle(), 'g', PRECISION));
-		mRotationAngleComboBox->setCurrentIndex(index);
-		if (index == -1)
-			mRotationAngleComboBox->lineEdit()->setText(QString::number(first->getRotationAngle(), 'g', PRECISION));
-	}
-	else
-	{
-		mRotationAngleComboBox->setCurrentIndex(-1);
-		mRotationAngleComboBox->lineEdit()->setText("");
-	}
-
-	mRotationCenterXLineEdit->setText(QString::number(mRotationCenter.x(), 'g', PRECISION));
-	mRotationCenterYLineEdit->setText(QString::number(mRotationCenter.y(), 'g', PRECISION));
-}
-
-void PropertyWindow::updateSpriteWidgets()
-{
-	// флаги идентичности значений свойств объектов в группе
-	bool equalFileName = true;
-	bool equalSpriteColor = true;
-	bool equalSpriteOpacity = true;
-
-	Q_ASSERT(!mSelectedObjects.empty());
-
-	Sprite *first = dynamic_cast<Sprite *>(mSelectedObjects.front());
-
-	foreach (GameObject *obj, mSelectedObjects)
-	{
-		Sprite *it = dynamic_cast<Sprite *>(obj);
-
-		if (it->getFileName() != first->getFileName())
-			equalFileName = false;
-
-		if (it->getColor().rgb() != first->getColor().rgb())
-			equalSpriteColor = false;
-
-		if (it->getColor().alpha() != first->getColor().alpha())
-			equalSpriteOpacity = false;
-	}
-
-	mSpriteFileNameLineEdit->setText(equalFileName ? first->getFileName() : "");
-
-	// установка текущего цвета
-	QPalette palette = mSpriteColorFrame->palette();
-	if (equalSpriteColor)
-	{
-		palette.setColor(QPalette::Window, first->getColor());
-	}
-	else
-	{
-		// FIXME:
-		palette.setColor(QPalette::Window, Qt::black);
-	}
-	mSpriteColorFrame->setPalette(palette);
-
-	if (equalSpriteOpacity)
-	{
-		int alpha = first->getColor().alpha();
-		alpha = alpha * 100 / 255;
-		mSpriteOpacitySlider->setSliderPosition(alpha);
-		mSpriteOpacityValueLabel->setText(QString::number(alpha) + "%");
-	}
-	else
-	{
-		mSpriteOpacitySlider->setSliderPosition(0);
-		mSpriteOpacityValueLabel->setText("");
-	}
-}
-
-void PropertyWindow::updateLabelWidgets()
-{
-	// флаги идентичности значений свойств объектов в группе
-	bool equalText = true;
-	bool equalFileName = true;
-	bool equalFontSize = true;
-	bool equalHorzAlignment = true;
-	bool equalVertAlignment = true;
-	bool equalLineSpacing = true;
-	bool equalLabelColor = true;
-	bool equalLabelOpacity = true;
-
-	Q_ASSERT(!mSelectedObjects.empty());
-
-	Label *first = dynamic_cast<Label *>(mSelectedObjects.front());
-
-	foreach (GameObject *obj, mSelectedObjects)
-	{
-		Label *it = dynamic_cast<Label *>(obj);
-
-		if (it->getText() != first->getText())
-			equalText = false;
-
-		if (it->getFileName() != first->getFileName())
-			equalFileName = false;
-
-		if (it->getFontSize() != first->getFontSize())
-			 equalFontSize = false;
-
-		if (it->getHorzAlignment() != first->getHorzAlignment())
-			equalHorzAlignment = false;
-
-		if (it->getVertAlignment() != first->getVertAlignment())
-			equalVertAlignment = false;
-
-		if (it->getLineSpacing() != first->getLineSpacing())
-			equalLineSpacing = false;
-
-		if (it->getColor().rgb() != first->getColor().rgb())
-			equalLabelColor = false;
-
-		if (it->getColor().alpha() != first->getColor().alpha())
-			equalLabelOpacity = false;
-	}
-
-	mTextLineEdit->setText(equalText ? first->getText() : "");
-
-	if (equalFileName)
-	{
-		int index = mLabelFileNameComboBox->findText(QFileInfo(first->getFileName()).fileName());
-		mLabelFileNameComboBox->setCurrentIndex(index);
-		if (index == -1)
-			mLabelFileNameComboBox->lineEdit()->setText(QFileInfo(first->getFileName()).fileName());
-	}
-	else
-	{
-		mLabelFileNameComboBox->setCurrentIndex(-1);
-	}
-
-	if (equalFontSize)
-	{
-		int index = mFontSizeComboBox->findText(QString::number(first->getFontSize(), 10));
-		mFontSizeComboBox->setCurrentIndex(index);
-		if (index == -1)
-			mLineSpacingComboBox->lineEdit()->setText(QString::number(first->getFontSize(), 10));
-	}
-	else
-	{
-		mFontSizeComboBox->setCurrentIndex(-1);
-	}
-
-
-	// деактивация кнопок выравнивания
-	mHorzAlignmentButtonGroup->setExclusive(false);
-	mHorzAlignmentLeftPushButton->setChecked(false);
-	mHorzAlignmentCenterPushButton->setChecked(false);
-	mHorzAlignmentRightPushButton->setChecked(false);
-	// активация общей кнопоки выравнивания
-	mHorzAlignmentButtonGroup->setExclusive(true);
-	if (equalHorzAlignment)
-		switch (first->getHorzAlignment())
-		{
-		case Label::HORZ_ALIGN_LEFT:
-			mHorzAlignmentLeftPushButton->setChecked(true);
-			break;
-		case Label::HORZ_ALIGN_CENTER:
-			mHorzAlignmentCenterPushButton->setChecked(true);
-			break;
-		case Label::HORZ_ALIGN_RIGHT:
-			mHorzAlignmentRightPushButton->setChecked(true);
-			break;
-		}
-
-	// деактивация кнопок выравнивания по вертикали
-	mVertAlignmentButtonGroup->setExclusive(false);
-	mVertAlignmentTopPushButton->setChecked(false);
-	mVertAlignmentCenterPushButton->setChecked(false);
-	mVertAlignmentBottomPushButton->setChecked(false);
-	// активация общей кнопоки выравнивания по вертикали
-	mVertAlignmentButtonGroup->setExclusive(true);
-	if (equalVertAlignment)
-		switch (first->getVertAlignment())
-		{
-		case Label::VERT_ALIGN_TOP:
-			mVertAlignmentTopPushButton->setChecked(true);
-			break;
-		case Label::VERT_ALIGN_CENTER:
-			mVertAlignmentCenterPushButton->setChecked(true);
-			break;
-		case Label::VERT_ALIGN_BOTTOM:
-			mVertAlignmentBottomPushButton->setChecked(true);
-			break;
-		}
-
-	if (equalLineSpacing)
-	{
-		int index = mLineSpacingComboBox->findText(QString::number(first->getLineSpacing()));
-		mLineSpacingComboBox->setCurrentIndex(index);
-		if (index == -1)
-			mLineSpacingComboBox->lineEdit()->setText(QString::number(first->getLineSpacing()));
-	}
-	else
-	{
-		mLineSpacingComboBox->setCurrentIndex(-1);
-	}
-
-	// установка текущего цвета
-	QPalette palette = mLabelColorFrame->palette();
-	if (equalLabelColor)
-	{
-		palette.setColor(QPalette::Window, first->getColor());
-	}
-	else
-	{
-		// FIXME:
-		palette.setColor(QPalette::Window, Qt::black);
-	}
-	mLabelColorFrame->setPalette(palette);
-
-	if (equalLabelOpacity)
-	{
-		int alpha = first->getColor().alpha();
-		alpha = alpha * 100 / 255;
-		mLabelOpacitySlider->setSliderPosition(alpha);
-		mLabelOpacityValueLabel->setText(QString::number(alpha) + "%");
-	}
-	else
-	{
-		mLabelOpacitySlider->setSliderPosition(0);
-		mLabelOpacityValueLabel->setText("");
-	}
-}
-
 void PropertyWindow::on_mNameLineEdit_editingFinished()
 {
+	qDebug() << mNameLineEdit->text();
+
+	Q_ASSERT(mSelectedObjects.size() == 1);
+
+	if (mNameLineEdit->text() == "")
+	{
+		mNameLineEdit->setText(mSelectedObjects.first()->getName());
+		return;
+	}
+
+	// FIXME: delete foreach
 	foreach (GameObject *obj, mSelectedObjects)
 		obj->setName(mNameLineEdit->text());
 }
@@ -695,8 +410,6 @@ void PropertyWindow::on_mFlipXCheckBox_clicked(bool checked)
 
 void PropertyWindow::on_mFlipYCheckBox_clicked(bool checked)
 {
-	qDebug() << "on_mFlipYCheckBox_clicked";
-
 	// просчет расположения старого центра вращения в процентах
 	QPointF percentCenter = calculatePercentPosition(calculateCurrentBoundingRect(), mRotationCenter);
 
@@ -741,8 +454,6 @@ void PropertyWindow::onRotationAngleEditingFinished()
 
 void PropertyWindow::on_mRotationAngleComboBox_currentIndexChanged(const QString &arg)
 {
-	qDebug() << "on_mRotationAngleComboBox_currentIndexChanged" << arg;
-
 	if (arg == "")
 		return;
 
@@ -837,11 +548,11 @@ void PropertyWindow::on_mSpriteOpacitySlider_valueChanged(int value)
 	{
 		Sprite *it = dynamic_cast<Sprite *>(obj);
 		QColor color = it->getColor();
-		color.setAlpha(value * 255 / 100);
+		color.setAlpha(value);
 		it->setColor(color);
 	}
 
-	mSpriteOpacityValueLabel->setText(QString::number(value) + "%");
+	mSpriteOpacityValueLabel->setText(QString::number(value * 100 / 255) + "%");
 }
 
 void PropertyWindow::on_mLabelFileNameComboBox_currentIndexChanged(const QString &arg)
@@ -937,8 +648,6 @@ void PropertyWindow::onVertAlignmentClicked(QAbstractButton *button)
 
 void PropertyWindow::onLineSpacingEditingFinished()
 {
-	qDebug() << "onLineSpacingEditingFinished";
-
 	float lineSpacing = mLineSpacingComboBox->lineEdit()->text().toFloat();
 
 	foreach (GameObject *obj, mSelectedObjects)
@@ -968,11 +677,369 @@ void PropertyWindow::on_mLabelOpacitySlider_valueChanged(int value)
 	{
 		Label *it = dynamic_cast<Label *>(obj);
 		QColor color = it->getColor();
-		color.setAlpha(value * 255 / 100);
+		color.setAlpha(value);
 		it->setColor(color);
 	}
 
-	mLabelOpacityValueLabel->setText(QString::number(value) + "%");
+	mLabelOpacityValueLabel->setText(QString::number(value * 100 / 255) + "%");
+}
+
+
+
+void PropertyWindow::setSpriteWidgetsVisible(bool visible)
+{
+	setGridLayoutRowsVisible(mScrollAreaLayout, 7, 3, visible);
+}
+
+void PropertyWindow::setLabelWidgetsVisible(bool visible)
+{
+	setGridLayoutRowsVisible(mScrollAreaLayout, 10, 8, visible);
+}
+
+void PropertyWindow::setGridLayoutRowsVisible(QGridLayout *layout, int firstRow, int numRows, bool visible)
+{
+	// устанавливаем видимость для заданного диапазона строк
+	for (int row = firstRow; row < firstRow + numRows; ++row)
+		for (int col = 0; col < layout->columnCount(); ++col)
+			setLayoutItemVisible(layout->itemAtPosition(row, col), visible);
+}
+
+void PropertyWindow::setLayoutItemVisible(QLayoutItem *item, bool visible)
+{
+	if (item != NULL)
+	{
+		if (item->widget() != NULL)
+		{
+			// устанавливаем видимость для виджета в элементе лейаута
+			item->widget()->setVisible(visible);
+		}
+		else if (item->layout() != NULL)
+		{
+			// рекурсивно устанавливаем видимость для всех вложенных элементов лейаута
+			for (int i = 0; i < item->layout()->count(); ++i)
+				setLayoutItemVisible(item->layout()->itemAt(i), visible);
+		}
+	}
+}
+
+void PropertyWindow::setLayoutItemEnabled(QLayoutItem *item, bool enable)
+{
+	if (item != NULL)
+	{
+		if (item->widget() != NULL)
+		{
+			// устанавливаем видимость для виджета в элементе лейаута
+			item->widget()->setEnabled(enable);
+		}
+		else if (item->layout() != NULL)
+		{
+			// рекурсивно устанавливаем видимость для всех вложенных элементов лейаута
+			for (int i = 0; i < item->layout()->count(); ++i)
+				setLayoutItemEnabled(item->layout()->itemAt(i), enable);
+		}
+	}
+}
+
+void PropertyWindow::updateCommonWidgets()
+{
+	// флаги идентичности значений свойств объектов в группе
+	bool equalName = true;
+	bool equalPosition = true;
+	bool equalSize = true;
+	bool isPositiveWSize = true;
+	bool isNegativeWSize = true;
+	bool isPositiveHSize = true;
+	bool isNegativeHSize = true;
+	bool equalRotationAngle = true;
+
+	Q_ASSERT(!mSelectedObjects.empty());
+
+	GameObject *first = mSelectedObjects.front();
+
+	foreach (GameObject *obj, mSelectedObjects)
+	{
+		GameObject *it = obj;
+
+		if (it->getName() != mSelectedObjects.front()->getName())
+			equalName = false;
+
+		if (!Utils::isEqual(it->getPosition().x(), first->getPosition().x()) ||
+			!Utils::isEqual(it->getPosition().y(), first->getPosition().y()))
+			equalPosition = false;
+
+		if (!Utils::isEqual(it->getSize().width(), first->getSize().width()) ||
+			!Utils::isEqual(it->getSize().height(), first->getSize().height()))
+			equalSize = false;
+
+		if (it->getSize().width() < 0)
+			isPositiveWSize = false;
+		if (it->getSize().width() >= 0)
+			isNegativeWSize = false;
+		if (it->getSize().height() < 0)
+			isPositiveHSize = false;
+		if (it->getSize().height() >= 0)
+			isNegativeHSize = false;
+
+		if (!Utils::isEqual(it->getRotationAngle(), first->getRotationAngle()))
+			equalRotationAngle = false;
+	}
+
+	mNameLineEdit->setText(equalName ? first->getName() : "");
+
+	// отображение id объекта(-ов)
+	QString strId;
+	foreach (GameObject *obj, mSelectedObjects)
+	{
+		if (obj == first)
+			strId += QString::number(obj->getObjectID());
+		else
+			strId += ", " + QString::number(obj->getObjectID());
+	}
+	mObjectIDLineEdit->setText(strId);
+
+	mPositionXLineEdit->setText(equalPosition ? QString::number(first->getPosition().x(), 'g', PRECISION) : "");
+	mPositionYLineEdit->setText(equalPosition ? QString::number(first->getPosition().y(), 'g', PRECISION) : "");
+
+	mSizeWLineEdit->setText(equalSize ? QString::number(qAbs(first->getSize().width()), 'g', PRECISION) : "");
+	mSizeHLineEdit->setText(equalSize ? QString::number(qAbs(first->getSize().height()), 'g', PRECISION) : "");
+
+	if (isPositiveWSize)
+		mFlipXCheckBox->setCheckState(Qt::Unchecked);
+	else if (isNegativeWSize)
+		mFlipXCheckBox->setCheckState(Qt::Checked);
+	else
+		mFlipXCheckBox->setCheckState(Qt::PartiallyChecked);
+
+	if (isPositiveHSize)
+		mFlipYCheckBox->setCheckState(Qt::Unchecked);
+	else if (isNegativeHSize)
+		mFlipYCheckBox->setCheckState(Qt::Checked);
+	else
+		mFlipYCheckBox->setCheckState(Qt::PartiallyChecked);
+
+	mRotationAngleComboBox->lineEdit()->setText(equalRotationAngle ? QString::number(first->getRotationAngle(), 'g', PRECISION) : "");
+
+	if (equalRotationAngle)
+	{
+		int index = mRotationAngleComboBox->findText(QString::number(first->getRotationAngle(), 'g', PRECISION));
+		mRotationAngleComboBox->setCurrentIndex(index);
+		if (index == -1)
+			mRotationAngleComboBox->lineEdit()->setText(QString::number(first->getRotationAngle(), 'g', PRECISION));
+	}
+	else
+	{
+		mRotationAngleComboBox->setCurrentIndex(-1);
+		mRotationAngleComboBox->lineEdit()->setText("");
+	}
+
+	mRotationCenterXLineEdit->setText(QString::number(mRotationCenter.x(), 'g', PRECISION));
+	mRotationCenterYLineEdit->setText(QString::number(mRotationCenter.y(), 'g', PRECISION));
+}
+
+void PropertyWindow::updateSpriteWidgets()
+{
+	// флаги идентичности значений свойств объектов в группе
+	bool equalFileName = true;
+	bool equalSpriteColor = true;
+	bool equalSpriteOpacity = true;
+
+	Q_ASSERT(!mSelectedObjects.empty());
+
+	Sprite *first = dynamic_cast<Sprite *>(mSelectedObjects.front());
+
+	foreach (GameObject *obj, mSelectedObjects)
+	{
+		Sprite *it = dynamic_cast<Sprite *>(obj);
+
+		if (it->getFileName() != first->getFileName())
+			equalFileName = false;
+
+		if (it->getColor().rgb() != first->getColor().rgb())
+			equalSpriteColor = false;
+
+		if (it->getColor().alpha() != first->getColor().alpha())
+			equalSpriteOpacity = false;
+	}
+
+	mSpriteFileNameLineEdit->setText(equalFileName ? first->getFileName() : "");
+
+	// установка текущего цвета
+	QPalette palette = mSpriteColorFrame->palette();
+	if (equalSpriteColor)
+	{
+		QColor color = first->getColor();
+		color.setAlpha(255);
+		palette.setColor(QPalette::Window, color);
+	}
+	else
+	{
+		palette.setColor(QPalette::Window, Qt::black);
+	}
+	mSpriteColorFrame->setPalette(palette);
+
+	if (equalSpriteOpacity)
+	{
+		int alpha = first->getColor().alpha();
+		mSpriteOpacitySlider->setSliderPosition(alpha);
+		mSpriteOpacityValueLabel->setText(QString::number(alpha * 100 / 255) + "%");
+	}
+	else
+	{
+		mSpriteOpacitySlider->setSliderPosition(0);
+		mSpriteOpacityValueLabel->setText("");
+	}
+}
+
+void PropertyWindow::updateLabelWidgets()
+{
+	// флаги идентичности значений свойств объектов в группе
+	bool equalText = true;
+	bool equalFileName = true;
+	bool equalFontSize = true;
+	bool equalHorzAlignment = true;
+	bool equalVertAlignment = true;
+	bool equalLineSpacing = true;
+	bool equalLabelColor = true;
+	bool equalLabelOpacity = true;
+
+	Q_ASSERT(!mSelectedObjects.empty());
+
+	Label *first = dynamic_cast<Label *>(mSelectedObjects.front());
+
+	foreach (GameObject *obj, mSelectedObjects)
+	{
+		Label *it = dynamic_cast<Label *>(obj);
+
+		if (it->getText() != first->getText())
+			equalText = false;
+
+		if (it->getFileName() != first->getFileName())
+			equalFileName = false;
+
+		if (it->getFontSize() != first->getFontSize())
+			 equalFontSize = false;
+
+		if (it->getHorzAlignment() != first->getHorzAlignment())
+			equalHorzAlignment = false;
+
+		if (it->getVertAlignment() != first->getVertAlignment())
+			equalVertAlignment = false;
+
+		if (it->getLineSpacing() != first->getLineSpacing())
+			equalLineSpacing = false;
+
+		if (it->getColor().rgb() != first->getColor().rgb())
+			equalLabelColor = false;
+
+		if (it->getColor().alpha() != first->getColor().alpha())
+			equalLabelOpacity = false;
+	}
+
+	mTextLineEdit->setText(equalText ? first->getText() : "");
+
+	if (equalFileName)
+	{
+		int index = mLabelFileNameComboBox->findText(QFileInfo(first->getFileName()).fileName());
+		mLabelFileNameComboBox->setCurrentIndex(index);
+		if (index == -1)
+			mLabelFileNameComboBox->lineEdit()->setText(QFileInfo(first->getFileName()).fileName());
+	}
+	else
+	{
+		mLabelFileNameComboBox->setCurrentIndex(-1);
+	}
+
+	if (equalFontSize)
+	{
+		int index = mFontSizeComboBox->findText(QString::number(first->getFontSize(), 10));
+		mFontSizeComboBox->setCurrentIndex(index);
+		if (index == -1)
+			mLineSpacingComboBox->lineEdit()->setText(QString::number(first->getFontSize(), 10));
+	}
+	else
+	{
+		mFontSizeComboBox->setCurrentIndex(-1);
+	}
+
+	// деактивация кнопок выравнивания
+	mHorzAlignmentButtonGroup->setExclusive(false);
+	mHorzAlignmentLeftPushButton->setChecked(false);
+	mHorzAlignmentCenterPushButton->setChecked(false);
+	mHorzAlignmentRightPushButton->setChecked(false);
+	// активация общей кнопоки выравнивания
+	mHorzAlignmentButtonGroup->setExclusive(true);
+	if (equalHorzAlignment)
+		switch (first->getHorzAlignment())
+		{
+		case Label::HORZ_ALIGN_LEFT:
+			mHorzAlignmentLeftPushButton->setChecked(true);
+			break;
+		case Label::HORZ_ALIGN_CENTER:
+			mHorzAlignmentCenterPushButton->setChecked(true);
+			break;
+		case Label::HORZ_ALIGN_RIGHT:
+			mHorzAlignmentRightPushButton->setChecked(true);
+			break;
+		}
+
+	// деактивация кнопок выравнивания по вертикали
+	mVertAlignmentButtonGroup->setExclusive(false);
+	mVertAlignmentTopPushButton->setChecked(false);
+	mVertAlignmentCenterPushButton->setChecked(false);
+	mVertAlignmentBottomPushButton->setChecked(false);
+	// активация общей кнопоки выравнивания по вертикали
+	mVertAlignmentButtonGroup->setExclusive(true);
+	if (equalVertAlignment)
+		switch (first->getVertAlignment())
+		{
+		case Label::VERT_ALIGN_TOP:
+			mVertAlignmentTopPushButton->setChecked(true);
+			break;
+		case Label::VERT_ALIGN_CENTER:
+			mVertAlignmentCenterPushButton->setChecked(true);
+			break;
+		case Label::VERT_ALIGN_BOTTOM:
+			mVertAlignmentBottomPushButton->setChecked(true);
+			break;
+		}
+
+	if (equalLineSpacing)
+	{
+		int index = mLineSpacingComboBox->findText(QString::number(first->getLineSpacing()));
+		mLineSpacingComboBox->setCurrentIndex(index);
+		if (index == -1)
+			mLineSpacingComboBox->lineEdit()->setText(QString::number(first->getLineSpacing()));
+	}
+	else
+	{
+		mLineSpacingComboBox->setCurrentIndex(-1);
+	}
+
+	// установка текущего цвета
+	QPalette palette = mLabelColorFrame->palette();
+	if (equalLabelColor)
+	{
+		QColor color = first->getColor();
+		color.setAlpha(255);
+		palette.setColor(QPalette::Window, color);
+	}
+	else
+	{
+		palette.setColor(QPalette::Window, Qt::black);
+	}
+	mLabelColorFrame->setPalette(palette);
+
+	if (equalLabelOpacity)
+	{
+		int alpha = first->getColor().alpha();
+		mLabelOpacitySlider->setSliderPosition(alpha);
+		mLabelOpacityValueLabel->setText(QString::number(alpha * 100 / 255) + "%");
+	}
+	else
+	{
+		mLabelOpacitySlider->setSliderPosition(0);
+		mLabelOpacityValueLabel->setText("");
+	}
 }
 
 QRectF PropertyWindow::calculateCurrentBoundingRect()

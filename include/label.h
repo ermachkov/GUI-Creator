@@ -110,6 +110,9 @@ private:
 	// Тип для списка локализованных шрифтов
 	typedef QMap<QString, QSharedPointer<FTFont> > FontMap;
 
+	// Загружает локализованные шрифты
+	void loadFonts();
+
 	QString                 mText;              // Текст надписи
 	QString                 mFileName;          // Имя файла со шрифтом
 	int                     mFontSize;          // Размер шрифта в пунктах

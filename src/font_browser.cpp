@@ -9,7 +9,7 @@ FontBrowser::FontBrowser(QWidget *parent)
 {
 	setupUi(this);
 
-	mFileModel = new QFileSystemModel(this);
+	mFileModel = new FontFileSystemModel(this);
 
 	connect(mFileModel, SIGNAL(directoryLoaded(const QString &)), this, SLOT(onDirectoryLoaded(const QString &)));
 	connect(mFileModel, SIGNAL(fileRenamed(const QString &, const QString &, const QString &)), this, SLOT(onFileRenamed(const QString &, const QString &, const QString &)));
@@ -40,14 +40,23 @@ QWidget *FontBrowser::getFontWidget() const
 	return mFontListView;
 }
 
+bool FontBrowser::isImageLoaded(const QModelIndex &index) const
+{
+	QString fileName = index.data().toString();
+
+	QMap<QString, Images> images = mPreviewItemDelegate->getImages();
+
+	QMap<QString, Images>::const_iterator it = images.find(fileName);
+	if (it != images.end())
+		return true;
+
+	return false;
+}
+
 void FontBrowser::onDirectoryLoaded(const QString &)
 {
 	QString path = mFileModel->rootPath();
 
-//	if (path != mFileModel->rootPath())
-//		return;
-
-	// FIXME:
 	mFontListView->setRootIndex(mFileModel->index(path));
 
 	// очистка списка загруженных шрифтов
@@ -65,10 +74,10 @@ void FontBrowser::onRootPathChanged(const QString &newPath)
 
 void FontBrowser::on_mFontListView_activated(const QModelIndex &index)
 {
-	QString path = mFileModel->fileInfo(index).canonicalFilePath();
-
 	if (!mFileModel->isDir(index))
 		return;
+
+	QString path = mFileModel->fileInfo(index).canonicalFilePath();
 
 	if (Utils::addTrailingSlash(path) == getFontPath())
 		mFileModel->setFilter(QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot);
@@ -78,7 +87,28 @@ void FontBrowser::on_mFontListView_activated(const QModelIndex &index)
 	mFileModel->setRootPath(path);
 }
 
-FontBrowser::PreviewItemDelegate::PreviewItemDelegate(QObject *parent, QFileSystemModel *fileModel)
+FontBrowser::FontFileSystemModel::FontFileSystemModel(FontBrowser *parent)
+: QFileSystemModel(parent), mFontBrowser(parent)
+{
+}
+
+Qt::ItemFlags FontBrowser::FontFileSystemModel::flags(const QModelIndex &index) const
+{
+	Qt::ItemFlags flags = QFileSystemModel::flags(index);
+	if (!index.isValid())
+		return flags;
+
+	// модификация флагов перетаскивания
+	flags ^= Qt::ItemIsDragEnabled;
+
+	// разрешение перетаскивания если не директория и файл загружен
+	if (!isDir(index) && mFontBrowser->isImageLoaded(index))
+		flags |= Qt::ItemIsDragEnabled;
+
+	return flags;
+}
+
+FontBrowser::PreviewItemDelegate::PreviewItemDelegate(QObject *parent, FontFileSystemModel *fileModel)
 : QItemDelegate(parent), mFileModel(fileModel), mFrameBuffer(NULL)
 {
 	// создание фреймбуффера первоначального размера
@@ -125,18 +155,19 @@ void FontBrowser::PreviewItemDelegate::drawDisplay(QPainter *painter,
 
 QSize FontBrowser::PreviewItemDelegate::sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
+	mFileModel->flags(index);
+
 	// возврат требуемого размера под надпись
 	if (!mFileModel->isDir(index))
 	{
 		createImage(option, index.data().toString());
 		QImage image = getImage(option, index.data().toString());
 		if (!image.isNull())
+		{
 			return image.size();
+		}
 	}
-	else
-		return QItemDelegate::sizeHint(option, index);
 
-	qWarning() << "no image in FontBrowser::PreviewItemDelegate::sizeHint";
 	return QItemDelegate::sizeHint(option, index);
 }
 
@@ -176,9 +207,7 @@ void FontBrowser::PreviewItemDelegate::createImage(const QStyleOptionViewItem &o
 
 		if (tempFont.isNull())
 		{
-			qDebug() << "Error in FontBrowser::scanFonts()";
-			// FIXME: запретить перетаскивание незагруженного элемента
-			// ...
+			// qWarning() << "image" << index.data().toString() << "not loaded";
 			return;
 		}
 
@@ -296,6 +325,11 @@ QImage FontBrowser::PreviewItemDelegate::getImage(const QStyleOptionViewItem &op
 void FontBrowser::PreviewItemDelegate::clearAllImages()
 {
 	mImages.clear();
+}
+
+const QMap<QString, FontBrowser::Images> &FontBrowser::PreviewItemDelegate::getImages() const
+{
+	return mImages;
 }
 
 QString FontBrowser::getFontPath() const

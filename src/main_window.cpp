@@ -148,7 +148,7 @@ MainWindow::MainWindow()
 	QSignalMapper *zoomSignalMapper = new QSignalMapper(this);
 
 	// создаем список масштабов
-	const qreal ZOOM_LIST[] = {0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0};
+	const qreal ZOOM_LIST[] = {0.1, 0.25, 0.5, 0.75, 1.0, 2.0, 5.0, 10.0, 20.0, 32.0};
 	for (size_t i = 0; i < sizeof(ZOOM_LIST) / sizeof(qreal); ++i)
 		mZoomList.push_back(ZOOM_LIST[i]);
 
@@ -746,6 +746,11 @@ void MainWindow::onTextureChanged(const QString &fileName, const QSharedPointer<
 	// заменяем текстуру во всех открытых вкладках
 	for (int i = 0; i < mTabWidget->count(); ++i)
 		getEditorWindow(i)->changeTexture(fileName, texture);
+
+	// обновляем окно свойств
+	EditorWindow *editorWindow = getEditorWindow();
+	if (editorWindow != NULL)
+		mPropertyWindow->onEditorWindowObjectsChanged(editorWindow->getSelectedObjects(), editorWindow->getRotationCenter());
 }
 
 void MainWindow::onClipboardDataChanged()

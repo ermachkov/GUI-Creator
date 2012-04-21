@@ -80,17 +80,23 @@ public:
 
 private:
 
+	// Загружает локацию из бинарного потока
+	bool load(QDataStream &stream);
+
+	// Сохраняет локацию в бинарный поток
+	bool save(QDataStream &stream);
+
 	BaseLayer       *mRootLayer;        // Корневой слой
 	BaseLayer       *mActiveLayer;      // Текущий активный слой
-
-	QList<qreal>    mHorzGuides;        // Горизонтальные направляющие
-	QList<qreal>    mVertGuides;        // Вертикальные направляющие
 
 	int             mObjectIndex;       // Текущий индекс для генерации уникальных идентификаторов объектов
 	int             mLayerIndex;        // Текущий индекс для генерации имен слоев
 	int             mLayerGroupIndex;   // Текущий индекс для генерации имен групп слоев
 	int             mSpriteIndex;       // Текущий индекс для генерации имен спрайтов
 	int             mLabelIndex;        // Текущий индекс для генерации имен надписей
+
+	QList<qreal>    mHorzGuides;        // Горизонтальные направляющие
+	QList<qreal>    mVertGuides;        // Вертикальные направляющие
 };
 
 #endif // LOCATION_H

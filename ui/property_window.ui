@@ -32,114 +32,16 @@
          <x>0</x>
          <y>0</y>
          <width>398</width>
-         <height>555</height>
+         <height>562</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="mScrollAreaWidgetLayout">
         <item>
-         <layout class="QGridLayout" name="mCommonLayout">
-          <item row="2" column="0">
-           <widget class="QLabel" name="mPositionLabel">
-            <property name="text">
-             <string>Позиция</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="4">
-           <widget class="QCheckBox" name="mFlipYCheckBox"/>
-          </item>
-          <item row="2" column="1">
-           <widget class="QLabel" name="mPositionXLabel">
-            <property name="text">
-             <string>X</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QLabel" name="mSizeWLabel">
-            <property name="text">
-             <string>W</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="3">
-           <widget class="QLabel" name="mPositionYLabel">
-            <property name="text">
-             <string>Y</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="mNameLabel">
-            <property name="text">
-             <string>Имя</string>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="4">
-           <widget class="QLineEdit" name="mRotationCenterYLineEdit"/>
-          </item>
-          <item row="6" column="0">
-           <widget class="QLabel" name="mRotationCenterLabel">
-            <property name="text">
-             <string>Центр вращения</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="mObjectIDLabel">
-            <property name="text">
-             <string>ID</string>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="2">
-           <widget class="QLineEdit" name="mRotationCenterXLineEdit"/>
-          </item>
-          <item row="2" column="2">
-           <widget class="QLineEdit" name="mPositionXLineEdit"/>
-          </item>
-          <item row="3" column="3">
-           <widget class="QLabel" name="mSizeHLabel">
-            <property name="text">
-             <string>H</string>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="0">
-           <widget class="QLabel" name="mRotationAngleLabel">
-            <property name="text">
-             <string>Угол поворота</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="3">
-           <widget class="QLabel" name="mFlipYLabel">
-            <property name="text">
-             <string>Y</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="4">
-           <widget class="QLineEdit" name="mPositionYLineEdit"/>
-          </item>
-          <item row="3" column="4">
-           <widget class="QLineEdit" name="mSizeHLineEdit"/>
-          </item>
-          <item row="3" column="2">
-           <widget class="QLineEdit" name="mSizeWLineEdit"/>
-          </item>
-          <item row="6" column="3">
-           <widget class="QLabel" name="mRotationCenterYLabel">
-            <property name="text">
-             <string>Y</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
-           <widget class="QLabel" name="mFlipLabel">
-            <property name="text">
-             <string>Отражение</string>
+         <layout class="QGridLayout" name="mScrollAreaLayout">
+          <item row="1" column="1" colspan="2">
+           <widget class="QLineEdit" name="mObjectIDLineEdit">
+            <property name="readOnly">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -150,28 +52,24 @@
             </property>
            </widget>
           </item>
-          <item row="4" column="2">
-           <widget class="QCheckBox" name="mFlipXCheckBox"/>
+          <item row="4" column="4">
+           <widget class="QCheckBox" name="mFlipYCheckBox"/>
           </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="mSizeLabel">
+          <item row="6" column="4">
+           <widget class="QLineEdit" name="mRotationCenterYLineEdit"/>
+          </item>
+          <item row="3" column="1">
+           <widget class="QLabel" name="mSizeWLabel">
             <property name="text">
-             <string>Размер</string>
+             <string>W</string>
             </property>
            </widget>
           </item>
-          <item row="6" column="1">
-           <widget class="QLabel" name="mRotationCenterXLabel">
-            <property name="text">
-             <string>X</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="5">
-           <widget class="QPushButton" name="mResetSizePushButton">
+          <item row="10" column="5">
+           <widget class="QPushButton" name="mTextEditPushButton">
             <property name="icon">
              <iconset resource="../res/resources.qrc">
-              <normaloff>:/images/reset_property.png</normaloff>:/images/reset_property.png</iconset>
+              <normaloff>:/images/edit.png</normaloff>:/images/edit.png</iconset>
             </property>
             <property name="iconSize">
              <size>
@@ -181,31 +79,94 @@
             </property>
            </widget>
           </item>
-          <item row="6" column="5">
-           <widget class="QPushButton" name="mResetRotationCenterPushButton">
-            <property name="icon">
-             <iconset resource="../res/resources.qrc">
-              <normaloff>:/images/reset_property.png</normaloff>:/images/reset_property.png</iconset>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>16</width>
-              <height>16</height>
-             </size>
+          <item row="5" column="0">
+           <widget class="QLabel" name="mRotationAngleLabel">
+            <property name="text">
+             <string>Угол поворота</string>
             </property>
            </widget>
           </item>
-          <item row="0" column="2" colspan="3">
-           <widget class="QLineEdit" name="mNameLineEdit"/>
+          <item row="15" column="0">
+           <widget class="QLabel" name="mLineSpacingLabel">
+            <property name="text">
+             <string>Интервал</string>
+            </property>
+           </widget>
           </item>
-          <item row="1" column="2">
-           <widget class="QLineEdit" name="mObjectIDLineEdit">
-            <property name="readOnly">
+          <item row="12" column="1" colspan="2">
+           <widget class="QComboBox" name="mFontSizeComboBox">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="editable">
              <bool>true</bool>
             </property>
+            <property name="insertPolicy">
+             <enum>QComboBox::NoInsert</enum>
+            </property>
+            <item>
+             <property name="text">
+              <string>10</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>12</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>14</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>16</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>18</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>20</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>24</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>32</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>40</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>64</string>
+             </property>
+            </item>
            </widget>
           </item>
-          <item row="5" column="2">
+          <item row="12" column="0">
+           <widget class="QLabel" name="mFontSizeLabel">
+            <property name="text">
+             <string>Размер шрифта</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1" colspan="2">
            <widget class="QComboBox" name="mRotationAngleComboBox">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
@@ -261,470 +222,493 @@
             </item>
            </widget>
           </item>
+          <item row="9" column="0">
+           <widget class="QLabel" name="mSpriteOpacityLabel">
+            <property name="text">
+             <string>Прозрачность</string>
+            </property>
+           </widget>
+          </item>
+          <item row="16" column="0">
+           <widget class="QLabel" name="mLabelColorLabel">
+            <property name="text">
+             <string>Цвет</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="3">
+           <widget class="QLabel" name="mPositionYLabel">
+            <property name="text">
+             <string>Y</string>
+            </property>
+           </widget>
+          </item>
+          <item row="16" column="1" colspan="4">
+           <layout class="QHBoxLayout" name="mLabelColorLayout">
+            <item>
+             <widget class="QFrame" name="mLabelColorFrame">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>32</width>
+                <height>32</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>32</width>
+                <height>32</height>
+               </size>
+              </property>
+              <property name="autoFillBackground">
+               <bool>true</bool>
+              </property>
+              <property name="frameShape">
+               <enum>QFrame::Box</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Plain</enum>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="mLabelColorSpacer">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>0</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item row="2" column="2">
+           <widget class="QLineEdit" name="mPositionXLineEdit"/>
+          </item>
+          <item row="10" column="0">
+           <widget class="QLabel" name="mTextLabel">
+            <property name="text">
+             <string>Текст</string>
+            </property>
+           </widget>
+          </item>
+          <item row="9" column="1" colspan="4">
+           <widget class="QSlider" name="mSpriteOpacitySlider">
+            <property name="maximum">
+             <number>255</number>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="3">
+           <widget class="QLabel" name="mSizeHLabel">
+            <property name="text">
+             <string>H</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="1" colspan="4">
+           <layout class="QHBoxLayout" name="mSpriteColorLayout">
+            <item>
+             <widget class="QFrame" name="mSpriteColorFrame">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>32</width>
+                <height>32</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>32</width>
+                <height>32</height>
+               </size>
+              </property>
+              <property name="autoFillBackground">
+               <bool>true</bool>
+              </property>
+              <property name="frameShape">
+               <enum>QFrame::Box</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Plain</enum>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="mSpriteColorSpacer">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>0</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item row="8" column="0">
+           <widget class="QLabel" name="mSpriteColorLabel">
+            <property name="text">
+             <string>Цвет</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="4">
+           <widget class="QLineEdit" name="mSizeHLineEdit"/>
+          </item>
+          <item row="10" column="1" colspan="4">
+           <widget class="QLineEdit" name="mTextLineEdit"/>
+          </item>
+          <item row="13" column="1" colspan="4">
+           <layout class="QHBoxLayout" name="mHorzAlignmentLayout">
+            <item>
+             <widget class="QPushButton" name="mHorzAlignmentLeftPushButton">
+              <property name="icon">
+               <iconset resource="../res/resources.qrc">
+                <normaloff>:/images/horz_align_left.png</normaloff>:/images/horz_align_left.png</iconset>
+              </property>
+              <property name="checkable">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="mHorzAlignmentCenterPushButton">
+              <property name="icon">
+               <iconset resource="../res/resources.qrc">
+                <normaloff>:/images/horz_align_center.png</normaloff>:/images/horz_align_center.png</iconset>
+              </property>
+              <property name="checkable">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="mHorzAlignmentRightPushButton">
+              <property name="icon">
+               <iconset resource="../res/resources.qrc">
+                <normaloff>:/images/horz_align_right.png</normaloff>:/images/horz_align_right.png</iconset>
+              </property>
+              <property name="checkable">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="mHorzAlignmentSpacer">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>0</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item row="11" column="1" colspan="4">
+           <widget class="QComboBox" name="mLabelFileNameComboBox"/>
+          </item>
+          <item row="7" column="1" colspan="4">
+           <widget class="QLineEdit" name="mSpriteFileNameLineEdit">
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="0">
+           <widget class="QLabel" name="mRotationCenterLabel">
+            <property name="text">
+             <string>Центр вращения</string>
+            </property>
+           </widget>
+          </item>
+          <item row="11" column="0">
+           <widget class="QLabel" name="mLabelFileNameLabel">
+            <property name="text">
+             <string>Шрифт</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="mSizeLabel">
+            <property name="text">
+             <string>Размер</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="mPositionLabel">
+            <property name="text">
+             <string>Позиция</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="0">
+           <widget class="QLabel" name="mSpriteFileNameLabel">
+            <property name="text">
+             <string>Файл</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="3">
+           <widget class="QLabel" name="mFlipYLabel">
+            <property name="text">
+             <string>Y</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="2">
+           <widget class="QLineEdit" name="mSizeWLineEdit"/>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="mNameLabel">
+            <property name="text">
+             <string>Имя</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="4">
+           <widget class="QLineEdit" name="mPositionYLineEdit"/>
+          </item>
+          <item row="0" column="1" colspan="4">
+           <widget class="QLineEdit" name="mNameLineEdit">
+            <property name="placeholderText">
+             <string>Разные значения</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="mObjectIDLabel">
+            <property name="text">
+             <string>ID</string>
+            </property>
+           </widget>
+          </item>
+          <item row="15" column="1" colspan="2">
+           <widget class="QComboBox" name="mLineSpacingComboBox">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="editable">
+             <bool>true</bool>
+            </property>
+            <property name="insertPolicy">
+             <enum>QComboBox::NoInsert</enum>
+            </property>
+            <item>
+             <property name="text">
+              <string>0.75</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>1.0</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>1.5</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>2.0</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="4" column="2">
+           <widget class="QCheckBox" name="mFlipXCheckBox"/>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="mFlipLabel">
+            <property name="text">
+             <string>Отражение</string>
+            </property>
+           </widget>
+          </item>
+          <item row="14" column="1" colspan="4">
+           <layout class="QHBoxLayout" name="mVertAlignmentLayout">
+            <item>
+             <widget class="QPushButton" name="mVertAlignmentTopPushButton">
+              <property name="icon">
+               <iconset resource="../res/resources.qrc">
+                <normaloff>:/images/vert_align_top.png</normaloff>:/images/vert_align_top.png</iconset>
+              </property>
+              <property name="checkable">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="mVertAlignmentCenterPushButton">
+              <property name="icon">
+               <iconset resource="../res/resources.qrc">
+                <normaloff>:/images/vert_align_center.png</normaloff>:/images/vert_align_center.png</iconset>
+              </property>
+              <property name="checkable">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="mVertAlignmentBottomPushButton">
+              <property name="icon">
+               <iconset resource="../res/resources.qrc">
+                <normaloff>:/images/vert_align_bottom.png</normaloff>:/images/vert_align_bottom.png</iconset>
+              </property>
+              <property name="checkable">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="mVertAlignmentSpacer">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>0</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item row="6" column="1">
+           <widget class="QLabel" name="mRotationCenterXLabel">
+            <property name="text">
+             <string>X</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="3">
+           <widget class="QLabel" name="mRotationCenterYLabel">
+            <property name="text">
+             <string>Y</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLabel" name="mPositionXLabel">
+            <property name="text">
+             <string>X</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="2">
+           <widget class="QLineEdit" name="mRotationCenterXLineEdit"/>
+          </item>
+          <item row="13" column="0" rowspan="2">
+           <widget class="QLabel" name="mAlignmentLabel">
+            <property name="text">
+             <string>Выравнивание</string>
+            </property>
+           </widget>
+          </item>
+          <item row="17" column="0">
+           <widget class="QLabel" name="mLabelOpacityLabel">
+            <property name="text">
+             <string>Прозрачность</string>
+            </property>
+           </widget>
+          </item>
+          <item row="17" column="1" colspan="4">
+           <widget class="QSlider" name="mLabelOpacitySlider">
+            <property name="maximum">
+             <number>255</number>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="17" column="5">
+           <widget class="QLabel" name="mLabelOpacityValueLabel">
+            <property name="text">
+             <string>100%</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="5">
+           <widget class="QPushButton" name="mResetSizePushButton">
+            <property name="icon">
+             <iconset resource="../res/resources.qrc">
+              <normaloff>:/images/reset_property.png</normaloff>:/images/reset_property.png</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>16</width>
+              <height>16</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="5">
+           <widget class="QPushButton" name="mResetRotationCenterPushButton">
+            <property name="icon">
+             <iconset resource="../res/resources.qrc">
+              <normaloff>:/images/reset_property.png</normaloff>:/images/reset_property.png</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>16</width>
+              <height>16</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="5">
+           <widget class="QPushButton" name="mSpriteFileNameBrowsePushButton">
+            <property name="icon">
+             <iconset resource="../res/resources.qrc">
+              <normaloff>:/images/browse.png</normaloff>:/images/browse.png</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>16</width>
+              <height>16</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="9" column="5">
+           <widget class="QLabel" name="mSpriteOpacityValueLabel">
+            <property name="text">
+             <string>100%</string>
+            </property>
+           </widget>
+          </item>
          </layout>
-        </item>
-        <item>
-         <widget class="QStackedWidget" name="mStackedWidget">
-          <property name="currentIndex">
-           <number>0</number>
-          </property>
-          <widget class="QWidget" name="mSpritePage">
-           <layout class="QVBoxLayout" name="mSpritePageLayout">
-            <property name="margin">
-             <number>0</number>
-            </property>
-            <item>
-             <layout class="QGridLayout" name="mSpriteLayout">
-              <item row="2" column="0">
-               <widget class="QLabel" name="mSpriteOpacityLabel">
-                <property name="text">
-                 <string>Прозрачность</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="1">
-               <widget class="QLineEdit" name="mSpriteFileNameLineEdit">
-                <property name="readOnly">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <layout class="QHBoxLayout" name="mSpriteColorLayout">
-                <item>
-                 <widget class="QFrame" name="mSpriteColorFrame">
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="minimumSize">
-                   <size>
-                    <width>32</width>
-                    <height>32</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>32</width>
-                    <height>32</height>
-                   </size>
-                  </property>
-                  <property name="autoFillBackground">
-                   <bool>true</bool>
-                  </property>
-                  <property name="frameShape">
-                   <enum>QFrame::Box</enum>
-                  </property>
-                  <property name="frameShadow">
-                   <enum>QFrame::Plain</enum>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <spacer name="mSpriteColorSpacer">
-                  <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>40</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                 </spacer>
-                </item>
-               </layout>
-              </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="mSpriteColorLabel">
-                <property name="text">
-                 <string>Цвет</string>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="1">
-               <widget class="QSlider" name="mSpriteOpacitySlider">
-                <property name="maximum">
-                 <number>100</number>
-                </property>
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="2">
-               <widget class="QPushButton" name="mSpriteFileNameBrowsePushButton">
-                <property name="icon">
-                 <iconset resource="../res/resources.qrc">
-                  <normaloff>:/images/browse.png</normaloff>:/images/browse.png</iconset>
-                </property>
-                <property name="iconSize">
-                 <size>
-                  <width>16</width>
-                  <height>16</height>
-                 </size>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="0">
-               <widget class="QLabel" name="mSpriteFileNameLabel">
-                <property name="text">
-                 <string>Файл</string>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="2">
-               <widget class="QLabel" name="mSpriteOpacityValueLabel">
-                <property name="text">
-                 <string>100%</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-           </layout>
-          </widget>
-          <widget class="QWidget" name="mLabelPage">
-           <layout class="QVBoxLayout" name="mLabelPageLayout">
-            <property name="margin">
-             <number>0</number>
-            </property>
-            <item>
-             <layout class="QGridLayout" name="mLabelLayout">
-              <item row="1" column="0">
-               <widget class="QLabel" name="mLabelFileNameLabel">
-                <property name="text">
-                 <string>Шрифт</string>
-                </property>
-               </widget>
-              </item>
-              <item row="5" column="0">
-               <widget class="QLabel" name="mLineSpacingLabel">
-                <property name="text">
-                 <string>Интервал</string>
-                </property>
-               </widget>
-              </item>
-              <item row="6" column="0">
-               <widget class="QLabel" name="mLabelColorLabel">
-                <property name="text">
-                 <string>Цвет</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="0">
-               <widget class="QLabel" name="mTextLabel">
-                <property name="text">
-                 <string>Текст</string>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="1">
-               <widget class="QComboBox" name="mFontSizeComboBox">
-                <property name="editable">
-                 <bool>true</bool>
-                </property>
-                <property name="currentIndex">
-                 <number>0</number>
-                </property>
-                <property name="insertPolicy">
-                 <enum>QComboBox::NoInsert</enum>
-                </property>
-                <item>
-                 <property name="text">
-                  <string>10</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>12</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>14</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>16</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>18</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>20</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>24</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>32</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>40</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>64</string>
-                 </property>
-                </item>
-               </widget>
-              </item>
-              <item row="7" column="0">
-               <widget class="QLabel" name="mLabelOpacityLabel">
-                <property name="text">
-                 <string>Прозрачность</string>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="0">
-               <widget class="QLabel" name="mFontSizeLabel">
-                <property name="text">
-                 <string>Размер шрифта</string>
-                </property>
-               </widget>
-              </item>
-              <item row="5" column="1">
-               <widget class="QComboBox" name="mLineSpacingComboBox">
-                <property name="editable">
-                 <bool>true</bool>
-                </property>
-                <property name="insertPolicy">
-                 <enum>QComboBox::NoInsert</enum>
-                </property>
-                <item>
-                 <property name="text">
-                  <string>0.75</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>1.0</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>1.5</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>2.0</string>
-                 </property>
-                </item>
-               </widget>
-              </item>
-              <item row="0" column="3">
-               <widget class="QPushButton" name="mTextEditPushButton">
-                <property name="icon">
-                 <iconset resource="../res/resources.qrc">
-                  <normaloff>:/images/edit.png</normaloff>:/images/edit.png</iconset>
-                </property>
-                <property name="iconSize">
-                 <size>
-                  <width>16</width>
-                  <height>16</height>
-                 </size>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="1" colspan="2">
-               <widget class="QLineEdit" name="mTextLineEdit"/>
-              </item>
-              <item row="1" column="1" colspan="2">
-               <widget class="QComboBox" name="mLabelFileNameComboBox"/>
-              </item>
-              <item row="3" column="1" colspan="2">
-               <layout class="QHBoxLayout" name="mHorzAlignmentLayout">
-                <item>
-                 <widget class="QPushButton" name="mHorzAlignmentLeftPushButton">
-                  <property name="icon">
-                   <iconset resource="../res/resources.qrc">
-                    <normaloff>:/images/horz_align_left.png</normaloff>:/images/horz_align_left.png</iconset>
-                  </property>
-                  <property name="checkable">
-                   <bool>true</bool>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="mHorzAlignmentCenterPushButton">
-                  <property name="icon">
-                   <iconset resource="../res/resources.qrc">
-                    <normaloff>:/images/horz_align_center.png</normaloff>:/images/horz_align_center.png</iconset>
-                  </property>
-                  <property name="checkable">
-                   <bool>true</bool>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="mHorzAlignmentRightPushButton">
-                  <property name="icon">
-                   <iconset resource="../res/resources.qrc">
-                    <normaloff>:/images/horz_align_right.png</normaloff>:/images/horz_align_right.png</iconset>
-                  </property>
-                  <property name="checkable">
-                   <bool>true</bool>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <spacer name="mHorzAlignmentSpacer">
-                  <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>40</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                 </spacer>
-                </item>
-               </layout>
-              </item>
-              <item row="4" column="1" colspan="2">
-               <layout class="QHBoxLayout" name="mVertAlignmentLayout">
-                <item>
-                 <widget class="QPushButton" name="mVertAlignmentTopPushButton">
-                  <property name="icon">
-                   <iconset resource="../res/resources.qrc">
-                    <normaloff>:/images/vert_align_top.png</normaloff>:/images/vert_align_top.png</iconset>
-                  </property>
-                  <property name="checkable">
-                   <bool>true</bool>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="mVertAlignmentCenterPushButton">
-                  <property name="icon">
-                   <iconset resource="../res/resources.qrc">
-                    <normaloff>:/images/vert_align_center.png</normaloff>:/images/vert_align_center.png</iconset>
-                  </property>
-                  <property name="checkable">
-                   <bool>true</bool>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="mVertAlignmentBottomPushButton">
-                  <property name="icon">
-                   <iconset resource="../res/resources.qrc">
-                    <normaloff>:/images/vert_align_bottom.png</normaloff>:/images/vert_align_bottom.png</iconset>
-                  </property>
-                  <property name="checkable">
-                   <bool>true</bool>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <spacer name="mVertAlignmentSpacer">
-                  <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>40</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                 </spacer>
-                </item>
-               </layout>
-              </item>
-              <item row="6" column="1" colspan="2">
-               <layout class="QHBoxLayout" name="mLabelColorLayout">
-                <item>
-                 <widget class="QFrame" name="mLabelColorFrame">
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="minimumSize">
-                   <size>
-                    <width>32</width>
-                    <height>32</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>32</width>
-                    <height>32</height>
-                   </size>
-                  </property>
-                  <property name="autoFillBackground">
-                   <bool>true</bool>
-                  </property>
-                  <property name="frameShape">
-                   <enum>QFrame::Box</enum>
-                  </property>
-                  <property name="frameShadow">
-                   <enum>QFrame::Plain</enum>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <spacer name="mLabelColorSpacer">
-                  <property name="orientation">
-                   <enum>Qt::Horizontal</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>40</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                 </spacer>
-                </item>
-               </layout>
-              </item>
-              <item row="7" column="3">
-               <widget class="QLabel" name="mLabelOpacityValueLabel">
-                <property name="text">
-                 <string>100%</string>
-                </property>
-               </widget>
-              </item>
-              <item row="7" column="1" colspan="2">
-               <widget class="QSlider" name="mLabelOpacitySlider">
-                <property name="maximum">
-                 <number>100</number>
-                </property>
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="0" rowspan="2">
-               <widget class="QLabel" name="mAlignmentLabel">
-                <property name="text">
-                 <string>Выравнивание</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-           </layout>
-          </widget>
-         </widget>
         </item>
         <item>
          <spacer name="mScrollAreaSpacer">

@@ -62,12 +62,17 @@ private:
 	// Тип для списка локализованных текстур
 	typedef QMap<QString, QSharedPointer<Texture> > TextureMap;
 
-	QString                 mFileName;      // Имя файла с текстурой
-	QSharedPointer<Texture> mTexture;       // Текстура спрайта
-	QColor                  mColor;         // Цвет спрайта
+	// Загружает локализованные текстуры
+	void loadTextures();
 
-	StringMap               mFileNameMap;   // Список локализованных имен файлов
-	TextureMap              mTextureMap;    // Список локализованных текстур
+	QString                 mFileName;          // Имя файла с текстурой
+	QSharedPointer<Texture> mTexture;           // Текстура спрайта
+	QColor                  mColor;             // Цвет спрайта
+
+	StringMap               mFileNameMap;       // Список локализованных имен файлов
+	TextureMap              mTextureMap;        // Список локализованных текстур
+	RealMap                 mTextureWidthMap;   // Список ширин локализованных текстур
+	RealMap                 mTextureHeightMap;  // Список высот локализованных текстур
 };
 
 #endif // SPRITE_H
