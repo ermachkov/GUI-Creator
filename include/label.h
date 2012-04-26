@@ -90,6 +90,12 @@ public:
 	// Устанавливает текущий язык для объекта
 	virtual void setCurrentLanguage(const QString &language);
 
+	// Определяет, локализован ли объект для текущего языка
+	virtual bool isLocalized() const;
+
+	// Устанавливает/сбрасывает локализацию для текущего языка
+	virtual void setLocalized(bool localized);
+
 	// Загружает переводы из Lua скрипта
 	virtual void loadTranslations(LuaScript *script);
 

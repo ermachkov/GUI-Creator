@@ -62,6 +62,7 @@ QPointF GameObject::getPosition() const
 void GameObject::setPosition(const QPointF &position)
 {
 	// устанавливаем новую позицию
+	Q_ASSERT(isLocalized());
 	mPosition = position;
 	updateTransform();
 
@@ -79,6 +80,7 @@ QSizeF GameObject::getSize() const
 void GameObject::setSize(const QSizeF &size)
 {
 	// устанавливаем новый размер
+	Q_ASSERT(isLocalized());
 	mSize = size;
 	updateTransform();
 
@@ -239,14 +241,42 @@ bool GameObject::save(QTextStream &stream, int indent)
 void GameObject::setCurrentLanguage(const QString &language)
 {
 	// устанавливаем новые значения позиции и размера для текущего языка
-	QString defaultLanguage = Project::getSingleton().getDefaultLanguage();
-	mPosition = QPointF(mPositionXMap[mPositionXMap.contains(language) ? language : defaultLanguage],
-		mPositionYMap[mPositionYMap.contains(language) ? language : defaultLanguage]);
-	mSize = QSizeF(mWidthMap[mWidthMap.contains(language) ? language : defaultLanguage],
-		mHeightMap[mHeightMap.contains(language) ? language : defaultLanguage]);
+	QString currentLanguage = isLocalized() ? language : Project::getSingleton().getDefaultLanguage();
+	mPosition = QPointF(mPositionXMap[currentLanguage], mPositionYMap[currentLanguage]);
+	mSize = QSizeF(mWidthMap[currentLanguage], mHeightMap[currentLanguage]);
 
 	// обновляем текущую трансформацию
 	updateTransform();
+}
+
+bool GameObject::isLocalized() const
+{
+	QString language = Project::getSingleton().getCurrentLanguage();
+	return mPositionXMap.contains(language) && mPositionYMap.contains(language) && mWidthMap.contains(language) && mHeightMap.contains(language);
+}
+
+void GameObject::setLocalized(bool localized)
+{
+	QString currentLanguage = Project::getSingleton().getCurrentLanguage();
+	QString defaultLanguage = Project::getSingleton().getDefaultLanguage();
+	Q_ASSERT(currentLanguage != defaultLanguage);
+
+	if (localized)
+	{
+		// копируем значения локализованных свойств из дефолтного языка
+		mPositionXMap[currentLanguage] = mPositionXMap[defaultLanguage];
+		mPositionYMap[currentLanguage] = mPositionYMap[defaultLanguage];
+		mWidthMap[currentLanguage] = mWidthMap[defaultLanguage];
+		mHeightMap[currentLanguage] = mHeightMap[defaultLanguage];
+	}
+	else
+	{
+		// удаляем значения локализованных свойств
+		mPositionXMap.remove(currentLanguage);
+		mPositionYMap.remove(currentLanguage);
+		mWidthMap.remove(currentLanguage);
+		mHeightMap.remove(currentLanguage);
+	}
 }
 
 void GameObject::loadTranslations(LuaScript *script)
@@ -327,6 +357,7 @@ bool GameObject::readRealMap(LuaScript &script, const QString &name, RealMap &ma
 void GameObject::writeRealMap(QTextStream &stream, const RealMap &map)
 {
 	// записываем значение свойства
+	Q_ASSERT(!map.empty());
 	if (map.size() > 1)
 	{
 		// записываем таблицу
@@ -381,6 +412,7 @@ bool GameObject::readStringMap(LuaScript &script, const QString &name, StringMap
 void GameObject::writeStringMap(QTextStream &stream, const StringMap &map)
 {
 	// записываем значение свойства
+	Q_ASSERT(!map.empty());
 	if (map.size() > 1)
 	{
 		// записываем таблицу

@@ -51,20 +51,27 @@ PropertyWindow::PropertyWindow(QWidget *parent)
 	scanFonts();
 }
 
-void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter)
+// сброс фокуса в окне свойств
+void PropertyWindow::clearChildWidgetFocus()
 {
-	// принудительно снимаем фокус с активного виджета, если он находится в окне свойств
-	// чтобы он выдал сигнал editingFinished для завершения редактирования и применения изменений
 	QWidget *widgetWithFocus = QApplication::focusWidget();
 	for (QWidget *widget = widgetWithFocus; widget != NULL; widget = widget->parentWidget())
 		if (widget == this)
 			widgetWithFocus->clearFocus();
+}
+
+void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter)
+{
+	// принудительно снимаем фокус с активного виджета, если он находится в окне свойств
+	// чтобы он выдал сигнал editingFinished для завершения редактирования и применения изменений
+	clearChildWidgetFocus();
 
 	// сохранение выделенных объектов во внутренний список
 	mSelectedObjects = objects;
 
 	// сохранение исходного центра вращения во внутреннюю переменную
 	mRotationCenter = rotationCenter;
+
 
 	// нет выделенных объектов
 	if (objects.empty())

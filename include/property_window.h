@@ -13,6 +13,9 @@ public:
 
 	explicit PropertyWindow(QWidget *parent = 0);
 
+	// сброс фокуса в окне свойств
+	void clearChildWidgetFocus();
+
 signals:
 
 	// отправка сигнала при изменении позиции, размера, цвета, угла поворота

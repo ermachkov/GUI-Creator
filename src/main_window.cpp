@@ -13,7 +13,7 @@
 #include "utils.h"
 
 MainWindow::MainWindow()
-: mUntitledIndex(1), mTranslationCounter(0)
+: mUntitledIndex(1), mTabWidgetCurrentIndex(-1), mTranslationCounter(0)
 {
 	setupUi(this);
 
@@ -433,6 +433,9 @@ bool MainWindow::on_mCloseAllAction_triggered()
 
 void MainWindow::on_mCutAction_triggered()
 {
+	// сброс фокуса в окне свойств
+	mPropertyWindow->clearChildWidgetFocus();
+
 	getEditorWindow()->cut();
 }
 
@@ -448,6 +451,9 @@ void MainWindow::on_mPasteAction_triggered()
 
 void MainWindow::on_mDeleteAction_triggered()
 {
+	// сброс фокуса в окне свойств
+	mPropertyWindow->clearChildWidgetFocus();
+
 	getEditorWindow()->clear();
 }
 
@@ -584,6 +590,10 @@ bool MainWindow::on_mTabWidget_tabCloseRequested(int index)
 
 void MainWindow::on_mTabWidget_currentChanged(int index)
 {
+	// сброс фокуса в окне свойств
+	mPropertyWindow->clearChildWidgetFocus();
+	mTabWidgetCurrentIndex = index;
+
 	if (index != -1)
 	{
 		// вызываем обработчик изменения масштаба
@@ -672,6 +682,9 @@ void MainWindow::onZoomEditingFinished()
 
 void MainWindow::onLanguageChanged(const QString &language)
 {
+	// сброс фокуса в окне свойств
+	mPropertyWindow->clearChildWidgetFocus();
+
 	// устанавливаем текущий язык
 	Project::getSingleton().setCurrentLanguage(language);
 	for (int i = 0; i < mTabWidget->count(); ++i)
@@ -738,7 +751,7 @@ void MainWindow::onLayerWindowLayerChanged()
 
 void MainWindow::onPropertyWindowObjectsChanged(const QPointF &rotationCenter)
 {
-	getEditorWindow()->updateSelection(rotationCenter);
+	getEditorWindow(mTabWidgetCurrentIndex)->updateSelection(rotationCenter);
 }
 
 void MainWindow::onTextureChanged(const QString &fileName, const QSharedPointer<Texture> &texture)

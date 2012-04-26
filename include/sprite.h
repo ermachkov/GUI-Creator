@@ -45,6 +45,12 @@ public:
 	// Устанавливает текущий язык для объекта
 	virtual void setCurrentLanguage(const QString &language);
 
+	// Определяет, локализован ли объект для текущего языка
+	virtual bool isLocalized() const;
+
+	// Устанавливает/сбрасывает локализацию для текущего языка
+	virtual void setLocalized(bool localized);
+
 	// Дублирует объект
 	virtual GameObject *duplicate(Layer *parent = NULL) const;
 

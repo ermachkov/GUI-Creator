@@ -53,6 +53,7 @@ QString Sprite::getFileName() const
 void Sprite::setFileName(const QString &fileName)
 {
 	// устанавливаем новое имя файла и загружаем текстуру
+	Q_ASSERT(isLocalized());
 	mFileName = fileName;
 	mTexture = TextureManager::getSingleton().loadTexture(mFileName);
 
@@ -64,10 +65,8 @@ void Sprite::setFileName(const QString &fileName)
 	// пересчитываем размер спрайта, если загружена валидная текстура
 	if (mTexture != TextureManager::getSingleton().getDefaultTexture())
 	{
-		QString defaultLanguage = Project::getSingleton().getDefaultLanguage();
-		qreal textureWidth = mTextureWidthMap[mTextureWidthMap.contains(language) ? language : defaultLanguage];
-		qreal textureHeight = mTextureHeightMap[mTextureHeightMap.contains(language) ? language : defaultLanguage];
-		setSize(QSizeF(mTexture->getWidth() * mSize.width() / textureWidth, mTexture->getHeight() * mSize.height() / textureHeight));
+		QPointF scale(mSize.width() / mTextureWidthMap[language], mSize.height() / mTextureHeightMap[language]);
+		setSize(QSizeF(mTexture->getWidth() * scale.x(), mTexture->getHeight() * scale.y()));
 		mTextureWidthMap[language] = mTexture->getWidth();
 		mTextureHeightMap[language] = mTexture->getHeight();
 	}
@@ -159,9 +158,46 @@ void Sprite::setCurrentLanguage(const QString &language)
 	GameObject::setCurrentLanguage(language);
 
 	// устанавливаем новые значения для имени файла и текстуры
+	QString currentLanguage = isLocalized() ? language : Project::getSingleton().getDefaultLanguage();
+	mFileName = mFileNameMap[currentLanguage];
+	mTexture = mTextureMap[currentLanguage];
+}
+
+bool Sprite::isLocalized() const
+{
+	QString language = Project::getSingleton().getCurrentLanguage();
+	return GameObject::isLocalized() && mFileNameMap.contains(language) && mTextureMap.contains(language)
+		&& mTextureWidthMap.contains(language) && mTextureHeightMap.contains(language);
+}
+
+void Sprite::setLocalized(bool localized)
+{
+	QString currentLanguage = Project::getSingleton().getCurrentLanguage();
 	QString defaultLanguage = Project::getSingleton().getDefaultLanguage();
-	mFileName = mFileNameMap[mFileNameMap.contains(language) ? language : defaultLanguage];
-	mTexture = mTextureMap[mTextureMap.contains(language) ? language : defaultLanguage];
+	Q_ASSERT(currentLanguage != defaultLanguage);
+
+	// устанавливаем локализацию для игрового объекта
+	GameObject::setLocalized(localized);
+
+	if (localized)
+	{
+		// копируем значения локализованных свойств из дефолтного языка
+		mFileNameMap[currentLanguage] = mFileNameMap[defaultLanguage];
+		mTextureMap[currentLanguage] = mTextureMap[defaultLanguage];
+		mTextureWidthMap[currentLanguage] = mTextureWidthMap[defaultLanguage];
+		mTextureHeightMap[currentLanguage] = mTextureHeightMap[defaultLanguage];
+	}
+	else
+	{
+		// удаляем значения локализованных свойств
+		mFileNameMap.remove(currentLanguage);
+		mTextureMap.remove(currentLanguage);
+		mTextureWidthMap.remove(currentLanguage);
+		mTextureHeightMap.remove(currentLanguage);
+	}
+
+	// устанавливаем текущий язык
+	setCurrentLanguage(Project::getSingleton().getCurrentLanguage());
 }
 
 GameObject *Sprite::duplicate(Layer *parent) const
@@ -202,17 +238,11 @@ bool Sprite::changeTexture(const QString &fileName, const QSharedPointer<Texture
 			// пересчитываем размер спрайта, если загружена валидная текстура
 			if (texture != TextureManager::getSingleton().getDefaultTexture())
 			{
-				// пересчитываем ширину спрайта
-				QString defaultLanguage = Project::getSingleton().getDefaultLanguage();
-				qreal width = mWidthMap[mWidthMap.contains(language) ? language : defaultLanguage];
-				qreal textureWidth = mTextureWidthMap[mTextureWidthMap.contains(language) ? language : defaultLanguage];
-				mWidthMap[language] = texture->getWidth() * width / textureWidth;
+				// пересчитываем размеры спрайта
+				QPointF scale(mWidthMap[language] / mTextureWidthMap[language], mHeightMap[language] / mTextureHeightMap[language]);
+				mWidthMap[language] = texture->getWidth() * scale.x();
+				mHeightMap[language] = texture->getHeight() * scale.y();
 				mTextureWidthMap[language] = texture->getWidth();
-
-				// пересчитываем высоту спрайта
-				qreal height = mHeightMap[mHeightMap.contains(language) ? language : defaultLanguage];
-				qreal textureHeight = mTextureHeightMap[mTextureHeightMap.contains(language) ? language : defaultLanguage];
-				mHeightMap[language] = texture->getHeight() * height / textureHeight;
 				mTextureHeightMap[language] = texture->getHeight();
 
 				// устанавливаем новый размер для текущего языка
@@ -250,35 +280,20 @@ void Sprite::loadTextures()
 	// загружаем локализованные текстуры
 	mTextureMap.clear();
 	for (StringMap::const_iterator it = mFileNameMap.begin(); it != mFileNameMap.end(); ++it)
-		mTextureMap[it.key()] = TextureManager::getSingleton().loadTexture(*it);
-
-	// пересчитываем ширину спрайтов
-	QStringList languages(mTextureMap.keys() + mWidthMap.keys());
-	languages.removeDuplicates();
-	QString defaultLanguage = Project::getSingleton().getDefaultLanguage();
-	foreach (const QString &language, languages)
 	{
-		QSharedPointer<Texture> &texture = mTextureMap[mTextureMap.contains(language) ? language : defaultLanguage];
+		// загружаем текстуру
+		const QString &language = it.key();
+		QSharedPointer<Texture> texture = TextureManager::getSingleton().loadTexture(*it);
+		mTextureMap[language] = texture;
+
+		// пересчитываем размер спрайта, если загружена валидная текстура
 		if (texture != TextureManager::getSingleton().getDefaultTexture())
 		{
-			qreal width = mWidthMap[mWidthMap.contains(language) ? language : defaultLanguage];
-			qreal textureWidth = mTextureWidthMap[mTextureWidthMap.contains(language) ? language : defaultLanguage];
-			mWidthMap[language] = texture->getWidth() * width / textureWidth;
+			// пересчитываем размеры спрайта
+			QPointF scale(mWidthMap[language] / mTextureWidthMap[language], mHeightMap[language] / mTextureHeightMap[language]);
+			mWidthMap[language] = texture->getWidth() * scale.x();
+			mHeightMap[language] = texture->getHeight() * scale.y();
 			mTextureWidthMap[language] = texture->getWidth();
-		}
-	}
-
-	// пересчитываем высоту спрайтов
-	languages = mTextureMap.keys() + mHeightMap.keys();
-	languages.removeDuplicates();
-	foreach (const QString &language, languages)
-	{
-		QSharedPointer<Texture> &texture = mTextureMap[mTextureMap.contains(language) ? language : defaultLanguage];
-		if (texture != TextureManager::getSingleton().getDefaultTexture())
-		{
-			qreal height = mHeightMap[mHeightMap.contains(language) ? language : defaultLanguage];
-			qreal textureHeight = mTextureHeightMap[mTextureHeightMap.contains(language) ? language : defaultLanguage];
-			mHeightMap[language] = texture->getHeight() * height / textureHeight;
 			mTextureHeightMap[language] = texture->getHeight();
 		}
 	}

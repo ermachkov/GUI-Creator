@@ -209,6 +209,7 @@ private:
 	PropertyWindow      *mPropertyWindow;           // Окно свойств объекта
 	LayersWindow        *mLayersWindow;             // Окно слоев
 	int                 mUntitledIndex;             // Текущий номер для новых файлов
+	int                 mTabWidgetCurrentIndex;     // Текущий индекс вкладки
 
 	QGLWidget           *mPrimaryGLWidget;          // OpenGL виджет для загрузки текстур в главном потоке
 	QGLWidget           *mSecondaryGLWidget;        // OpenGL виджет для загрузки текстур в фоновом потоке
