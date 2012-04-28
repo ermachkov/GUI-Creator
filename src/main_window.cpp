@@ -197,6 +197,7 @@ MainWindow::MainWindow()
 
 	// связываем сигналы об изменениях в окне свойств
 	connect(mPropertyWindow, SIGNAL(objectsChanged(const QPointF &)), this, SLOT(onPropertyWindowObjectsChanged(const QPointF &)));
+	connect(mPropertyWindow, SIGNAL(localizationChanged()), this, SLOT(onPropertyWindowLocalizationChanged()));
 
 	// связываем сигнал об изменении текстуры
 	connect(TextureManager::getSingletonPtr(), SIGNAL(textureChanged(const QString &, const QSharedPointer<Texture> &)),
@@ -568,8 +569,11 @@ bool MainWindow::on_mTabWidget_tabCloseRequested(int index)
 	if (close)
 	{
 		// сбрасываем текущую локацию
-		mLayersWindow->setCurrentLocation(NULL);
-		mPropertyWindow->onEditorWindowSelectionChanged(QList<GameObject *>(), QPointF());
+		if (index == mTabWidget->currentIndex())
+		{
+			mLayersWindow->setCurrentLocation(NULL);
+			mPropertyWindow->onEditorWindowSelectionChanged(QList<GameObject *>(), QPointF());
+		}
 
 		// удаляем файл переводов из списка слежения
 		if (editorWindow->isSaved())
@@ -752,6 +756,11 @@ void MainWindow::onLayerWindowLayerChanged()
 void MainWindow::onPropertyWindowObjectsChanged(const QPointF &rotationCenter)
 {
 	getEditorWindow(mTabWidgetCurrentIndex)->updateSelection(rotationCenter);
+}
+
+void MainWindow::onPropertyWindowLocalizationChanged()
+{
+	getEditorWindow()->updateLocalization();
 }
 
 void MainWindow::onTextureChanged(const QString &fileName, const QSharedPointer<Texture> &texture)

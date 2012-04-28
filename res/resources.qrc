@@ -44,5 +44,6 @@
         <file>images/vert_align_bottom.png</file>
         <file>images/browse.png</file>
         <file>images/edit.png</file>
+        <file>images/localization.png</file>
     </qresource>
 </RCC>

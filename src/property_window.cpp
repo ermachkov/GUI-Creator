@@ -34,7 +34,8 @@ PropertyWindow::PropertyWindow(QWidget *parent)
 
 	// по умолчанию окно свойств пустое
 	mScrollArea->setVisible(false);
-	mNoSelectionObjectsLabel->setVisible(true);
+	mNoSelectedObjectsLabel->setVisible(true);
+	mLocalizationWidget->setVisible(false);
 
 	// установка валидаторов
 	mPositionXLineEdit->setValidator(new QDoubleValidator(-10000, +10000, 6, this));
@@ -62,6 +63,8 @@ void PropertyWindow::clearChildWidgetFocus()
 
 void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter)
 {
+	qDebug() << "onEditorWindowSelectionChanged" << objects;
+
 	// принудительно снимаем фокус с активного виджета, если он находится в окне свойств
 	// чтобы он выдал сигнал editingFinished для завершения редактирования и применения изменений
 	clearChildWidgetFocus();
@@ -72,49 +75,66 @@ void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &o
 	// сохранение исходного центра вращения во внутреннюю переменную
 	mRotationCenter = rotationCenter;
 
-
 	// нет выделенных объектов
-	if (objects.empty())
+	if (mSelectedObjects.empty())
 	{
 		// установка отсутствия свойств
 		mScrollArea->setVisible(false);
+		mLocalizationWidget->setVisible(false);
 		// показ надписи об отсутствии выделенных объектов
-		mNoSelectionObjectsLabel->setVisible(true);
+		mNoSelectedObjectsLabel->setVisible(true);
 		return;
 	}
 
-	// показ свойств
-	mScrollArea->setVisible(true);
+	// FIXME: переименовать isAllLocalized в allLocalized
+	// все имена, начинающиеся на is, зарезервированы для аксессоров!
+
+
+	// FIXME: не забыть про дубликат в on_mLocalizationPushButton_clicked
+	// логика скрытия в зависимости от выбранного языка
+	// определение локализованы ли все выделенные объекты или нет
+	bool isAllLocalized = true;
+	foreach (GameObject *object, mSelectedObjects)
+		isAllLocalized = isAllLocalized && object->isLocalized();
+
+	mScrollArea->setVisible(isAllLocalized);
+	mLocalizationWidget->setVisible(!isAllLocalized);
 
 	// скрытие надписи об отсутствии выделенных объектов
-	mNoSelectionObjectsLabel->setVisible(false);
-
-	// FIXME:
-	// логика скрытия в зависимости от выбранного языка
-
-
+	mNoSelectedObjectsLabel->setVisible(false);
 
 	// FIXME:
 /*
-	if (mScrollAreaLayout->count() == 1)
+	// проверка множественного выделения
+	if (mSelectedObjects.size() == 1)
 	{
-		;
+		setGridLayoutRowsEnabled(mScrollAreaLayout, 0, mScrollAreaLayout->count(), true);
 	}
 	else
 	{
-		// деактивируем все ячейки грида окна свойств
-		for (int line = 0; line < mScrollAreaLayout->count(); ++line)
-			setLayoutItemEnabled(mScrollAreaLayout->itemAt(line), false);
+		// активируем ячейки грида окна свойств
+		setGridLayoutRowsEnabled(mScrollAreaLayout, 0, mScrollAreaLayout->count(), true);
 
-		// активируем нужные ячейки грида окна свойств
+		// деактивируем ячейки грида окна свойств
+		setGridLayoutRowsEnabled(mScrollAreaLayout, 0, 2, false);
+		setGridLayoutRowsEnabled(mScrollAreaLayout, 4, 1, false);
 	}
 */
+	// проверка множественного выделения
+	if (mSelectedObjects.size() > 1)
+	{
+		// убираем видимость ячеек грида окна свойств
+		setGridLayoutRowsVisible(mScrollAreaLayout, 0, 2, false);
+		setGridLayoutRowsVisible(mScrollAreaLayout, 4, 1, false);
+	}
+
+
 	// отображение общих свойств
 	updateCommonWidgets();
 
 	// определение идентичности типа выделенных объектов
 	QStringList types;
-	foreach (GameObject *object, objects)
+	foreach (GameObject *object, mSelectedObjects)
 		types.push_back(typeid(*object).name());
 	if (types.count(types.front()) != types.size())
 	{
@@ -124,14 +144,14 @@ void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &o
 		return;
 	}
 
-	if (dynamic_cast<Sprite *>(objects.front()) != NULL)
+	if (dynamic_cast<Sprite *>(mSelectedObjects.front()) != NULL)
 	{
 		// отображение свойств спрайтов
 		setSpriteWidgetsVisible(true);
 		setLabelWidgetsVisible(false);
 		updateSpriteWidgets();
 	}
-	else if (dynamic_cast<Label *>(objects.front()) != NULL)
+	else if (dynamic_cast<Label *>(mSelectedObjects.front()) != NULL)
 	{
 		// отображение свойств надписей
 		setLabelWidgetsVisible(true);
@@ -150,6 +170,8 @@ void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &o
 
 void PropertyWindow::onEditorWindowObjectsChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter)
 {
+	qDebug() << "onEditorWindowObjectsChanged" << objects;
+
 	// сохранение выделенных объектов во внутренний список
 	mSelectedObjects = objects;
 
@@ -228,7 +250,7 @@ bool PropertyWindow::eventFilter(QObject *object, QEvent *event)
 
 void PropertyWindow::on_mNameLineEdit_editingFinished()
 {
-	qDebug() << mNameLineEdit->text();
+	qDebug() << "on_mNameLineEdit_editingFinished" << mNameLineEdit->text();
 
 	Q_ASSERT(mSelectedObjects.size() == 1);
 
@@ -450,6 +472,8 @@ void PropertyWindow::on_mFlipYCheckBox_clicked(bool checked)
 
 void PropertyWindow::onRotationAngleEditingFinished()
 {
+	qDebug() << "onRotationAngleEditingFinished";
+
 	foreach (GameObject *obj, mSelectedObjects)
 		obj->setRotationAngle(mRotationAngleComboBox->lineEdit()->text().toFloat());
 
@@ -459,8 +483,11 @@ void PropertyWindow::onRotationAngleEditingFinished()
 	updateCommonWidgets();
 }
 
+/* FIXME: delete
 void PropertyWindow::on_mRotationAngleComboBox_currentIndexChanged(const QString &arg)
 {
+	qDebug() << "on_mRotationAngleComboBox_currentIndexChanged";
+
 	if (arg == "")
 		return;
 
@@ -472,6 +499,21 @@ void PropertyWindow::on_mRotationAngleComboBox_currentIndexChanged(const QString
 	// обновление окна общих свойств (позиция)
 	updateCommonWidgets();
 }
+*/
+
+void PropertyWindow::on_mRotationAngleComboBox_activated(const QString &arg)
+{
+	qDebug() << "on_mRotationAngleComboBox_activated";
+
+	foreach (GameObject *obj, mSelectedObjects)
+		obj->setRotationAngle(arg.toFloat());
+
+	emit objectsChanged(mRotationCenter);
+
+	// обновление окна общих свойств (позиция)
+	updateCommonWidgets();
+}
+
 
 void PropertyWindow::on_mRotationCenterXLineEdit_editingFinished()
 {
@@ -562,8 +604,11 @@ void PropertyWindow::on_mSpriteOpacitySlider_valueChanged(int value)
 	mSpriteOpacityValueLabel->setText(QString::number(value * 100 / 255) + "%");
 }
 
+/* FIXME: delete
 void PropertyWindow::on_mLabelFileNameComboBox_currentIndexChanged(const QString &arg)
 {
+	qDebug() << "on_mLabelFileNameComboBox_currentIndexChanged" << arg;
+
 	if (arg == "")
 		return;
 
@@ -573,9 +618,23 @@ void PropertyWindow::on_mLabelFileNameComboBox_currentIndexChanged(const QString
 		it->setFileName(Project::getSingleton().getFontsDirectory() + arg);
 	}
 }
+ */
+
+void PropertyWindow::on_mLabelFileNameComboBox_activated(const QString &arg)
+{
+   qDebug() << "on_mLabelFileNameComboBox_activated" << arg;
+
+   foreach (GameObject *obj, mSelectedObjects)
+   {
+	   Label *it = dynamic_cast<Label *>(obj);
+	   it->setFileName(Project::getSingleton().getFontsDirectory() + arg);
+   }
+}
 
 void PropertyWindow::onFontSizeEditingFinished()
 {
+	qDebug() << "on_mPositionXLineEdit_editingFinished";
+
 	int fontSize = mFontSizeComboBox->lineEdit()->text().toInt();
 
 	foreach (GameObject *obj, mSelectedObjects)
@@ -585,10 +644,27 @@ void PropertyWindow::onFontSizeEditingFinished()
 	}
 }
 
+/* FIXME: delete
 void PropertyWindow::on_mFontSizeComboBox_currentIndexChanged(const QString &arg)
 {
+	qDebug() << "on_mFontSizeComboBox_currentIndexChanged";
+
 	if (arg == "")
 		return;
+
+	int fontSize = arg.toInt();
+
+	foreach (GameObject *obj, mSelectedObjects)
+	{
+		Label *it = dynamic_cast<Label *>(obj);
+		it->setFontSize(fontSize);
+	}
+}
+*/
+
+void PropertyWindow::on_mFontSizeComboBox_activated(const QString &arg)
+{
+	qDebug() << "on_mFontSizeComboBox_activated" << arg;
 
 	int fontSize = arg.toInt();
 
@@ -655,6 +731,8 @@ void PropertyWindow::onVertAlignmentClicked(QAbstractButton *button)
 
 void PropertyWindow::onLineSpacingEditingFinished()
 {
+	qDebug() << "onLineSpacingEditingFinished";
+
 	float lineSpacing = mLineSpacingComboBox->lineEdit()->text().toFloat();
 
 	foreach (GameObject *obj, mSelectedObjects)
@@ -663,11 +741,27 @@ void PropertyWindow::onLineSpacingEditingFinished()
 		it->setLineSpacing(lineSpacing);
 	}
 }
-
+/* FIXME: delete
 void PropertyWindow::on_mLineSpacingComboBox_currentIndexChanged(const QString &arg)
 {
+	qDebug() << "on_mLineSpacingComboBox_currentIndexChanged";
+
 	if (arg == "")
 		return;
+
+	float lineSpacing = arg.toFloat();
+
+	foreach (GameObject *obj, mSelectedObjects)
+	{
+		Label *it = dynamic_cast<Label *>(obj);
+		it->setLineSpacing(lineSpacing);
+	}
+}
+*/
+
+void PropertyWindow::on_mLineSpacingComboBox_activated(const QString &arg)
+{
+	qDebug() << "on_mLineSpacingComboBox_activated";
 
 	float lineSpacing = arg.toFloat();
 
@@ -691,7 +785,24 @@ void PropertyWindow::on_mLabelOpacitySlider_valueChanged(int value)
 	mLabelOpacityValueLabel->setText(QString::number(value * 100 / 255) + "%");
 }
 
+void PropertyWindow::on_mLocalizationPushButton_clicked()
+{
+	qDebug() << "on_mLocalizationPushButton_clicked";
 
+	foreach (GameObject *object, mSelectedObjects)
+		if (!object->isLocalized())
+			object->setLocalized(true);
+
+	// FIXME: не забыть про дубликат в onEditorWindowSelectionChanged
+	// показ свойств
+	mScrollArea->setVisible(true);
+
+	// скрытие кнопки локализовать
+	mLocalizationWidget->setVisible(false);
+
+	// отправляем сигнал об изменении локализации выделенных объектов
+	emit localizationChanged();
+}
 
 void PropertyWindow::setSpriteWidgetsVisible(bool visible)
 {
@@ -727,6 +838,14 @@ void PropertyWindow::setLayoutItemVisible(QLayoutItem *item, bool visible)
 				setLayoutItemVisible(item->layout()->itemAt(i), visible);
 		}
 	}
+}
+
+void PropertyWindow::setGridLayoutRowsEnabled(QGridLayout *layout, int firstRow, int numRows, bool enable)
+{
+	// устанавливаем видимость для заданного диапазона строк
+	for (int row = firstRow; row < firstRow + numRows; ++row)
+		for (int col = 0; col < layout->columnCount(); ++col)
+			setLayoutItemEnabled(layout->itemAtPosition(row, col), enable);
 }
 
 void PropertyWindow::setLayoutItemEnabled(QLayoutItem *item, bool enable)
@@ -943,11 +1062,11 @@ void PropertyWindow::updateLabelWidgets()
 	}
 
 	mTextLineEdit->setText(equalText ? first->getText() : "");
-
 	if (equalFileName)
 	{
 		int index = mLabelFileNameComboBox->findText(QFileInfo(first->getFileName()).fileName());
 		mLabelFileNameComboBox->setCurrentIndex(index);
+
 		if (index == -1)
 			mLabelFileNameComboBox->lineEdit()->setText(QFileInfo(first->getFileName()).fileName());
 	}

@@ -247,10 +247,7 @@ bool Sprite::changeTexture(const QString &fileName, const QSharedPointer<Texture
 
 				// устанавливаем новый размер для текущего языка
 				if (language == Project::getSingleton().getCurrentLanguage())
-				{
-					mSize = QSizeF(mWidthMap[language], mHeightMap[language]);
-					updateTransform();
-				}
+					setSize(QSizeF(mWidthMap[language], mHeightMap[language]));
 			}
 		}
 

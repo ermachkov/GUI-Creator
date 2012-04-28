@@ -21,6 +21,9 @@ signals:
 	// отправка сигнала при изменении позиции, размера, цвета, угла поворота
 	void objectsChanged(const QPointF &rotationCenter);
 
+	// Сигнал об изменении локализации выделенных объектов
+	void localizationChanged();
+
 public slots:
 
 	// обработчик изменения выделения объектов
@@ -53,7 +56,9 @@ private slots:
 
 	void onRotationAngleEditingFinished();
 
-	void on_mRotationAngleComboBox_currentIndexChanged(const QString &arg);
+//	void on_mRotationAngleComboBox_currentIndexChanged(const QString &arg);
+
+	void on_mRotationAngleComboBox_activated(const QString &arg);
 
 	void on_mRotationCenterXLineEdit_editingFinished();
 
@@ -63,11 +68,15 @@ private slots:
 
 	void on_mSpriteOpacitySlider_valueChanged(int value);
 
-	void on_mLabelFileNameComboBox_currentIndexChanged(const QString &arg);
+//	void on_mLabelFileNameComboBox_currentIndexChanged(const QString &arg);
+
+	void on_mLabelFileNameComboBox_activated(const QString &arg);
 
 	void onFontSizeEditingFinished();
 
-	void on_mFontSizeComboBox_currentIndexChanged(const QString &arg);
+//	void on_mFontSizeComboBox_currentIndexChanged(const QString &arg);
+
+	void on_mFontSizeComboBox_activated(const QString &arg);
 
 	void onHorzAlignmentClicked(QAbstractButton *button);
 
@@ -75,9 +84,13 @@ private slots:
 
 	void onLineSpacingEditingFinished();
 
-	void on_mLineSpacingComboBox_currentIndexChanged(const QString &arg);
+//	void on_mLineSpacingComboBox_currentIndexChanged(const QString &arg);
+
+	void on_mLineSpacingComboBox_activated(const QString &arg);
 
 	void on_mLabelOpacitySlider_valueChanged(int value);
+
+	void on_mLocalizationPushButton_clicked();
 
 private:
 
@@ -95,7 +108,10 @@ private:
 	// Устанавливает видимость для элемента лейаута
 	void setLayoutItemVisible(QLayoutItem *item, bool visible);
 
-	// Активирует/деактивирует items
+	// Активирует/деактивирует элемент для заданного диапазона строк в грид лейауте
+	void setGridLayoutRowsEnabled(QGridLayout *layout, int firstRow, int numRows, bool enable);
+
+	// Активирует/деактивирует элемент лейаута
 	void setLayoutItemEnabled(QLayoutItem *item, bool enable);
 
 	// отображение значений параметров объектов в виджетах ГУИ

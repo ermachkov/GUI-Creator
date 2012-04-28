@@ -28,6 +28,9 @@ EditorWindow::EditorWindow(QWidget *parent, QGLWidget *shareWidget, const QStrin
 	if (Options::getSingleton().isShowGuides())
 		mCameraPos = QPointF(-RULER_SIZE, -RULER_SIZE);
 
+	// обновляем состояние локализации
+	updateLocalization();
+
 	// создаем новую локацию
 	mLocation = new Location(this);
 }
@@ -313,6 +316,9 @@ void EditorWindow::setCurrentLanguage(const QString &language)
 	// устанавливаем новый язык
 	mLocation->getRootLayer()->setCurrentLanguage(language);
 
+	// обновляем состояние локализации
+	updateLocalization();
+
 	// пересчитываем прямоугольник выделения и центр вращения
 	if (mEditorState == STATE_IDLE && !mSelectedObjects.empty())
 	{
@@ -366,6 +372,31 @@ void EditorWindow::updateSelection(const QPointF &rotationCenter)
 		selectGameObjects(mSelectedObjects);
 		mOriginalCenter = mSnappedCenter = mSelectedObjects.size() == 1 ? mSelectedObjects.front()->getRotationCenter() : rotationCenter;
 		updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
+	}
+}
+
+void EditorWindow::updateLocalization()
+{
+	if (Project::getSingleton().getCurrentLanguage() == Project::getSingleton().getDefaultLanguage())
+	{
+		// в дефолтной локали разрешаем все операции редактирования
+		mMoveEnabled = true;
+		mResizeEnabled = true;
+		mRotationEnabled = true;
+		mMoveCenterEnabled = true;
+	}
+	else
+	{
+		// в недефолтной локали запрещаем поворот и перемещение центра вращения
+		mRotationEnabled = false;
+		mMoveCenterEnabled = false;
+
+		// разрешаем перемещение и изменение размеров, только если все выделенные объекты локализованы
+		bool allLocalized = true;
+		foreach (GameObject *object, mSelectedObjects)
+			allLocalized = allLocalized && object->isLocalized();
+		mMoveEnabled = allLocalized;
+		mResizeEnabled = allLocalized;
 	}
 }
 
@@ -637,7 +668,7 @@ void EditorWindow::mousePressEvent(QMouseEvent *event)
 	{
 		// сохраняем начальные оконные координаты мыши и сбрасываем флаг разрешения редактирования
 		mFirstPos = event->pos();
-		mEnableEdit = false;
+		mEditEnabled = false;
 		mHorzSnapLine = mVertSnapLine = QLineF();
 
 		bool showGuides = Options::getSingleton().isShowGuides();
@@ -668,17 +699,17 @@ void EditorWindow::mousePressEvent(QMouseEvent *event)
 			// переходим в режим перетаскивания вертикальной направляющей
 			mEditorState = STATE_VERT_GUIDE;
 		}
-		else if (!mSelectedObjects.empty() && QRectF(mSnappedCenter.x() - offset, mSnappedCenter.y() - offset, size, size).contains(pos))
+		else if (mMoveCenterEnabled && !mSelectedObjects.empty() && QRectF(mSnappedCenter.x() - offset, mSnappedCenter.y() - offset, size, size).contains(pos))
 		{
 			// переходим в состояние перетаскивания центра вращения
 			mEditorState = STATE_MOVE_CENTER;
 		}
-		else if ((mSelectionMarker = findSelectionMarker(pos, MARKER_SIZE / mZoom)) != MARKER_NONE)
+		else if (mResizeEnabled && (mSelectionMarker = findSelectionMarker(pos, MARKER_SIZE / mZoom)) != MARKER_NONE)
 		{
 			// переходим в состояние изменения размера объектов
 			mEditorState = STATE_RESIZE;
 		}
-		else if (findSelectionMarker(pos, ROTATE_SIZE / mZoom) != MARKER_NONE)
+		else if (mRotationEnabled && findSelectionMarker(pos, ROTATE_SIZE / mZoom) != MARKER_NONE)
 		{
 			// переходим в состояние поворота объектов
 			mEditorState = STATE_ROTATE;
@@ -705,11 +736,16 @@ void EditorWindow::mousePressEvent(QMouseEvent *event)
 			}
 			else
 			{
-				// выделяем найденный объект и переходим в состояние перетаскивания объекта
-				mEditorState = STATE_MOVE;
+				// выделяем найденный объект
 				if (!mSelectedObjects.contains(object))
 					selectGameObject(object);
-				setCursor(Qt::ClosedHandCursor);
+
+				// переходим в состояние перетаскивания
+				if (mMoveEnabled)
+				{
+					mEditorState = STATE_MOVE;
+					setCursor(Qt::ClosedHandCursor);
+				}
 			}
 		}
 		else
@@ -729,7 +765,7 @@ void EditorWindow::mouseReleaseEvent(QMouseEvent *event)
 	if (event->button() == Qt::LeftButton)
 	{
 		// обрабатываем текущее состояние редактирования
-		if (mEnableEdit)
+		if (mEditEnabled)
 		{
 			if (mEditorState == STATE_SELECT)
 			{
@@ -806,7 +842,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 
 	// разрешаем редактирование, если мышь передвинулась достаточно далеко от начального положения при зажатой левой кнопке
 	if ((event->buttons() & Qt::LeftButton) != 0 && (qAbs(mLastPos.x() - mFirstPos.x()) > 2 || qAbs(mLastPos.y() - mFirstPos.y()) > 2))
-		mEnableEdit = true;
+		mEditEnabled = true;
 
 	// перемещаем камеру при зажатой правой кнопке мыши
 	if ((event->buttons() & Qt::RightButton) != 0)
@@ -814,7 +850,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 
 	// обрабатываем текущее состояние редактирования
 	QPointF pos = windowToWorld(event->pos());
-	if (mEnableEdit)
+	if (mEditEnabled)
 	{
 		if (mEditorState == STATE_SELECT)
 		{
@@ -1178,7 +1214,7 @@ void EditorWindow::keyPressEvent(QKeyEvent *event)
 {
 	// стрелки клавиатуры
 	if ((event->key() == Qt::Key_Left || event->key() == Qt::Key_Right || event->key() == Qt::Key_Up || event->key() == Qt::Key_Down)
-		&& !mSelectedObjects.empty() && mEditorState == STATE_IDLE)
+		&& mMoveEnabled && !mSelectedObjects.empty() && mEditorState == STATE_IDLE)
 	{
 		// выбираем направление перемещения
 		QPointF offset;
@@ -1236,7 +1272,7 @@ void EditorWindow::keyReleaseEvent(QKeyEvent *event)
 
 void EditorWindow::dragEnterEvent(QDragEnterEvent *event)
 {
-	// проверяем, что текущий активный слой доступен
+	// выходим, если текущий активный слой недоступен
 	if (mLocation->getAvailableLayer() == NULL)
 		return;
 
@@ -1247,7 +1283,7 @@ void EditorWindow::dragEnterEvent(QDragEnterEvent *event)
 
 void EditorWindow::dropEvent(QDropEvent *event)
 {
-	// проверяем, что текущий активный слой доступен
+	// выходим, если текущий активный слой недоступен
 	if (mLocation->getAvailableLayer() == NULL)
 		return;
 
@@ -1567,6 +1603,9 @@ void EditorWindow::selectGameObjects(const QList<GameObject *> &objects)
 		if (!mSelectedObjects.empty())
 			mOriginalCenter = mSnappedCenter = mSelectedObjects.size() == 1 ? mSelectedObjects.front()->getRotationCenter() : mOriginalRect.center();
 
+		// обновляем состояние локализации
+		updateLocalization();
+
 		// посылаем сигнал об изменении выделения
 		emit selectionChanged(mSelectedObjects, mSnappedCenter);
 	}
@@ -1581,6 +1620,7 @@ void EditorWindow::updateMouseCursor(const QPointF &pos)
 		qreal size = CENTER_SIZE / mZoom;
 		qreal offset = size / 2.0;
 		SelectionMarker marker;
+		GameObject *object;
 
 		if (showGuides && ((pos.x() < mCameraPos.x() + RULER_SIZE / mZoom) || (pos.y() < mCameraPos.y() + RULER_SIZE / mZoom)))
 		{
@@ -1597,24 +1637,25 @@ void EditorWindow::updateMouseCursor(const QPointF &pos)
 			// курсор над вертикальной направляющей
 			setCursor(Qt::SplitHCursor);
 		}
-		else if (!mSelectedObjects.empty() && QRectF(mSnappedCenter.x() - offset, mSnappedCenter.y() - offset, size, size).contains(pos))
+		else if (mMoveCenterEnabled && !mSelectedObjects.empty() && QRectF(mSnappedCenter.x() - offset, mSnappedCenter.y() - offset, size, size).contains(pos))
 		{
 			// курсор над центром вращения
 			setCursor(Qt::CrossCursor);
 		}
-		else if ((marker = findSelectionMarker(pos, MARKER_SIZE / mZoom)) != MARKER_NONE)
+		else if (mResizeEnabled && (marker = findSelectionMarker(pos, MARKER_SIZE / mZoom)) != MARKER_NONE)
 		{
 			// курсор над маркером выделения
 			static const Qt::CursorShape MARKER_CURSORS[] = {Qt::SizeFDiagCursor, Qt::SizeHorCursor, Qt::SizeBDiagCursor, Qt::SizeVerCursor,
 				Qt::SizeFDiagCursor, Qt::SizeHorCursor, Qt::SizeBDiagCursor, Qt::SizeVerCursor};
 			setCursor(MARKER_CURSORS[marker - 1]);
 		}
-		else if (findSelectionMarker(pos, ROTATE_SIZE / mZoom) != MARKER_NONE)
+		else if (mRotationEnabled && findSelectionMarker(pos, ROTATE_SIZE / mZoom) != MARKER_NONE)
 		{
 			// курсор рядом с маркером выделения
 			setCursor(mRotateCursor);
 		}
-		else if (mLocation->getRootLayer()->findGameObjectByPoint(pos) != NULL)
+		else if ((object = mLocation->getRootLayer()->findGameObjectByPoint(pos)) != NULL
+			&& (mSelectedObjects.contains(object) ? mMoveEnabled : object->isLocalized()))
 		{
 			// курсор над игровым объектом
 			setCursor(Qt::OpenHandCursor);

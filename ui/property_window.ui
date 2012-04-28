@@ -7,13 +7,13 @@
     <x>0</x>
     <y>0</y>
     <width>418</width>
-    <height>623</height>
+    <height>643</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>300</width>
-    <height>300</height>
+    <width>394</width>
+    <height>344</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -31,8 +31,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>381</width>
-         <height>535</height>
+         <width>383</width>
+         <height>620</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="mScrollAreaWidgetLayout">
@@ -67,6 +67,12 @@
           </item>
           <item row="10" column="5">
            <widget class="QPushButton" name="mTextEditPushButton">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="icon">
              <iconset resource="../res/resources.qrc">
               <normaloff>:/images/edit.png</normaloff>:/images/edit.png</iconset>
@@ -661,6 +667,12 @@
           </item>
           <item row="3" column="5">
            <widget class="QPushButton" name="mResetSizePushButton">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="icon">
              <iconset resource="../res/resources.qrc">
               <normaloff>:/images/reset_property.png</normaloff>:/images/reset_property.png</iconset>
@@ -675,6 +687,12 @@
           </item>
           <item row="6" column="5">
            <widget class="QPushButton" name="mResetRotationCenterPushButton">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="icon">
              <iconset resource="../res/resources.qrc">
               <normaloff>:/images/reset_property.png</normaloff>:/images/reset_property.png</iconset>
@@ -689,6 +707,12 @@
           </item>
           <item row="7" column="5">
            <widget class="QPushButton" name="mSpriteFileNameBrowsePushButton">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <property name="icon">
              <iconset resource="../res/resources.qrc">
               <normaloff>:/images/browse.png</normaloff>:/images/browse.png</iconset>
@@ -728,23 +752,104 @@
      </widget>
     </item>
     <item>
-     <widget class="QLabel" name="mLocalizationLabel">
-      <property name="text">
-       <string>Нажмите кнопку для открытия свойств локализации</string>
-      </property>
+     <widget class="QWidget" name="mLocalizationWidget" native="true">
+      <layout class="QVBoxLayout" name="mLocalizationWidgetLayout">
+       <item>
+        <spacer name="mLocalizationTopSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QLabel" name="mLocalizationLabel">
+         <property name="text">
+          <string>Нажмите эту кнопку для локализации выделенных объектов на текущий язык</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QGridLayout" name="mLocalizationButtonLayout">
+         <item row="0" column="1">
+          <widget class="QPushButton" name="mLocalizationPushButton">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="icon">
+            <iconset resource="../res/resources.qrc">
+             <normaloff>:/images/localization.png</normaloff>:/images/localization.png</iconset>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>128</width>
+             <height>128</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <spacer name="mLocalizationButtonLeftSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="0" column="2">
+          <spacer name="mLocalizationButtonRightSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <spacer name="mLocalizationBottomSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
      </widget>
     </item>
     <item>
-     <widget class="QPushButton" name="mLocalizationPushButton">
+     <widget class="QLabel" name="mNoSelectedObjectsLabel">
       <property name="text">
-       <string>- = Л О К А Л И З О В А Т Ь = -</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QLabel" name="mNoSelectionObjectsLabel">
-      <property name="text">
-       <string>Нет выбранных объектов</string>
+       <string>Нет выделенных объектов</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>

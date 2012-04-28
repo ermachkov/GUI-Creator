@@ -94,6 +94,9 @@ public:
 	// Обновляет прямоугольник выделения и центр вращения
 	void updateSelection(const QPointF &rotationCenter);
 
+	// Обновляет состояние локализации
+	void updateLocalization();
+
 signals:
 
 	// Сигнал об изменении масштаба
@@ -233,11 +236,16 @@ private:
 	bool                mSaved;             // Флаг сохранения локации
 	EditorState         mEditorState;       // Текущее состояние редактирования
 
+	bool                mEditEnabled;       // Флаг разрешения редактирования
+	bool                mMoveEnabled;       // Флаг разрешения перемещения
+	bool                mResizeEnabled;     // Флаг разрешения изменения размеров
+	bool                mRotationEnabled;   // Флаг разрешения поворота
+	bool                mMoveCenterEnabled; // Флаг разрешения перемещения центра вращения
+
 	QPointF             mCameraPos;         // Текущее положение камеры
 	qreal               mZoom;              // Текущий зум
 	QPoint              mFirstPos;          // Начальные оконные координаты мыши
 	QPoint              mLastPos;           // Последние оконные координаты мыши
-	bool                mEnableEdit;        // Флаг разрешения редактирования
 	QRectF              mSelectionRect;     // Рамка выделения
 
 	QList<GameObject *> mSelectedObjects;   // Список выделенных объектов, отсортированный по глубине
