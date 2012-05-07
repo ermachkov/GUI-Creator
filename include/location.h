@@ -39,6 +39,18 @@ public:
 	// Возвращает доступный активный слой для добавления/вставки объектов
 	Layer *getAvailableLayer() const;
 
+	// Возвращает стек отмен локации
+	QUndoStack *getUndoStack() const;
+
+	// Возвращает флаг неизмененной локации
+	bool isClean() const;
+
+	// Устанавливает флаг неизмененной локации
+	void setClean();
+
+	// Помещает в стек отмен новую команду
+	void pushCommand(const QString &commandName);
+
 	// Создает новый слой
 	BaseLayer *createLayer(BaseLayer *parent = NULL, int index = 0);
 
@@ -88,6 +100,7 @@ private:
 
 	BaseLayer       *mRootLayer;        // Корневой слой
 	BaseLayer       *mActiveLayer;      // Текущий активный слой
+	QUndoStack      *mUndoStack;        // Текущий стек отмен
 
 	int             mObjectIndex;       // Текущий индекс для генерации уникальных идентификаторов объектов
 	int             mLayerIndex;        // Текущий индекс для генерации имен слоев

@@ -31,14 +31,17 @@ public:
 	// Возвращает имя файла локации
 	QString getFileName() const;
 
-	// Возвращает флаг изменения локации
-	bool isChanged() const;
+	// Возвращает флаг безымянной локации
+	bool isUntitled() const;
 
-	// Устанавливает флаг изменения локации
-	void setChanged(bool changed);
+	// Возвращает флаг неизмененной локации
+	bool isClean() const;
 
-	// Возвращает флаг сохранения локации
-	bool isSaved() const;
+	// Возвращает стек отмен локации
+	QUndoStack *getUndoStack() const;
+
+	// Помещает в стек отмен новую команду
+	void pushCommand(const QString &commandName);
 
 	// Возвращает текущий масштаб
 	qreal getZoom() const;
@@ -109,7 +112,7 @@ signals:
 	void objectsChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter);
 
 	// Сигнал об изменении локации
-	void locationChanged(bool changed);
+	void locationChanged(const QString &commandName);
 
 	// Сигнал об изменении координат мышки
 	void mouseMoved(const QPointF &pos);
@@ -219,7 +222,7 @@ private:
 	QSet<BaseLayer *> getParentLayers() const;
 
 	// Выдает сигналы об изменении локации и заданных слоев
-	void emitLayerChangedSignals(const QSet<BaseLayer *> &layers);
+	void emitLayerChangedSignals(const QSet<BaseLayer *> &layers, const QString &commandName);
 
 	// Ищет маркер выделения
 	SelectionMarker findSelectionMarker(const QPointF &pos, qreal size) const;
@@ -232,8 +235,7 @@ private:
 
 	Location            *mLocation;         // Игровая локация
 	QString             mFileName;          // Имя файла локации
-	bool                mChanged;           // Флаг изменения локации
-	bool                mSaved;             // Флаг сохранения локации
+	bool                mUntitled;          // Флаг безымянной локации
 	EditorState         mEditorState;       // Текущее состояние редактирования
 
 	bool                mEditEnabled;       // Флаг разрешения редактирования

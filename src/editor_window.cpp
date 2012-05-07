@@ -8,7 +8,7 @@
 #include "utils.h"
 
 EditorWindow::EditorWindow(QWidget *parent, QGLWidget *shareWidget, const QString &fileName, QWidget *spriteWidget, QWidget *fontWidget)
-: QGLWidget(shareWidget->format(), parent, shareWidget), mFileName(fileName), mChanged(false), mSaved(false), mEditorState(STATE_IDLE),
+: QGLWidget(shareWidget->format(), parent, shareWidget), mFileName(fileName), mUntitled(true), mEditorState(STATE_IDLE),
   mCameraPos(0.0, 0.0), mZoom(1.0), mSpriteWidget(spriteWidget), mFontWidget(fontWidget)
 {
 	// разрешаем события клавиатуры и перемещения мыши
@@ -39,10 +39,9 @@ bool EditorWindow::load(const QString &fileName)
 {
 	if (mLocation->load(fileName))
 	{
-		// устанавливаем имя файла и флаги изменения/сохранения
+		// устанавливаем имя файла
 		mFileName = fileName;
-		mChanged = false;
-		mSaved = true;
+		mUntitled = false;
 		return true;
 	}
 
@@ -53,13 +52,10 @@ bool EditorWindow::save(const QString &fileName)
 {
 	if (mLocation->save(fileName))
 	{
-		// устанавливаем имя файла и флаги изменения/сохранения
+		// устанавливаем имя файла и флаг неизмененной локации
 		mFileName = fileName;
-		mChanged = false;
-		mSaved = true;
-
-		// посылаем сигнал о сохранении локации
-		emit locationChanged(mChanged);
+		mUntitled = false;
+		mLocation->setClean();
 		return true;
 	}
 
@@ -81,20 +77,24 @@ QString EditorWindow::getFileName() const
 	return mFileName;
 }
 
-bool EditorWindow::isChanged() const
+bool EditorWindow::isUntitled() const
 {
-	return mChanged;
+	return mUntitled;
 }
 
-void EditorWindow::setChanged(bool changed)
+bool EditorWindow::isClean() const
 {
-	mChanged = changed;
-	emit locationChanged(mChanged);
+	return mLocation->isClean();
 }
 
-bool EditorWindow::isSaved() const
+QUndoStack *EditorWindow::getUndoStack() const
 {
-	return mSaved;
+	return mLocation->getUndoStack();
+}
+
+void EditorWindow::pushCommand(const QString &commandName)
+{
+	mLocation->pushCommand(commandName);
 }
 
 qreal EditorWindow::getZoom() const
@@ -136,7 +136,10 @@ void EditorWindow::cut()
 	if (mEditorState == STATE_IDLE && !mSelectedObjects.empty())
 	{
 		copy();
-		clear();
+		QSet<BaseLayer *> layers = getParentLayers();
+		qDeleteAll(mSelectedObjects);
+		deselectAll();
+		emitLayerChangedSignals(layers, "Вырезание объектов");
 	}
 }
 
@@ -198,7 +201,7 @@ void EditorWindow::paste()
 
 		// обновляем курсор мыши и посылаем сигналы об изменении локации и слоев
 		updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
-		emitLayerChangedSignals(getParentLayers());
+		emitLayerChangedSignals(getParentLayers(), "Вставка объектов");
 	}
 }
 
@@ -209,7 +212,7 @@ void EditorWindow::clear()
 		QSet<BaseLayer *> layers = getParentLayers();
 		qDeleteAll(mSelectedObjects);
 		deselectAll();
-		emitLayerChangedSignals(layers);
+		emitLayerChangedSignals(layers, "Удаление объектов");
 	}
 }
 
@@ -236,16 +239,35 @@ void EditorWindow::bringToFront()
 	if (mEditorState == STATE_IDLE && !mSelectedObjects.empty())
 	{
 		// перемещаем выделенные объекты в начало списка у родительского слоя
-		for (int i = mSelectedObjects.size() - 1; i >= 0; --i)
+		bool moved = false;
+		Layer *parent = NULL;
+		int first;
+		for (int i = 0; i < mSelectedObjects.size(); ++i)
 		{
-			Layer *parent = mSelectedObjects[i]->getParentLayer();
-			parent->removeGameObject(parent->indexOfGameObject(mSelectedObjects[i]));
-			parent->insertGameObject(0, mSelectedObjects[i]);
+			// переходим на новый слой, если требуется
+			if (mSelectedObjects[i]->getParentLayer() != parent)
+			{
+				parent = mSelectedObjects[i]->getParentLayer();
+				first = i;
+			}
+
+			// перемещаем текущий объект в соответствующую позицию в начале списка
+			int index = parent->indexOfGameObject(mSelectedObjects[i]);
+			int insertIndex = i - first;
+			if (index > insertIndex)
+			{
+				moved = true;
+				parent->removeGameObject(index);
+				parent->insertGameObject(insertIndex, mSelectedObjects[i]);
+			}
 		}
 
 		// обновляем курсор мыши и посылаем сигналы об изменении локации и слоев
-		updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
-		emitLayerChangedSignals(getParentLayers());
+		if (moved)
+		{
+			updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
+			emitLayerChangedSignals(getParentLayers(), "Перемещение объектов на передний план");
+		}
 	}
 }
 
@@ -254,16 +276,35 @@ void EditorWindow::sendToBack()
 	if (mEditorState == STATE_IDLE && !mSelectedObjects.empty())
 	{
 		// перемещаем выделенные объекты в конец списка у родительского слоя
-		for (int i = 0; i < mSelectedObjects.size(); ++i)
+		bool moved = false;
+		Layer *parent = NULL;
+		int last;
+		for (int i = mSelectedObjects.size() - 1; i >= 0; --i)
 		{
-			Layer *parent = mSelectedObjects[i]->getParentLayer();
-			parent->removeGameObject(parent->indexOfGameObject(mSelectedObjects[i]));
-			parent->addGameObject(mSelectedObjects[i]);
+			// переходим на новый слой, если требуется
+			if (mSelectedObjects[i]->getParentLayer() != parent)
+			{
+				parent = mSelectedObjects[i]->getParentLayer();
+				last = i;
+			}
+
+			// перемещаем текущий объект в соответствующую позицию в конце списка
+			int index = parent->indexOfGameObject(mSelectedObjects[i]);
+			int insertIndex = parent->getNumGameObjects() - 1 - (last - i);
+			if (index < insertIndex)
+			{
+				moved = true;
+				parent->removeGameObject(index);
+				parent->insertGameObject(insertIndex, mSelectedObjects[i]);
+			}
 		}
 
 		// обновляем курсор мыши и посылаем сигналы об изменении локации и слоев
-		updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
-		emitLayerChangedSignals(getParentLayers());
+		if (moved)
+		{
+			updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
+			emitLayerChangedSignals(getParentLayers(), "Перемещение объектов на задний план");
+		}
 	}
 }
 
@@ -272,20 +313,34 @@ void EditorWindow::moveUp()
 	if (mEditorState == STATE_IDLE && !mSelectedObjects.empty())
 	{
 		// перемещаем выделенные объекты на одну позицию вверх
+		bool moved = false;
+		Layer *parent = NULL;
+		int first;
 		for (int i = 0; i < mSelectedObjects.size(); ++i)
 		{
-			Layer *parent = mSelectedObjects[i]->getParentLayer();
-			int index = parent->indexOfGameObject(mSelectedObjects[i]);
-			if (index > 0)
+			// переходим на новый слой, если требуется
+			if (mSelectedObjects[i]->getParentLayer() != parent)
 			{
+				parent = mSelectedObjects[i]->getParentLayer();
+				first = i;
+			}
+
+			// перемещаем текущий объект на одну позицию вверх
+			int index = parent->indexOfGameObject(mSelectedObjects[i]);
+			if (index > i - first)
+			{
+				moved = true;
 				parent->removeGameObject(index);
 				parent->insertGameObject(index - 1, mSelectedObjects[i]);
 			}
 		}
 
 		// обновляем курсор мыши и посылаем сигналы об изменении локации и слоев
-		updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
-		emitLayerChangedSignals(getParentLayers());
+		if (moved)
+		{
+			updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
+			emitLayerChangedSignals(getParentLayers(), "Перемещение объектов вверх");
+		}
 	}
 }
 
@@ -294,20 +349,34 @@ void EditorWindow::moveDown()
 	if (mEditorState == STATE_IDLE && !mSelectedObjects.empty())
 	{
 		// перемещаем выделенные объекты на одну позицию вниз
+		bool moved = false;
+		Layer *parent = NULL;
+		int last;
 		for (int i = mSelectedObjects.size() - 1; i >= 0; --i)
 		{
-			Layer *parent = mSelectedObjects[i]->getParentLayer();
-			int index = parent->indexOfGameObject(mSelectedObjects[i]);
-			if (index < parent->getNumGameObjects() - 1)
+			// переходим на новый слой, если требуется
+			if (mSelectedObjects[i]->getParentLayer() != parent)
 			{
+				parent = mSelectedObjects[i]->getParentLayer();
+				last = i;
+			}
+
+			// перемещаем текущий объект на одну позицию вниз
+			int index = parent->indexOfGameObject(mSelectedObjects[i]);
+			if (index < parent->getNumGameObjects() - 1 - (last - i))
+			{
+				moved = true;
 				parent->removeGameObject(index);
 				parent->insertGameObject(index + 1, mSelectedObjects[i]);
 			}
 		}
 
 		// обновляем курсор мыши и посылаем сигналы об изменении локации и слоев
-		updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
-		emitLayerChangedSignals(getParentLayers());
+		if (moved)
+		{
+			updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
+			emitLayerChangedSignals(getParentLayers(), "Перемещение объектов вниз");
+		}
 	}
 }
 
@@ -781,7 +850,12 @@ void EditorWindow::mouseReleaseEvent(QMouseEvent *event)
 				mOriginalCenter = mSnappedCenter = mSelectedObjects.size() == 1 ? mSelectedObjects.front()->getRotationCenter() : mSnappedCenter;
 
 				// посылаем сигналы об изменении локации и слоев
-				emitLayerChangedSignals(getParentLayers());
+				if (mEditorState == STATE_MOVE)
+					emitLayerChangedSignals(getParentLayers(), "Перемещение объектов");
+				else if (mEditorState == STATE_RESIZE)
+					emitLayerChangedSignals(getParentLayers(), "Изменение размеров объектов");
+				else
+					emitLayerChangedSignals(getParentLayers(), "Поворот объектов");
 			}
 			else if (mEditorState == STATE_MOVE_CENTER)
 			{
@@ -789,35 +863,36 @@ void EditorWindow::mouseReleaseEvent(QMouseEvent *event)
 				mOriginalCenter = mSnappedCenter = mSelectedObjects.size() == 1 ? mSelectedObjects.front()->getRotationCenter() : mSnappedCenter;
 
 				// посылаем сигнал об изменении локации
-				mChanged = true;
-				emit locationChanged(mChanged);
+				emit locationChanged("Перемещение центра вращения");
 			}
 			else if (mEditorState == STATE_HORZ_GUIDE)
 			{
-				// удаляем горизонтальную направляющую, если ее вытащили за пределы окна
-				bool outside = event->pos().y() < RULER_SIZE || event->pos().y() > height();
-				if (outside)
-					mLocation->removeGuide(true, mGuideIndex);
-
-				// посылаем сигнал об изменении локации, кроме случая, когда направляющую перетащили с линейки за пределы окна
-				if ((mFirstPos.x() >= RULER_SIZE && mFirstPos.y() >= RULER_SIZE) || !outside)
+				if (event->pos().y() >= RULER_SIZE && event->pos().y() < height())
 				{
-					mChanged = true;
-					emit locationChanged(mChanged);
+					// посылаем сигнал о создании или перемещении направляющей
+					emit locationChanged(mFirstPos.y() < RULER_SIZE ? "Создание направляющей" : "Перемещение направляющей");
+				}
+				else
+				{
+					// удаляем направляющую и посылаем сигнал, если ее вытащили за пределы окна со свободного места
+					mLocation->removeGuide(true, mGuideIndex);
+					if (mFirstPos.y() >= RULER_SIZE)
+						emit locationChanged("Удаление направляющей");
 				}
 			}
 			else if (mEditorState == STATE_VERT_GUIDE)
 			{
-				// удаляем вертикальную направляющую, если ее вытащили за пределы окна
-				bool outside = event->pos().x() < RULER_SIZE || event->pos().x() > width();
-				if (outside)
-					mLocation->removeGuide(false, mGuideIndex);
-
-				// посылаем сигнал об изменении локации, кроме случая, когда направляющую перетащили с линейки за пределы окна
-				if ((mFirstPos.x() >= RULER_SIZE && mFirstPos.y() >= RULER_SIZE) || !outside)
+				if (event->pos().x() >= RULER_SIZE && event->pos().x() < width())
 				{
-					mChanged = true;
-					emit locationChanged(mChanged);
+					// посылаем сигнал о создании или перемещении направляющей
+					emit locationChanged(mFirstPos.x() < RULER_SIZE ? "Создание направляющей" : "Перемещение направляющей");
+				}
+				else
+				{
+					// удаляем направляющую и посылаем сигнал, если ее вытащили за пределы окна со свободного места
+					mLocation->removeGuide(false, mGuideIndex);
+					if (mFirstPos.x() >= RULER_SIZE)
+						emit locationChanged("Удаление направляющей");
 				}
 			}
 		}
@@ -1238,9 +1313,6 @@ void EditorWindow::keyPressEvent(QKeyEvent *event)
 		selectGameObjects(mSelectedObjects);
 		updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
 
-		// посылаем сигналы об изменении локации и слоев
-		emitLayerChangedSignals(getParentLayers());
-
 		// отправляем сигнал об изменении объектов
 		emit objectsChanged(mSelectedObjects, mSnappedCenter);
 	}
@@ -1258,7 +1330,13 @@ void EditorWindow::keyPressEvent(QKeyEvent *event)
 
 void EditorWindow::keyReleaseEvent(QKeyEvent *event)
 {
-	if (event->key() == Qt::Key_Shift && mEditorState != STATE_IDLE)
+	if ((event->key() == Qt::Key_Left || event->key() == Qt::Key_Right || event->key() == Qt::Key_Up || event->key() == Qt::Key_Down)
+		&& !event->isAutoRepeat() && mMoveEnabled && !mSelectedObjects.empty() && mEditorState == STATE_IDLE)
+	{
+		// посылаем сигналы об изменении локации и слоев
+		emitLayerChangedSignals(getParentLayers(), "Перемещение объектов");
+	}
+	else if (event->key() == Qt::Key_Shift && !event->isAutoRepeat() && mEditorState != STATE_IDLE)
 	{
 		// генерируем событие перемещения мыши при отпускании Shift
 		QMouseEvent event(QEvent::MouseMove, mapFromGlobal(QCursor::pos()), Qt::NoButton, Qt::LeftButton, 0);
@@ -1347,7 +1425,7 @@ void EditorWindow::dropEvent(QDropEvent *event)
 
 	// обновляем курсор мыши и посылаем сигналы об изменении локации и слоев
 	updateMouseCursor(pos);
-	emitLayerChangedSignals(getParentLayers());
+	emitLayerChangedSignals(getParentLayers(), "Создание объекта");
 
 	// устанавливаем фокус на окне редактирования
 	setFocus();
@@ -1677,11 +1755,10 @@ QSet<BaseLayer *> EditorWindow::getParentLayers() const
 	return layers;
 }
 
-void EditorWindow::emitLayerChangedSignals(const QSet<BaseLayer *> &layers)
+void EditorWindow::emitLayerChangedSignals(const QSet<BaseLayer *> &layers, const QString &commandName)
 {
 	// посылаем сигналы об изменении локации и слоев
-	mChanged = true;
-	emit locationChanged(mChanged);
+	emit locationChanged(commandName);
 	foreach (BaseLayer *layer, layers)
 		emit layerChanged(mLocation, layer);
 }

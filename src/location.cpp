@@ -15,6 +15,9 @@ Location::Location(QObject *parent)
 
 	// добавляем в него новый слой по умолчанию и делаем его активным
 	mActiveLayer = createLayer(mRootLayer);
+
+	// создаем стек отмен и сохраняем начальное состояние локации
+	mUndoStack = new QUndoStack(this);
 }
 
 Location::~Location()
@@ -205,6 +208,26 @@ Layer *Location::getAvailableLayer() const
 	// возвращаем указатель на активный слой, если он не папка, видим и не заблокирован
 	Layer *layer = dynamic_cast<Layer *>(mActiveLayer);
 	return layer != NULL && layer->getVisibleState() == BaseLayer::LAYER_VISIBLE && layer->getLockState() == BaseLayer::LAYER_UNLOCKED ? layer : NULL;
+}
+
+QUndoStack *Location::getUndoStack() const
+{
+	return mUndoStack;
+}
+
+bool Location::isClean() const
+{
+	return mUndoStack->isClean();
+}
+
+void Location::setClean()
+{
+	mUndoStack->setClean();
+}
+
+void Location::pushCommand(const QString &commandName)
+{
+	mUndoStack->push(new QUndoCommand(commandName));
 }
 
 BaseLayer *Location::createLayer(BaseLayer *parent, int index)

@@ -6,6 +6,7 @@
 class EditorWindow;
 class FontBrowser;
 class GameObject;
+class HistoryWindow;
 class LayersWindow;
 class PropertyWindow;
 class SpriteBrowser;
@@ -131,7 +132,7 @@ private slots:
 	void onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter);
 
 	// Обработчик изменения локации в окне редактирования
-	void onEditorWindowLocationChanged(bool changed);
+	void onEditorWindowLocationChanged(const QString &commandName);
 
 	// Обработчик изменения положения курсора мышки на OpenGL окне
 	void onEditorWindowMouseMoved(const QPointF &pos);
@@ -204,6 +205,9 @@ private:
 	// Обновляет пункты меню с последними файлами
 	void updateRecentFilesActions(const QString &fileName);
 
+	// Обновляет флаг неизмененной локации (звездочка) для текущей вкладки
+	void updateCleanState();
+
 	// Проверяет текущую локацию на наличие отсутствующих файлов
 	void checkMissedFiles();
 
@@ -211,6 +215,7 @@ private:
 	FontBrowser         *mFontBrowser;              // Браузер шрифтов
 	PropertyWindow      *mPropertyWindow;           // Окно свойств объекта
 	LayersWindow        *mLayersWindow;             // Окно слоев
+	HistoryWindow       *mHistoryWindow;            // Окно истории
 	int                 mUntitledIndex;             // Текущий номер для новых файлов
 	int                 mTabWidgetCurrentIndex;     // Текущий индекс вкладки
 

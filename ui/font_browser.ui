@@ -19,8 +19,8 @@
   <property name="windowTitle">
    <string>Шрифты</string>
   </property>
-  <widget class="QWidget" name="dockWidgetContents">
-   <layout class="QVBoxLayout" name="verticalLayout">
+  <widget class="QWidget" name="mDockWidgetContents">
+   <layout class="QVBoxLayout" name="mDockWidgetLayout">
     <item>
      <widget class="QListView" name="mFontListView">
       <property name="movement">

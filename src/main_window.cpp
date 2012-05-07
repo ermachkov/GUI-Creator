@@ -3,6 +3,7 @@
 #include "editor_window.h"
 #include "font_browser.h"
 #include "font_manager.h"
+#include "history_window.h"
 #include "layers_window.h"
 #include "options.h"
 #include "options_dialog.h"
@@ -56,9 +57,14 @@ MainWindow::MainWindow()
 	mLayersWindow = new LayersWindow(mPrimaryGLWidget, this);
 	addDockWidget(Qt::RightDockWidgetArea, mLayersWindow);
 
+	// создаем окно истории
+	mHistoryWindow = new HistoryWindow(this);
+	addDockWidget(Qt::RightDockWidgetArea, mHistoryWindow);
+
 	// наложение плавающих окон друг на друга
 	tabifyDockWidget(mSpriteBrowser, mFontBrowser);
-	tabifyDockWidget(mSpriteBrowser, mPropertyWindow);
+	tabifyDockWidget(mFontBrowser, mPropertyWindow);
+	tabifyDockWidget(mLayersWindow, mHistoryWindow);
 
 	// установка нулевого индекса для всех таббаров
 	QList<QTabBar *> tabBars = findChildren<QTabBar *>();
@@ -89,6 +95,7 @@ MainWindow::MainWindow()
 	mFontBrowser->toggleViewAction()->setText("&Шрифты");
 	mPropertyWindow->toggleViewAction()->setText("Сво&йства");
 	mLayersWindow->toggleViewAction()->setText("С&лои");
+	mHistoryWindow->toggleViewAction()->setText("&История");
 
 	// добавляем в меню Вид пункты для плавающих окон
 	QAction *zoomAction = mZoomMenu->menuAction();
@@ -96,6 +103,7 @@ MainWindow::MainWindow()
 	mViewMenu->insertAction(zoomAction, mFontBrowser->toggleViewAction());
 	mViewMenu->insertAction(zoomAction, mPropertyWindow->toggleViewAction());
 	mViewMenu->insertAction(zoomAction, mLayersWindow->toggleViewAction());
+	mViewMenu->insertAction(zoomAction, mHistoryWindow->toggleViewAction());
 	mViewMenu->insertSeparator(zoomAction);
 
 	// добавляем в меню Язык все доступные языки
@@ -226,6 +234,7 @@ MainWindow::~MainWindow()
 	delete mFontBrowser;
 	delete mPropertyWindow;
 	delete mLayersWindow;
+	delete mHistoryWindow;
 
 	// удаляем синглетоны в последнюю очередь
 	TextureManager::destroy();
@@ -375,7 +384,7 @@ bool MainWindow::on_mSaveAction_triggered()
 {
 	// если файл не был ни разу сохранен, показываем диалоговое окно сохранения файла
 	EditorWindow *editorWindow = getEditorWindow();
-	if (!editorWindow->isSaved())
+	if (editorWindow->isUntitled())
 		return on_mSaveAsAction_triggered();
 
 	// сохраняем файл
@@ -385,6 +394,8 @@ bool MainWindow::on_mSaveAction_triggered()
 		return false;
 	}
 
+	// обновляем звездочку в имени вкладки
+	updateCleanState();
 	return true;
 }
 
@@ -392,7 +403,7 @@ bool MainWindow::on_mSaveAsAction_triggered()
 {
 	// показываем диалоговое окно сохранения файла
 	EditorWindow *editorWindow = getEditorWindow();
-	QString dir = editorWindow->isSaved() ? editorWindow->getFileName() : Options::getSingleton().getLastOpenedDirectory() + editorWindow->getFileName();
+	QString dir = editorWindow->isUntitled() ? Options::getSingleton().getLastOpenedDirectory() + editorWindow->getFileName() : editorWindow->getFileName();
 	QString filter = "Файлы " + QCoreApplication::applicationName() + " (*.lua);;Все файлы (*)";
 	QString fileName = QFileDialog::getSaveFileName(this, "Сохранить как", dir, filter);
 	if (!Utils::isFileNameValid(fileName, Project::getSingleton().getRootDirectory() + Project::getSingleton().getLocationsDirectory(), this))
@@ -408,8 +419,9 @@ bool MainWindow::on_mSaveAsAction_triggered()
 		return false;
 	}
 
-	// обновляем список последних файлов
+	// обновляем список последних файлов и звездочку в имени вкладки
 	updateRecentFilesActions(fileName);
+	updateCleanState();
 	return true;
 }
 
@@ -555,7 +567,7 @@ bool MainWindow::on_mTabWidget_tabCloseRequested(int index)
 	// запрашиваем подтверждение на сохранение, если файл был изменен
 	EditorWindow *editorWindow = getEditorWindow(index);
 	bool close = true;
-	if (editorWindow->isChanged())
+	if (!editorWindow->isClean())
 	{
 		QString text = QString("Сохранить изменения в файле %1?").arg(QFileInfo(editorWindow->getFileName()).fileName());
 		QMessageBox::StandardButton result = QMessageBox::warning(this, "", text, QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
@@ -576,7 +588,7 @@ bool MainWindow::on_mTabWidget_tabCloseRequested(int index)
 		}
 
 		// удаляем файл переводов из списка слежения
-		if (editorWindow->isSaved())
+		if (!editorWindow->isUntitled())
 		{
 			QString translationFileName = getTranslationFileName(editorWindow->getFileName());
 			mTranslationFilesMap.remove(translationFileName);
@@ -609,16 +621,17 @@ void MainWindow::on_mTabWidget_currentChanged(int index)
 		onEditorWindowSelectionChanged(editorWindow->getSelectedObjects(), QPointF());
 
 		// обновляем пункт меню Файл-Сохранить
-		mSaveAction->setEnabled(editorWindow->isChanged());
+		mSaveAction->setEnabled(!editorWindow->isClean());
 
 		// обновляем заголовок окна
 		setWindowTitle("");
 		setWindowFilePath(editorWindow->getFileName());
-		setWindowModified(editorWindow->isChanged());
+		setWindowModified(!editorWindow->isClean());
 
 		// устанавливаем текущую локацию
 		mLayersWindow->setCurrentLocation(editorWindow->getLocation());
 		mPropertyWindow->onEditorWindowSelectionChanged(editorWindow->getSelectedObjects(), editorWindow->getRotationCenter());
+		mHistoryWindow->setUndoStack(editorWindow->getUndoStack());
 	}
 	else
 	{
@@ -650,6 +663,7 @@ void MainWindow::on_mTabWidget_currentChanged(int index)
 		// сбрасываем текущую локацию
 		mLayersWindow->setCurrentLocation(NULL);
 		mPropertyWindow->onEditorWindowSelectionChanged(QList<GameObject *>(), QPointF());
+		mHistoryWindow->setUndoStack(NULL);
 	}
 }
 
@@ -724,18 +738,10 @@ void MainWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &objec
 	mMoveDownAction->setEnabled(selected);
 }
 
-void MainWindow::onEditorWindowLocationChanged(bool changed)
+void MainWindow::onEditorWindowLocationChanged(const QString &commandName)
 {
-	// добавляем/убираем звездочку в имени вкладки
-	EditorWindow *editorWindow = getEditorWindow();
-	mTabWidget->setTabText(mTabWidget->currentIndex(), QFileInfo(editorWindow->getFileName()).fileName() + (changed ? "*" : ""));
-
-	// обновляем заголовок окна
-	setWindowFilePath(editorWindow->getFileName());
-	setWindowModified(changed);
-
-	// разрешаем/запрещаем пункт меню Файл-Сохранить
-	mSaveAction->setEnabled(changed);
+	getEditorWindow()->pushCommand(commandName);
+	updateCleanState();
 }
 
 void MainWindow::onEditorWindowMouseMoved(const QPointF &pos)
@@ -745,7 +751,7 @@ void MainWindow::onEditorWindowMouseMoved(const QPointF &pos)
 
 void MainWindow::onLayerWindowLocationChanged()
 {
-	getEditorWindow()->setChanged(true);
+	// TODO: сохранить событие в журнал
 }
 
 void MainWindow::onLayerWindowLayerChanged()
@@ -791,7 +797,7 @@ EditorWindow *MainWindow::createEditorWindow(const QString &fileName)
 	connect(editorWindow, SIGNAL(zoomChanged(const QString &)), this, SLOT(onZoomChanged(const QString &)));
 	connect(editorWindow, SIGNAL(selectionChanged(const QList<GameObject *> &, const QPointF &)),
 		this, SLOT(onEditorWindowSelectionChanged(const QList<GameObject *> &, const QPointF &)));
-	connect(editorWindow, SIGNAL(locationChanged(bool)), this, SLOT(onEditorWindowLocationChanged(bool)));
+	connect(editorWindow, SIGNAL(locationChanged(const QString &)), this, SLOT(onEditorWindowLocationChanged(const QString &)));
 	connect(editorWindow, SIGNAL(mouseMoved(const QPointF &)), this, SLOT(onEditorWindowMouseMoved(const QPointF &)));
 	connect(editorWindow, SIGNAL(layerChanged(Location *, BaseLayer *)), mLayersWindow, SIGNAL(layerChanged(Location *, BaseLayer *)));
 
@@ -862,6 +868,21 @@ void MainWindow::updateRecentFilesActions(const QString &fileName)
 
 	// показываем разделитель, если есть последние файлы
 	mRecentFilesSeparator->setVisible(numRecentFiles != 0);
+}
+
+void MainWindow::updateCleanState()
+{
+	// добавляем/убираем звездочку в имени вкладки
+	EditorWindow *editorWindow = getEditorWindow();
+	bool clean = editorWindow->isClean();
+	mTabWidget->setTabText(mTabWidget->currentIndex(), QFileInfo(editorWindow->getFileName()).fileName() + (clean ? "" : "*"));
+
+	// обновляем заголовок окна
+	setWindowFilePath(editorWindow->getFileName());
+	setWindowModified(!clean);
+
+	// разрешаем/запрещаем пункт меню Файл-Сохранить
+	mSaveAction->setEnabled(!clean);
 }
 
 void MainWindow::checkMissedFiles()

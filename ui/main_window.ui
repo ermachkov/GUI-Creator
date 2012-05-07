@@ -11,7 +11,7 @@
    </rect>
   </property>
   <widget class="QWidget" name="mCentralWidget">
-   <layout class="QVBoxLayout" name="mMainWindowLayout">
+   <layout class="QVBoxLayout" name="mCentralWidgetLayout">
     <item>
      <widget class="QTabWidget" name="mTabWidget">
       <property name="currentIndex">
@@ -36,7 +36,7 @@
      <x>0</x>
      <y>0</y>
      <width>901</width>
-     <height>25</height>
+     <height>29</height>
     </rect>
    </property>
    <widget class="QMenu" name="mFileMenu">

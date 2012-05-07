@@ -18,6 +18,7 @@ set(SOURCES
 	src/font_browser.cpp
 	src/font_manager.cpp
 	src/game_object.cpp
+	src/history_window.cpp
 	src/label.cpp
 	src/layer.cpp
 	src/layer_group.cpp
@@ -44,6 +45,7 @@ set(HEADERS
 	include/font_browser.h
 	include/font_manager.h
 	include/game_object.h
+	include/history_window.h
 	include/label.h
 	include/layer.h
 	include/layer_group.h
@@ -67,6 +69,7 @@ set(HEADERS
 
 set(FORMS
 	ui/font_browser.ui
+	ui/history_window.ui
 	ui/layers_window.ui
 	ui/main_window.ui
 	ui/options_dialog.ui
