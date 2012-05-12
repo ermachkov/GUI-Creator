@@ -27,10 +27,10 @@ signals:
 public slots:
 
 	// обработчик изменения выделения объектов
-	void onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter);
+	void onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QRectF &boundingRect, const QPointF &rotationCenter);
 
 	// обработчик изменения свойств объекта
-	void onEditorWindowObjectsChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter);
+	void onEditorWindowObjectsChanged(const QList<GameObject *> &objects, const QRectF &boundingRect, const QPointF &rotationCenter);
 
 protected:
 
@@ -49,6 +49,8 @@ private slots:
 	void on_mSizeWLineEdit_editingFinished();
 
 	void on_mSizeHLineEdit_editingFinished();
+
+	void on_mLockSizePushButton_clicked();
 
 	void on_mFlipXCheckBox_clicked(bool checked);
 
@@ -96,11 +98,8 @@ private:
 
 	static const int PRECISION = 8;
 
-	// Устанавливает видимость для виджетов со свойствами спрайтов
-	void setSpriteWidgetsVisible(bool visible);
-
-	// Устанавливает видимость для виджетов со свойствами надписей
-	void setLabelWidgetsVisible(bool visible);
+	// логика показа свойств выделенных объектов
+	void updateWidgetsVisibledAndEnabled();
 
 	// Устанавливает видимость для заданного диапазона строк в грид лейауте
 	void setGridLayoutRowsVisible(QGridLayout *layout, int firstRow, int numRows, bool visible);
@@ -140,9 +139,13 @@ private:
 
 	QList<GameObject *> mSelectedObjects;           // текущие выделенные объекты
 	QPointF             mRotationCenter;            // текущий центр вращения выделенных объектов
+	QRectF              mBoundingRect;              // текущий bounding rect выделенных объектов
 
 	QButtonGroup        *mHorzAlignmentButtonGroup; // группировка кнопок горизонтального выравнивания
 	QButtonGroup        *mVertAlignmentButtonGroup; // группировка кнопок вертикального выравнивания
+
+	QIcon               mLockTextureSizeIcon;       // иконка для кнопки блокировки изменения размера
+	QIcon               mUnlockTextureSizeIcon;     // иконка для кнопки разблокировки изменения размера
 };
 
 #endif // PROPERTY_WINDOW_H

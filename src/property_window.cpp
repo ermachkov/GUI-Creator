@@ -12,6 +12,10 @@ PropertyWindow::PropertyWindow(QWidget *parent)
 {
 	setupUi(this);
 
+	// загрузка иконок кнопок
+	mLockTextureSizeIcon = QIcon(":/images/size_locked.png");
+	mUnlockTextureSizeIcon = QIcon(":/images/size_unlocked.png");
+
 	connect(mRotationAngleComboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(onRotationAngleEditingFinished()));
 	connect(mFontSizeComboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(onFontSizeEditingFinished()));
 	connect(mLineSpacingComboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(onLineSpacingEditingFinished()));
@@ -61,10 +65,8 @@ void PropertyWindow::clearChildWidgetFocus()
 			widgetWithFocus->clearFocus();
 }
 
-void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter)
+void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QRectF &boundingRect, const QPointF &rotationCenter)
 {
-	qDebug() << "onEditorWindowSelectionChanged" << objects;
-
 	// принудительно снимаем фокус с активного виджета, если он находится в окне свойств
 	// чтобы он выдал сигнал editingFinished для завершения редактирования и применения изменений
 	clearChildWidgetFocus();
@@ -72,108 +74,27 @@ void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &o
 	// сохранение выделенных объектов во внутренний список
 	mSelectedObjects = objects;
 
+	// сохранение bounding rect
+	mBoundingRect = boundingRect;
+
 	// сохранение исходного центра вращения во внутреннюю переменную
 	mRotationCenter = rotationCenter;
 
-	// нет выделенных объектов
-	if (mSelectedObjects.empty())
-	{
-		// установка отсутствия свойств
-		mScrollArea->setVisible(false);
-		mLocalizationWidget->setVisible(false);
-		// показ надписи об отсутствии выделенных объектов
-		mNoSelectedObjectsLabel->setVisible(true);
-		return;
-	}
-
-	// FIXME: переименовать isAllLocalized в allLocalized
-	// все имена, начинающиеся на is, зарезервированы для аксессоров!
-
-
 	// FIXME: не забыть про дубликат в on_mLocalizationPushButton_clicked
-	// логика скрытия в зависимости от выбранного языка
-	// определение локализованы ли все выделенные объекты или нет
-	bool isAllLocalized = true;
-	foreach (GameObject *object, mSelectedObjects)
-		isAllLocalized = isAllLocalized && object->isLocalized();
-
-	mScrollArea->setVisible(isAllLocalized);
-	mLocalizationWidget->setVisible(!isAllLocalized);
-
-	// скрытие надписи об отсутствии выделенных объектов
-	mNoSelectedObjectsLabel->setVisible(false);
-
-	// FIXME:
-/*
-	// проверка множественного выделения
-	if (mSelectedObjects.size() == 1)
-	{
-		setGridLayoutRowsEnabled(mScrollAreaLayout, 0, mScrollAreaLayout->count(), true);
-	}
-	else
-	{
-		// активируем ячейки грида окна свойств
-		setGridLayoutRowsEnabled(mScrollAreaLayout, 0, mScrollAreaLayout->count(), true);
-
-		// деактивируем ячейки грида окна свойств
-		setGridLayoutRowsEnabled(mScrollAreaLayout, 0, 2, false);
-		setGridLayoutRowsEnabled(mScrollAreaLayout, 4, 1, false);
-	}
-*/
-	// проверка множественного выделения
-	if (mSelectedObjects.size() > 1)
-	{
-		// убираем видимость ячеек грида окна свойств
-		setGridLayoutRowsVisible(mScrollAreaLayout, 0, 2, false);
-		setGridLayoutRowsVisible(mScrollAreaLayout, 4, 1, false);
-	}
-
-
-	// отображение общих свойств
-	updateCommonWidgets();
-
-	// определение идентичности типа выделенных объектов
-	QStringList types;
-	foreach (GameObject *object, mSelectedObjects)
-		types.push_back(typeid(*object).name());
-	if (types.count(types.front()) != types.size())
-	{
-		// если выделенные объекты имеют разные типы, скрываем специфичные свойства
-		setSpriteWidgetsVisible(false);
-		setLabelWidgetsVisible(false);
-		return;
-	}
-
-	if (dynamic_cast<Sprite *>(mSelectedObjects.front()) != NULL)
-	{
-		// отображение свойств спрайтов
-		setSpriteWidgetsVisible(true);
-		setLabelWidgetsVisible(false);
-		updateSpriteWidgets();
-	}
-	else if (dynamic_cast<Label *>(mSelectedObjects.front()) != NULL)
-	{
-		// отображение свойств надписей
-		setLabelWidgetsVisible(true);
-		setSpriteWidgetsVisible(false);
-		updateLabelWidgets();
-	}
-	else
-	{
-		qWarning() << "Error can't find type of object";
-	}
+	updateWidgetsVisibledAndEnabled();
 
 	// запрещаем дальнейшее сжатие последней колонки
 	int width = qMax(mScrollAreaLayout->columnMinimumWidth(5), mScrollAreaLayout->cellRect(0, 5).width());
 	mScrollAreaLayout->setColumnMinimumWidth(5, width);
 }
 
-void PropertyWindow::onEditorWindowObjectsChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter)
+void PropertyWindow::onEditorWindowObjectsChanged(const QList<GameObject *> &objects, const QRectF &boundingRect, const QPointF &rotationCenter)
 {
-	qDebug() << "onEditorWindowObjectsChanged" << objects;
-
 	// сохранение выделенных объектов во внутренний список
 	mSelectedObjects = objects;
+
+	// сохранение bounding rect
+	mBoundingRect = boundingRect;
 
 	// сохранение исходного центра вращения во внутреннюю переменную
 	mRotationCenter = rotationCenter;
@@ -274,29 +195,36 @@ void PropertyWindow::on_mTextEditPushButton_clicked(bool checked)
 
 void PropertyWindow::on_mPositionXLineEdit_editingFinished()
 {
-	// просчет расположения старого центра вращения в процентах
-	QPointF percentCenter = calculatePercentPosition(calculateCurrentBoundingRect(), mRotationCenter);
+	// FIXME: учет множественного выделения
 
-	foreach (GameObject *obj, mSelectedObjects)
-	{
-		QPointF pos = obj->getPosition();
-		pos.setX(mPositionXLineEdit->text().toFloat());
-		obj->setPosition(pos);
-	}
-
-	// просчет нового расположения центра вращения по процентам
-	mRotationCenter = calculatePosition(calculateCurrentBoundingRect(), percentCenter);
-
-	// обновление значения нового центра вращения для объекта, если он один
 	if (mSelectedObjects.size() == 1)
 	{
-		mRotationCenter == mSelectedObjects.front()->getRotationCenter();
+		// одиночное выделение
+		GameObject *obj = mSelectedObjects.first();
+		QPointF position = obj->getPosition();
+		position.setX(mPositionXLineEdit->text().toFloat());
+		obj->setPosition(position);
+
+		// просчет нового расположения центра вращения
+		mRotationCenter = mSelectedObjects.front()->getRotationCenter();
 	}
 	else
 	{
-		// просчет нового расположения центра вращения по процентам
-		mRotationCenter = calculatePosition(calculateCurrentBoundingRect(), percentCenter);
-		mSelectedObjects.front()->setRotationCenter(mRotationCenter);
+		QRectF currentBoundingRect = calculateCurrentBoundingRect();
+
+		// просчет смещения
+		qreal deltaX = mPositionXLineEdit->text().toFloat() - currentBoundingRect.left();;
+
+		// множественное выделение
+		foreach (GameObject *obj, mSelectedObjects)
+		{
+			QPointF position = obj->getPosition();
+			position.setX(position.x() + deltaX);
+			obj->setPosition(position);
+		}
+
+		// просчет нового расположения центра вращения
+		mRotationCenter.setX(mRotationCenter.x() + deltaX);
 	}
 
 	// сохранение значения нового центра вращения в GUI
@@ -307,35 +235,39 @@ void PropertyWindow::on_mPositionXLineEdit_editingFinished()
 
 void PropertyWindow::on_mPositionYLineEdit_editingFinished()
 {
-	// просчет расположения старого центра вращения в процентах
-	QPointF percentCenter = calculatePercentPosition(calculateCurrentBoundingRect(), mRotationCenter);
+	// FIXME: учет множественного выделения
 
-	foreach (GameObject *obj, mSelectedObjects)
-	{
-		QPointF pos = obj->getPosition();
-		pos.setY(mPositionYLineEdit->text().toFloat());
-		obj->setPosition(pos);
-	}
-
-	// просчет нового расположения центра вращения по процентам
-	mRotationCenter = calculatePosition(calculateCurrentBoundingRect(), percentCenter);
-
-	// обновление значения нового центра вращения для объекта, если он один
-	if (mSelectedObjects.size() == 1)
-		mSelectedObjects.front()->setRotationCenter(mRotationCenter);
-
-	// обновление значения нового центра вращения для объекта, если он один
 	if (mSelectedObjects.size() == 1)
 	{
-		mRotationCenter == mSelectedObjects.front()->getRotationCenter();
+		// одиночное выделение
+
+		GameObject *obj = mSelectedObjects.first();
+		QPointF position = obj->getPosition();
+		position.setY(mPositionYLineEdit->text().toFloat());
+		obj->setPosition(position);
+
+		// просчет нового расположения центра вращения
+		mRotationCenter = mSelectedObjects.front()->getRotationCenter();
 	}
 	else
 	{
-		// просчет нового расположения центра вращения по процентам
-		mRotationCenter = calculatePosition(calculateCurrentBoundingRect(), percentCenter);
-		mSelectedObjects.front()->setRotationCenter(mRotationCenter);
-	}
+		// множественное выделение
 
+		QRectF currentBoundingRect = calculateCurrentBoundingRect();
+
+		// просчет смещения
+		qreal deltaY = mPositionYLineEdit->text().toFloat() - currentBoundingRect.top();
+
+		foreach (GameObject *obj, mSelectedObjects)
+		{
+			QPointF position = obj->getPosition();
+			position.setY(position.y() + deltaY);
+			obj->setPosition(position);
+		}
+
+		// просчет нового расположения центра вращения
+		mRotationCenter.setY(mRotationCenter.y() + deltaY);
+	}
 
 	// сохранение значения нового центра вращения в GUI
 	mRotationCenterYLineEdit->setText(QString::number(mRotationCenter.y(), 'g', PRECISION));
@@ -346,31 +278,74 @@ void PropertyWindow::on_mPositionYLineEdit_editingFinished()
 void PropertyWindow::on_mSizeWLineEdit_editingFinished()
 {
 	// входящее значение W должно быть > 0
+	// FIXME: учет множественного выделения
 
-	// просчет расположения старого центра вращения в процентах
-	QPointF percentCenter = calculatePercentPosition(calculateCurrentBoundingRect(), mRotationCenter);
+	QRectF currentBoundingRect = calculateCurrentBoundingRect();
 
-	float newW = mSizeWLineEdit->text().toFloat();
-	foreach (GameObject *obj, mSelectedObjects)
-		obj->setSize(QSizeF(newW, obj->getSize().height()));
+	qreal newW = mSizeWLineEdit->text().toFloat();
+	qreal newH = mSizeHLineEdit->text().toFloat();
+	qreal oldW = currentBoundingRect.width();
+	qreal oldH = currentBoundingRect.height();
 
-	// просчет нового расположения центра вращения по процентам
-	mRotationCenter = calculatePosition(calculateCurrentBoundingRect(), percentCenter);
+	QSizeF percentDelta(newW / oldW, newH / oldH);
 
-	// обновление значения нового центра вращения для объекта, если он один
 	if (mSelectedObjects.size() == 1)
 	{
-		mRotationCenter == mSelectedObjects.front()->getRotationCenter();
+		GameObject *obj = mSelectedObjects.first();
+		QSizeF size = obj->getSize();
+		size.setWidth(size.width() * percentDelta.width());
+		size.setHeight(size.height() * percentDelta.height());
+		obj->setSize(size);
 	}
 	else
 	{
-		// просчет нового расположения центра вращения по процентам
-		mRotationCenter = calculatePosition(calculateCurrentBoundingRect(), percentCenter);
-		mSelectedObjects.front()->setRotationCenter(mRotationCenter);
+		// учёт наличия спрайтов с вращением
+		foreach (GameObject *obj, mSelectedObjects)
+		{
+			qreal angle = obj->getRotationAngle();
+			if (angle != 0.0 && angle != 90.0 && angle != 180.0 && angle != 270.0)
+			{
+				percentDelta.setHeight(percentDelta.width());
+				//percentDelta.setWidth(percentDelta.height());
+				break;
+			}
+		}
+
+		foreach (GameObject *obj, mSelectedObjects)
+		{
+			QPointF position = obj->getPosition();
+			position.setX(currentBoundingRect.left() + (position.x() - currentBoundingRect.left()) * percentDelta.width());
+			position.setY(currentBoundingRect.top() + (position.y() - currentBoundingRect.top()) * percentDelta.height());
+			QSizeF size = obj->getSize();
+			qreal angle = obj->getRotationAngle();
+			if (angle != 90.0 && angle != 270.0)
+			{
+				size.setWidth(size.width() * percentDelta.width());
+				size.setHeight(size.height() * percentDelta.height());
+			}
+			else
+			{
+				size.setWidth(size.width() * percentDelta.height());
+				size.setHeight(size.height() * percentDelta.width());
+			}
+
+
+			// установка новой позиции объекту
+			obj->setPosition(position);
+			// установка нового размера объекту
+			obj->setSize(size);
+
+			// просчет нового расположения центра вращения по процентам
+			currentBoundingRect = calculateCurrentBoundingRect();
+		}
 	}
+
+	mRotationCenter.setX(currentBoundingRect.left() + (mRotationCenter.x() - currentBoundingRect.left()) * percentDelta.width());
+	mRotationCenter.setY(currentBoundingRect.top() + (mRotationCenter.y() - currentBoundingRect.top()) * percentDelta.height());
 
 	// сохранение значения нового центра вращения в GUI
 	mRotationCenterXLineEdit->setText(QString::number(mRotationCenter.x(), 'g', PRECISION));
+	mRotationCenterYLineEdit->setText(QString::number(mRotationCenter.y(), 'g', PRECISION));
 
 	emit objectsChanged(mRotationCenter);
 }
@@ -378,39 +353,110 @@ void PropertyWindow::on_mSizeWLineEdit_editingFinished()
 void PropertyWindow::on_mSizeHLineEdit_editingFinished()
 {
 	// входящее значение H должно быть > 0
+	// FIXME: учет множественного выделения
 
-	// просчет расположения старого центра вращения в процентах
-	QPointF percentCenter = calculatePercentPosition(calculateCurrentBoundingRect(), mRotationCenter);
+	QRectF currentBoundingRect = calculateCurrentBoundingRect();
 
-	float newH = mSizeHLineEdit->text().toFloat();
-	foreach (GameObject *obj, mSelectedObjects)
-		obj->setSize(QSizeF(obj->getSize().width(), newH));
+	qreal newW = mSizeWLineEdit->text().toFloat();
+	qreal newH = mSizeHLineEdit->text().toFloat();
+	qreal oldW = currentBoundingRect.width();
+	qreal oldH = currentBoundingRect.height();
 
-	// просчет нового расположения центра вращения по процентам
-	mRotationCenter = calculatePosition(calculateCurrentBoundingRect(), percentCenter);
+	QSizeF percentDelta(newW / oldW, newH / oldH);
 
-	// обновление значения нового центра вращения для объекта, если он один
 	if (mSelectedObjects.size() == 1)
 	{
-		mRotationCenter == mSelectedObjects.front()->getRotationCenter();
+		GameObject *obj = mSelectedObjects.first();
+		QSizeF size = obj->getSize();
+		size.setWidth(size.width() * percentDelta.width());
+		size.setHeight(size.height() * percentDelta.height());
+		obj->setSize(size);
 	}
 	else
 	{
-		// просчет нового расположения центра вращения по процентам
-		mRotationCenter = calculatePosition(calculateCurrentBoundingRect(), percentCenter);
-		mSelectedObjects.front()->setRotationCenter(mRotationCenter);
+		// учёт наличия спрайтов с вращением
+		foreach (GameObject *obj, mSelectedObjects)
+		{
+			qreal angle = obj->getRotationAngle();
+			if (angle != 0.0 && angle != 90.0 && angle != 180.0 && angle != 270.0)
+			{
+				//percentDelta.setHeight(percentDelta.width());
+				percentDelta.setWidth(percentDelta.height());
+				break;
+			}
+		}
+
+		foreach (GameObject *obj, mSelectedObjects)
+		{
+			QPointF position = obj->getPosition();
+			position.setX(currentBoundingRect.left() + (position.x() - currentBoundingRect.left()) * percentDelta.width());
+			position.setY(currentBoundingRect.top() + (position.y() - currentBoundingRect.top()) * percentDelta.height());
+			QSizeF size = obj->getSize();
+			qreal angle = obj->getRotationAngle();
+			if (angle != 90.0 && angle != 270.0)
+			{
+				size.setWidth(size.width() * percentDelta.width());
+				size.setHeight(size.height() * percentDelta.height());
+			}
+			else
+			{
+				size.setWidth(size.width() * percentDelta.height());
+				size.setHeight(size.height() * percentDelta.width());
+			}
+
+			// установка новой позиции объекту
+			obj->setPosition(position);
+			// установка нового размера объекту
+			obj->setSize(size);
+
+			// просчет нового расположения центра вращения по процентам
+			currentBoundingRect = calculateCurrentBoundingRect();
+		}
+
 	}
 
+	mRotationCenter.setX(currentBoundingRect.left() + (mRotationCenter.x() - currentBoundingRect.left()) * percentDelta.width());
+	mRotationCenter.setY(currentBoundingRect.top() + (mRotationCenter.y() - currentBoundingRect.top()) * percentDelta.height());
+
 	// сохранение значения нового центра вращения в GUI
+	mRotationCenterXLineEdit->setText(QString::number(mRotationCenter.x(), 'g', PRECISION));
 	mRotationCenterYLineEdit->setText(QString::number(mRotationCenter.y(), 'g', PRECISION));
 
 	emit objectsChanged(mRotationCenter);
 }
 
+void PropertyWindow::on_mLockSizePushButton_clicked()
+{
+	bool isLockedSize = false;
+
+	Q_ASSERT(!mSelectedObjects.empty());
+
+	foreach (GameObject *obj, mSelectedObjects)
+		isLockedSize = isLockedSize || obj->isSizeLocked();
+
+	foreach (GameObject *obj, mSelectedObjects)
+		obj->setSizeLocked(!isLockedSize);
+
+	mSizeWLineEdit->setReadOnly(!isLockedSize);
+	mSizeHLineEdit->setReadOnly(!isLockedSize);
+
+	if (isLockedSize)
+	{
+		// set unlocked
+		mLockSizePushButton->setIcon(mUnlockTextureSizeIcon);
+	}
+	else
+	{
+		// set locked
+		mLockSizePushButton->setIcon(mLockTextureSizeIcon);
+	}
+}
+
 void PropertyWindow::on_mFlipXCheckBox_clicked(bool checked)
 {
 	// просчет расположения старого центра вращения в процентах
-	QPointF percentCenter = calculatePercentPosition(calculateCurrentBoundingRect(), mRotationCenter);
+	//QPointF percentCenter = calculatePercentPosition(calculateCurrentBoundingRect(), mRotationCenter);
+	QPointF percentCenter = calculatePercentPosition(mBoundingRect, mRotationCenter);
 
 	foreach (GameObject *obj, mSelectedObjects)
 	{
@@ -440,7 +486,8 @@ void PropertyWindow::on_mFlipXCheckBox_clicked(bool checked)
 void PropertyWindow::on_mFlipYCheckBox_clicked(bool checked)
 {
 	// просчет расположения старого центра вращения в процентах
-	QPointF percentCenter = calculatePercentPosition(calculateCurrentBoundingRect(), mRotationCenter);
+	//QPointF percentCenter = calculatePercentPosition(calculateCurrentBoundingRect(), mRotationCenter);
+	QPointF percentCenter = calculatePercentPosition(mBoundingRect, mRotationCenter);
 
 	foreach (GameObject *obj, mSelectedObjects)
 	{
@@ -794,24 +841,117 @@ void PropertyWindow::on_mLocalizationPushButton_clicked()
 			object->setLocalized(true);
 
 	// FIXME: не забыть про дубликат в onEditorWindowSelectionChanged
-	// показ свойств
-	mScrollArea->setVisible(true);
-
-	// скрытие кнопки локализовать
-	mLocalizationWidget->setVisible(false);
+	updateWidgetsVisibledAndEnabled();
 
 	// отправляем сигнал об изменении локализации выделенных объектов
 	emit localizationChanged();
 }
 
-void PropertyWindow::setSpriteWidgetsVisible(bool visible)
+void PropertyWindow::updateWidgetsVisibledAndEnabled()
 {
-	setGridLayoutRowsVisible(mScrollAreaLayout, 7, 3, visible);
-}
+	qDebug() << "updateWidgetsVisibledAndEnabled()";
 
-void PropertyWindow::setLabelWidgetsVisible(bool visible)
-{
-	setGridLayoutRowsVisible(mScrollAreaLayout, 10, 8, visible);
+	// invisible localization button
+	mLocalizationWidget->setVisible(false);
+
+	if (mSelectedObjects.empty())
+	{
+		// invisible property window
+		mScrollArea->setVisible(false);
+		// visible noselection text
+		mNoSelectedObjectsLabel->setVisible(true);
+		return;
+	}
+
+	// visible property window
+	mScrollArea->setVisible(true);
+
+	// invisible noselection text
+	mNoSelectedObjectsLabel->setVisible(false);
+
+	QString currentLanguage = Project::getSingleton().getCurrentLanguage();
+	QString defaultLanguage = Project::getSingleton().getDefaultLanguage();
+
+	if (currentLanguage == defaultLanguage)
+	{
+		// enable all properties
+		setGridLayoutRowsEnabled(mScrollAreaLayout, 0, mScrollAreaLayout->rowCount(), true);
+	}
+	else
+	{
+		// определение локализованы ли все выделенные объекты или нет
+		bool allLocalized = true;
+		foreach (GameObject *object, mSelectedObjects)
+			allLocalized = allLocalized && object->isLocalized();
+
+		if (allLocalized)
+		{
+			// dissable all
+			setGridLayoutRowsEnabled(mScrollAreaLayout, 0, mScrollAreaLayout->rowCount(), false);
+			// enable specific:
+			// - pos, size, flip, rotationAngle, rotationCenter
+			setGridLayoutRowsEnabled(mScrollAreaLayout, 2, 5, true);
+			// - fileName(Sprite)
+			setGridLayoutRowsEnabled(mScrollAreaLayout, 7, 2, true);
+			// - fileName(Label), fontSize
+			setGridLayoutRowsEnabled(mScrollAreaLayout, 12, 2, true);
+		}
+		else
+		{
+			// invisible property window
+			mScrollArea->setVisible(false);
+			// visible localization button
+			mLocalizationWidget->setVisible(true);
+			return;
+		}
+	}
+
+	// invisible all properties
+	setGridLayoutRowsVisible(mScrollAreaLayout, 0, mScrollAreaLayout->rowCount(), false);
+
+	// visible common properties
+	if (mSelectedObjects.size() > 1)
+	{
+		// множественное выжеление
+
+		// visible common properties for multi selection
+		setGridLayoutRowsVisible(mScrollAreaLayout, 2, 2, true);
+		setGridLayoutRowsVisible(mScrollAreaLayout, 5, 3, true);
+	}
+	else
+	{
+		// visible common properties for single selection
+		setGridLayoutRowsVisible(mScrollAreaLayout, 0, 7, true);
+	}
+	updateCommonWidgets();
+
+	// определение идентичности типа выделенных объектов
+	QStringList types;
+	foreach (GameObject *object, mSelectedObjects)
+		types.push_back(typeid(*object).name());
+	if (types.count(types.front()) != types.size())
+	{
+		// выделенные объекты имеют разные типы
+		return;
+	}
+
+	if (dynamic_cast<Sprite *>(mSelectedObjects.front()) != NULL)
+	{
+		// visible Sprite properties
+		setGridLayoutRowsVisible(mScrollAreaLayout, 7, 4, true);
+		updateSpriteWidgets();
+	}
+	else if (dynamic_cast<Label *>(mSelectedObjects.front()) != NULL)
+	{
+		// visible Label properties
+		setGridLayoutRowsVisible(mScrollAreaLayout, 11, 8, true);
+		updateLabelWidgets();
+	}
+	else
+	{
+		qWarning() << "Error can't find type of object";
+	}
+
 }
 
 void PropertyWindow::setGridLayoutRowsVisible(QGridLayout *layout, int firstRow, int numRows, bool visible)
@@ -870,8 +1010,9 @@ void PropertyWindow::updateCommonWidgets()
 {
 	// флаги идентичности значений свойств объектов в группе
 	bool equalName = true;
-	bool equalPosition = true;
-	bool equalSize = true;
+//	bool equalPosition = true;
+//	bool equalSize = true;
+	bool isLockedSize = false;
 	bool isPositiveWSize = true;
 	bool isNegativeWSize = true;
 	bool isPositiveHSize = true;
@@ -889,13 +1030,15 @@ void PropertyWindow::updateCommonWidgets()
 		if (it->getName() != mSelectedObjects.front()->getName())
 			equalName = false;
 
-		if (!Utils::isEqual(it->getPosition().x(), first->getPosition().x()) ||
-			!Utils::isEqual(it->getPosition().y(), first->getPosition().y()))
-			equalPosition = false;
+//		if (!Utils::isEqual(it->getPosition().x(), first->getPosition().x()) ||
+//			!Utils::isEqual(it->getPosition().y(), first->getPosition().y()))
+//			equalPosition = false;
 
-		if (!Utils::isEqual(it->getSize().width(), first->getSize().width()) ||
-			!Utils::isEqual(it->getSize().height(), first->getSize().height()))
-			equalSize = false;
+//		if (!Utils::isEqual(it->getSize().width(), first->getSize().width()) ||
+//			!Utils::isEqual(it->getSize().height(), first->getSize().height()))
+//			equalSize = false;
+
+		isLockedSize = isLockedSize || it->isSizeLocked();
 
 		if (it->getSize().width() < 0)
 			isPositiveWSize = false;
@@ -923,11 +1066,33 @@ void PropertyWindow::updateCommonWidgets()
 	}
 	mObjectIDLineEdit->setText(strId);
 
-	mPositionXLineEdit->setText(equalPosition ? QString::number(first->getPosition().x(), 'g', PRECISION) : "");
-	mPositionYLineEdit->setText(equalPosition ? QString::number(first->getPosition().y(), 'g', PRECISION) : "");
+// FIXME:
+//	mPositionXLineEdit->setText(equalPosition ? QString::number(first->getPosition().x(), 'g', PRECISION) : "");
+//	mPositionYLineEdit->setText(equalPosition ? QString::number(first->getPosition().y(), 'g', PRECISION) : "");
 
-	mSizeWLineEdit->setText(equalSize ? QString::number(qAbs(first->getSize().width()), 'g', PRECISION) : "");
-	mSizeHLineEdit->setText(equalSize ? QString::number(qAbs(first->getSize().height()), 'g', PRECISION) : "");
+	mPositionXLineEdit->setText(QString::number(mBoundingRect.x(), 'g', PRECISION));
+	mPositionYLineEdit->setText(QString::number(mBoundingRect.y(), 'g', PRECISION));
+
+// FIXME:
+//	mSizeWLineEdit->setText(equalSize ? QString::number(qAbs(first->getSize().width()), 'g', PRECISION) : "");
+//	mSizeHLineEdit->setText(equalSize ? QString::number(qAbs(first->getSize().height()), 'g', PRECISION) : "");
+
+	mSizeWLineEdit->setText(QString::number(mBoundingRect.width(), 'g', PRECISION));
+	mSizeHLineEdit->setText(QString::number(mBoundingRect.height(), 'g', PRECISION));
+
+	mSizeWLineEdit->setReadOnly(isLockedSize);
+	mSizeHLineEdit->setReadOnly(isLockedSize);
+
+	if (isLockedSize)
+	{
+		// set locked
+		mLockSizePushButton->setIcon(mLockTextureSizeIcon);
+	}
+	else
+	{
+		// set unlocked
+		mLockSizePushButton->setIcon(mUnlockTextureSizeIcon);
+	}
 
 	if (isPositiveWSize)
 		mFlipXCheckBox->setCheckState(Qt::Unchecked);
@@ -968,6 +1133,8 @@ void PropertyWindow::updateSpriteWidgets()
 	bool equalFileName = true;
 	bool equalSpriteColor = true;
 	bool equalSpriteOpacity = true;
+	bool equalSpriteTextureSizeW = true;
+	bool equalSpriteTextureSizeH = true;
 
 	Q_ASSERT(!mSelectedObjects.empty());
 
@@ -985,6 +1152,12 @@ void PropertyWindow::updateSpriteWidgets()
 
 		if (it->getColor().alpha() != first->getColor().alpha())
 			equalSpriteOpacity = false;
+
+		if (it->getTextureSize().width() != first->getTextureSize().width())
+			equalSpriteTextureSizeW = false;
+
+		if (it->getTextureSize().height() != first->getTextureSize().height())
+			equalSpriteTextureSizeH = false;
 	}
 
 	mSpriteFileNameLineEdit->setText(equalFileName ? first->getFileName() : "");
@@ -1002,6 +1175,10 @@ void PropertyWindow::updateSpriteWidgets()
 		palette.setColor(QPalette::Window, Qt::black);
 	}
 	mSpriteColorFrame->setPalette(palette);
+
+	mTextureSizeWLineEdit->setText(equalSpriteTextureSizeW ? QString::number(first->getTextureSize().width()) : "");
+
+	mTextureSizeHLineEdit->setText(equalSpriteTextureSizeH ? QString::number(first->getTextureSize().height()) : "");
 
 	if (equalSpriteOpacity)
 	{

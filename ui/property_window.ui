@@ -32,7 +32,7 @@
          <x>0</x>
          <y>0</y>
          <width>383</width>
-         <height>620</height>
+         <height>637</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="mScrollAreaWidgetLayout">
@@ -65,7 +65,7 @@
             </property>
            </widget>
           </item>
-          <item row="10" column="5">
+          <item row="11" column="5">
            <widget class="QPushButton" name="mTextEditPushButton">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -92,14 +92,14 @@
             </property>
            </widget>
           </item>
-          <item row="15" column="0">
+          <item row="16" column="0">
            <widget class="QLabel" name="mLineSpacingLabel">
             <property name="text">
              <string>Интервал</string>
             </property>
            </widget>
           </item>
-          <item row="12" column="1" colspan="2">
+          <item row="13" column="1" colspan="2">
            <widget class="QComboBox" name="mFontSizeComboBox">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
@@ -165,7 +165,7 @@
             </item>
            </widget>
           </item>
-          <item row="12" column="0">
+          <item row="13" column="0">
            <widget class="QLabel" name="mFontSizeLabel">
             <property name="text">
              <string>Размер шрифта</string>
@@ -228,14 +228,14 @@
             </item>
            </widget>
           </item>
-          <item row="9" column="0">
+          <item row="10" column="0">
            <widget class="QLabel" name="mSpriteOpacityLabel">
             <property name="text">
              <string>Прозрачность</string>
             </property>
            </widget>
           </item>
-          <item row="16" column="0">
+          <item row="17" column="0">
            <widget class="QLabel" name="mLabelColorLabel">
             <property name="text">
              <string>Цвет</string>
@@ -249,7 +249,7 @@
             </property>
            </widget>
           </item>
-          <item row="16" column="1" colspan="4">
+          <item row="17" column="1" colspan="4">
            <layout class="QHBoxLayout" name="mLabelColorLayout">
             <item>
              <widget class="QFrame" name="mLabelColorFrame">
@@ -300,14 +300,14 @@
           <item row="2" column="2">
            <widget class="QLineEdit" name="mPositionXLineEdit"/>
           </item>
-          <item row="10" column="0">
+          <item row="11" column="0">
            <widget class="QLabel" name="mTextLabel">
             <property name="text">
              <string>Текст</string>
             </property>
            </widget>
           </item>
-          <item row="9" column="1" colspan="4">
+          <item row="10" column="1" colspan="4">
            <widget class="QSlider" name="mSpriteOpacitySlider">
             <property name="maximum">
              <number>255</number>
@@ -324,7 +324,7 @@
             </property>
            </widget>
           </item>
-          <item row="8" column="1" colspan="4">
+          <item row="9" column="1" colspan="4">
            <layout class="QHBoxLayout" name="mSpriteColorLayout">
             <item>
              <widget class="QFrame" name="mSpriteColorFrame">
@@ -372,7 +372,7 @@
             </item>
            </layout>
           </item>
-          <item row="8" column="0">
+          <item row="9" column="0">
            <widget class="QLabel" name="mSpriteColorLabel">
             <property name="text">
              <string>Цвет</string>
@@ -382,10 +382,10 @@
           <item row="3" column="4">
            <widget class="QLineEdit" name="mSizeHLineEdit"/>
           </item>
-          <item row="10" column="1" colspan="4">
+          <item row="11" column="1" colspan="4">
            <widget class="QLineEdit" name="mTextLineEdit"/>
           </item>
-          <item row="13" column="1" colspan="4">
+          <item row="14" column="1" colspan="4">
            <layout class="QHBoxLayout" name="mHorzAlignmentLayout">
             <item>
              <widget class="QPushButton" name="mHorzAlignmentLeftPushButton">
@@ -435,7 +435,7 @@
             </item>
            </layout>
           </item>
-          <item row="11" column="1" colspan="4">
+          <item row="12" column="1" colspan="4">
            <widget class="QComboBox" name="mLabelFileNameComboBox"/>
           </item>
           <item row="7" column="1" colspan="4">
@@ -452,7 +452,7 @@
             </property>
            </widget>
           </item>
-          <item row="11" column="0">
+          <item row="12" column="0">
            <widget class="QLabel" name="mLabelFileNameLabel">
             <property name="text">
              <string>Шрифт</string>
@@ -501,11 +501,7 @@
            <widget class="QLineEdit" name="mPositionYLineEdit"/>
           </item>
           <item row="0" column="1" colspan="4">
-           <widget class="QLineEdit" name="mNameLineEdit">
-            <property name="placeholderText">
-             <string>Разные значения</string>
-            </property>
-           </widget>
+           <widget class="QLineEdit" name="mNameLineEdit"/>
           </item>
           <item row="1" column="0">
            <widget class="QLabel" name="mObjectIDLabel">
@@ -514,7 +510,7 @@
             </property>
            </widget>
           </item>
-          <item row="15" column="1" colspan="2">
+          <item row="16" column="1" colspan="2">
            <widget class="QComboBox" name="mLineSpacingComboBox">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
@@ -560,7 +556,7 @@
             </property>
            </widget>
           </item>
-          <item row="14" column="1" colspan="4">
+          <item row="15" column="1" colspan="4">
            <layout class="QHBoxLayout" name="mVertAlignmentLayout">
             <item>
              <widget class="QPushButton" name="mVertAlignmentTopPushButton">
@@ -634,21 +630,21 @@
           <item row="6" column="2">
            <widget class="QLineEdit" name="mRotationCenterXLineEdit"/>
           </item>
-          <item row="13" column="0" rowspan="2">
+          <item row="14" column="0" rowspan="2">
            <widget class="QLabel" name="mAlignmentLabel">
             <property name="text">
              <string>Выравнивание</string>
             </property>
            </widget>
           </item>
-          <item row="17" column="0">
+          <item row="18" column="0">
            <widget class="QLabel" name="mLabelOpacityLabel">
             <property name="text">
              <string>Прозрачность</string>
             </property>
            </widget>
           </item>
-          <item row="17" column="1" colspan="4">
+          <item row="18" column="1" colspan="4">
            <widget class="QSlider" name="mLabelOpacitySlider">
             <property name="maximum">
              <number>255</number>
@@ -658,7 +654,7 @@
             </property>
            </widget>
           </item>
-          <item row="17" column="5">
+          <item row="18" column="5">
            <widget class="QLabel" name="mLabelOpacityValueLabel">
             <property name="text">
              <string>100%</string>
@@ -666,7 +662,7 @@
            </widget>
           </item>
           <item row="3" column="5">
-           <widget class="QPushButton" name="mResetSizePushButton">
+           <widget class="QPushButton" name="mLockSizePushButton">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
@@ -675,7 +671,7 @@
             </property>
             <property name="icon">
              <iconset resource="../res/resources.qrc">
-              <normaloff>:/images/reset_property.png</normaloff>:/images/reset_property.png</iconset>
+              <normaloff>:/images/size_locked.png</normaloff>:/images/size_locked.png</iconset>
             </property>
             <property name="iconSize">
              <size>
@@ -725,10 +721,57 @@
             </property>
            </widget>
           </item>
-          <item row="9" column="5">
+          <item row="10" column="5">
            <widget class="QLabel" name="mSpriteOpacityValueLabel">
             <property name="text">
              <string>100%</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="0">
+           <widget class="QLabel" name="mTextureSizeLabel">
+            <property name="text">
+             <string>Размер текстуры</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="1">
+           <widget class="QLabel" name="mTextureSizeWLabel">
+            <property name="text">
+             <string>W</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="2">
+           <widget class="QLineEdit" name="mTextureSizeWLineEdit">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+            <property name="placeholderText">
+             <string>Разные значения</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="3">
+           <widget class="QLabel" name="mTextureSizeHLabel">
+            <property name="text">
+             <string>H</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="4">
+           <widget class="QLineEdit" name="mTextureSizeHLineEdit">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+            <property name="placeholderText">
+             <string>Разные значения</string>
             </property>
            </widget>
           </item>

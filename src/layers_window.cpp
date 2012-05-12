@@ -20,8 +20,7 @@ LayersWindow::LayersWindow(QGLWidget *primaryGLWidget, QWidget *parent)
 	connect(this, SIGNAL(layerChanged(Location *, BaseLayer *)), mLayersTreeWidget, SLOT(onEditorWindowLayerChanged(Location *, BaseLayer *)));
 
 	// перенаправление сигналов из LayersTreeWidget
-	//connect(mLayersTreeWidget, SIGNAL(locationChanged()), this, SIGNAL(locationChanged()));
-	connect(mLayersTreeWidget, SIGNAL(locationChanged()), this, SLOT(onLayerTreeWindowLocationChanged()));
+	connect(mLayersTreeWidget, SIGNAL(locationChanged(const QString &)), this, SLOT(onLayersTreeWidgetLocationChanged(const QString &)));
 	connect(mLayersTreeWidget, SIGNAL(layerChanged()), this, SIGNAL(layerChanged()));
 
 	mLayersTreeWidget->setPrimaryGLWidget(primaryGLWidget);
@@ -53,12 +52,12 @@ void LayersWindow::setCurrentLocation(Location *location)
 	}
 }
 
-void LayersWindow::onLayerTreeWindowLocationChanged()
+void LayersWindow::onLayersTreeWidgetLocationChanged(const QString &commandName)
 {
 	// блокировка кнопки удаления если один слой или одна активная папка
 	setDeleteButtonState();
 
-	emit locationChanged();
+	emit locationChanged(commandName);
 }
 
 void LayersWindow::setDeleteButtonState()
@@ -71,4 +70,3 @@ void LayersWindow::setDeleteButtonState()
 	// активация/деактивация кнопки удаления
 	mDeletePushButton->setEnabled(enableDelete);
 }
-

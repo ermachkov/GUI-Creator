@@ -72,6 +72,12 @@ void Sprite::setFileName(const QString &fileName)
 	}
 }
 
+QSizeF Sprite::getTextureSize() const
+{
+	QString language = isLocalized() ? Project::getSingleton().getCurrentLanguage() : Project::getSingleton().getDefaultLanguage();
+	return QSizeF(mTextureWidthMap[language], mTextureHeightMap[language]);
+}
+
 QColor Sprite::getColor() const
 {
 	return mColor;

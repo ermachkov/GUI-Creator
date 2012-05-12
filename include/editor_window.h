@@ -52,6 +52,9 @@ public:
 	// Возвращает список выделенных объектов
 	QList<GameObject *> getSelectedObjects() const;
 
+	// Возвращает ограничивающий прямоугольник выделенных объектов
+	QRectF getBoundingRect() const;
+
 	// Возвращает координаты центра вращения
 	QPointF getRotationCenter() const;
 
@@ -106,10 +109,10 @@ signals:
 	void zoomChanged(const QString &zoomStr);
 
 	// Сигнал об изменении выделения
-	void selectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter);
+	void selectionChanged(const QList<GameObject *> &objects, const QRectF &boundingRect, const QPointF &rotationCenter);
 
 	// Сигнал об изменении свойств выделенных объектов
-	void objectsChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter);
+	void objectsChanged(const QList<GameObject *> &objects, const QRectF &boundingRect, const QPointF &rotationCenter);
 
 	// Сигнал об изменении локации
 	void locationChanged(const QString &commandName);
@@ -215,6 +218,9 @@ private:
 	// Выделяет игровые объекты
 	void selectGameObjects(const QList<GameObject *> &objects);
 
+	// Сортирует выделенные игровые объекты по глубине
+	void sortSelectedGameObjects();
+
 	// Обновляет курсор мыши
 	void updateMouseCursor(const QPointF &pos);
 
@@ -250,7 +256,7 @@ private:
 	QPoint              mLastPos;           // Последние оконные координаты мыши
 	QRectF              mSelectionRect;     // Рамка выделения
 
-	QList<GameObject *> mSelectedObjects;   // Список выделенных объектов, отсортированный по глубине
+	QList<GameObject *> mSelectedObjects;   // Список выделенных объектов
 	QList<QPointF>      mOriginalPositions; // Список исходных координат объектов
 	QList<QSizeF>       mOriginalSizes;     // Список исходных размеров объектов
 	QList<qreal>        mOriginalAngles;    // Список исходных углов поворота объектов

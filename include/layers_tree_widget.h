@@ -39,7 +39,7 @@ public:
 signals:
 
 	// Сигнал об изменении локации
-	void locationChanged();
+	void locationChanged(const QString &commandName);
 
 	// Сигнал об изменении слоя
 	void layerChanged();

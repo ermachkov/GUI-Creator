@@ -19,14 +19,10 @@ public:
 	// Устанавливает текущую локацию
 	void setCurrentLocation(Location *location);
 
-private slots:
-
-	void onLayerTreeWindowLocationChanged();
-
 signals:
 
 	// Сигнал об изменении локации
-	void locationChanged();
+	void locationChanged(const QString &commandName);
 
 	// Сигнал об изменении слоя
 	void layerChanged();
@@ -34,10 +30,13 @@ signals:
 	// Сигнал об изменении слоя в окне редактирования
 	void layerChanged(Location *location, BaseLayer *layer);
 
+private slots:
+
+	void onLayersTreeWidgetLocationChanged(const QString &commandName);
+
 private:
 
 	void setDeleteButtonState();
-
 };
 
 #endif // LAYERS_WINDOW_H

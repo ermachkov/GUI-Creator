@@ -24,6 +24,9 @@ public:
 	// Сравнение дробных чисел с необходимой точностью
 	static bool isEqual(qreal value1, qreal value2, qreal eps = EPS);
 
+	// Округляет координаты точки
+	static QPointF round(const QPointF &pt);
+
 	// Проверяет, что все координаты линии нулевые
 	static bool isNull(const QLineF &line);
 

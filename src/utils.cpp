@@ -28,6 +28,11 @@ bool Utils::isEqual(qreal value1, qreal value2, qreal eps)
 	return qAbs(value1 - value2) <= eps;
 }
 
+QPointF Utils::round(const QPointF &pt)
+{
+	return QPointF(qRound(pt.x()), qRound(pt.y()));
+}
+
 bool Utils::isNull(const QLineF &line)
 {
 	return line.p1().isNull() && line.p2().isNull();

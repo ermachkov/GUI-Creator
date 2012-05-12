@@ -128,17 +128,14 @@ private slots:
 	// Обработчик изменения файла переводов
 	void onTranslationFileChanged(const QString &path);
 
-	// Обработчик изменения выделения в окне редактирования
-	void onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter);
+	// Обработчик изменения локации
+	void onLocationChanged(const QString &commandName);
 
-	// Обработчик изменения локации в окне редактирования
-	void onEditorWindowLocationChanged(const QString &commandName);
+	// Обработчик изменения выделения в окне редактирования
+	void onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QRectF &boundingRect, const QPointF &rotationCenter);
 
 	// Обработчик изменения положения курсора мышки на OpenGL окне
 	void onEditorWindowMouseMoved(const QPointF &pos);
-
-	// Обработчик изменения локации в окне слоёв
-	void onLayerWindowLocationChanged();
 
 	// Обработчик изменения слоя в окне слоёв
 	void onLayerWindowLayerChanged();

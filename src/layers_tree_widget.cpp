@@ -179,7 +179,7 @@ void LayersTreeWidget::onAddLayerGroup()
 		qDebug() << "Error in LayersWindow::onAddLayerGroup";
 	}
 
-	emit locationChanged();
+	emit locationChanged("Создание группы слоев");
 
 	DEBUG_TREES();
 }
@@ -221,7 +221,7 @@ void LayersTreeWidget::onAddLayer()
 		qDebug() << "Error in LayersWindow::onAddLayer";
 	}
 
-	emit locationChanged();
+	emit locationChanged("Создание слоя");
 
 	DEBUG_TREES();
 }
@@ -241,7 +241,7 @@ void LayersTreeWidget::onDelete()
 			delete item;
 		}
 
-		emit locationChanged();
+		emit locationChanged("Удаление слоев");
 		emit layerChanged();
 	}
 
@@ -401,7 +401,7 @@ void LayersTreeWidget::dropEvent(QDropEvent *event)
 		delete itemSelected;
 	}
 
-	emit locationChanged();
+	emit locationChanged(currentDropAction == Qt::MoveAction ? "Перемещение слоев" : "Копирование слоев");
 
 	// отладочное сравнение деревьев
 	DEBUG_TREES();
@@ -450,8 +450,6 @@ void LayersTreeWidget::onCurrentItemChanged(QTreeWidgetItem *current, QTreeWidge
 
 		// установка текущего текущего слоя BaseLayer *
 		mCurrentLocation->setActiveLayer(getBaseLayer(current));
-
-		emit locationChanged();
 	}
 /*
 	else
@@ -500,7 +498,7 @@ void LayersTreeWidget::onItemClicked(QTreeWidgetItem *item, int column)
 			break;
 		}
 
-		emit locationChanged();
+		emit locationChanged("Изменение видимости слоя");
 		emit layerChanged();
 	}
 	else if	(column == LOCK_COLUMN)
@@ -549,8 +547,8 @@ void LayersTreeWidget::onItemClicked(QTreeWidgetItem *item, int column)
 			break;
 		}
 
+		emit locationChanged("Изменение блокировки слоя");
 		emit layerChanged();
-		emit locationChanged();
 	}
 	else if (column == DATA_COLUMN)
 	{
@@ -567,7 +565,7 @@ void LayersTreeWidget::onItemChanged(QTreeWidgetItem *item, int column)
 	{
 		getBaseLayer(item)->setName(item->text(DATA_COLUMN));
 
-		emit locationChanged();
+		emit locationChanged("Переименование слоя");
 
 		DEBUG_TREES();
 	}
@@ -575,26 +573,12 @@ void LayersTreeWidget::onItemChanged(QTreeWidgetItem *item, int column)
 
 void LayersTreeWidget::onItemExpanded(QTreeWidgetItem *item)
 {
-	BaseLayer *base = getBaseLayer(item);
-
-	if (!base->isExpanded())
-	{
-		base->setExpanded(true);
-
-		emit locationChanged();
-	}
+	getBaseLayer(item)->setExpanded(true);
 }
 
 void LayersTreeWidget::onItemCollapsed(QTreeWidgetItem *item)
 {
-	BaseLayer *base = getBaseLayer(item);
-
-	if (base->isExpanded())
-	{
-		base->setExpanded(false);
-
-		emit locationChanged();
-	}
+	getBaseLayer(item)->setExpanded(false);
 }
 
 void LayersTreeWidget::onContextMenuTriggered(QAction *action)
@@ -631,6 +615,8 @@ void LayersTreeWidget::onContextMenuTriggered(QAction *action)
 
 		// ручное досоздание дерева
 		createTreeItems(itemAdded, baseAdded);
+
+		emit locationChanged("Дублирование слоев");
 	}
 	else if (action == mNewGroupAction)
 	{
@@ -903,8 +889,6 @@ void LayersTreeWidget::adjustObjectNamesAndIds(BaseLayer *baseLayer)
 			adjustObjectNamesAndIds(childBaseLayer);
 		}
 	}
-
-
 }
 
 QTreeWidgetItem *LayersTreeWidget::findItemByBaseLayer(BaseLayer *layer, QTreeWidgetItem *item) const

@@ -24,6 +24,9 @@ public:
 	// Устанавливает имя файла с текстурой
 	void setFileName(const QString &fileName);
 
+	// Возвращает размер текстуры в пикселях
+	QSizeF getTextureSize() const;
+
 	// Возвращает цвет спрайта
 	QColor getColor() const;
 

@@ -126,6 +126,11 @@ QList<GameObject *> EditorWindow::getSelectedObjects() const
 	return mSelectedObjects;
 }
 
+QRectF EditorWindow::getBoundingRect() const
+{
+	return mSnappedRect;
+}
+
 QPointF EditorWindow::getRotationCenter() const
 {
 	return mSnappedCenter;
@@ -147,6 +152,9 @@ void EditorWindow::copy()
 {
 	if (mEditorState == STATE_IDLE && !mSelectedObjects.empty())
 	{
+		// сортируем выделенные объекты по глубине
+		sortSelectedGameObjects();
+
 		// сохраняем объекты в байтовый массив
 		QByteArray data;
 		QDataStream stream(&data, QIODevice::WriteOnly);
@@ -238,6 +246,9 @@ void EditorWindow::bringToFront()
 {
 	if (mEditorState == STATE_IDLE && !mSelectedObjects.empty())
 	{
+		// сортируем выделенные объекты по глубине
+		sortSelectedGameObjects();
+
 		// перемещаем выделенные объекты в начало списка у родительского слоя
 		bool moved = false;
 		Layer *parent = NULL;
@@ -275,6 +286,9 @@ void EditorWindow::sendToBack()
 {
 	if (mEditorState == STATE_IDLE && !mSelectedObjects.empty())
 	{
+		// сортируем выделенные объекты по глубине
+		sortSelectedGameObjects();
+
 		// перемещаем выделенные объекты в конец списка у родительского слоя
 		bool moved = false;
 		Layer *parent = NULL;
@@ -312,6 +326,9 @@ void EditorWindow::moveUp()
 {
 	if (mEditorState == STATE_IDLE && !mSelectedObjects.empty())
 	{
+		// сортируем выделенные объекты по глубине
+		sortSelectedGameObjects();
+
 		// перемещаем выделенные объекты на одну позицию вверх
 		bool moved = false;
 		Layer *parent = NULL;
@@ -348,6 +365,9 @@ void EditorWindow::moveDown()
 {
 	if (mEditorState == STATE_IDLE && !mSelectedObjects.empty())
 	{
+		// сортируем выделенные объекты по глубине
+		sortSelectedGameObjects();
+
 		// перемещаем выделенные объекты на одну позицию вниз
 		bool moved = false;
 		Layer *parent = NULL;
@@ -792,14 +812,9 @@ void EditorWindow::mousePressEvent(QMouseEvent *event)
 				mEditorState = STATE_IDLE;
 				QList<GameObject *> objects = mSelectedObjects;
 				if (objects.contains(object))
-				{
 					objects.removeOne(object);
-				}
 				else
-				{
 					objects.push_back(object);
-					objects = mLocation->getRootLayer()->sortGameObjects(objects);
-				}
 				selectGameObjects(objects);
 				updateMouseCursor(pos);
 			}
@@ -937,6 +952,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 			bool shift = (event->modifiers() & Qt::ShiftModifier) != 0;
 			QVector2D axis;
 			QPointF offset = calcTranslation(QPointF(mLastPos - mFirstPos) / mZoom, shift, axis);
+			offset = Utils::round(mOriginalRect.topLeft() + offset) - mOriginalRect.topLeft();
 
 			// определяем координаты привязываемого прямоугольника
 			QRectF rect = mOriginalRect.translated(offset);
@@ -1012,10 +1028,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 
 			// перемещаем все выделенные объекты
 			for (int i = 0; i < mSelectedObjects.size(); ++i)
-			{
-				QPointF position = mOriginalPositions[i] + offset;
-				mSelectedObjects[i]->setPosition(QPointF(qRound(position.x()), qRound(position.y())));
-			}
+				mSelectedObjects[i]->setPosition(mOriginalPositions[i] + offset);
 
 			// пересчитываем общий прямоугольник выделения
 			mSnappedRect = mSelectedObjects.front()->getBoundingRect();
@@ -1043,51 +1056,59 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 		{
 			// определяем значение масштаба и координаты точки, относительно которой он производится
 			bool keepProportions = (event->modifiers() & Qt::ShiftModifier) != 0 || mKeepProportions;
-			QPointF pivot, scale;
+			QPointF roundPos, pivot, scale;
 			mHorzSnapLine = mVertSnapLine = QLineF();
 			switch (mSelectionMarker)
 			{
 			case MARKER_TOP_LEFT:
 				pivot = mOriginalRect.bottomRight();
-				scale = calcScale(pos, pivot, -1.0, -1.0, keepProportions);
+				roundPos = Utils::round(pos - pivot) + pivot;
+				scale = calcScale(roundPos, pivot, -1.0, -1.0, keepProportions);
 				break;
 
 			case MARKER_CENTER_LEFT:
 				pivot = QPointF(mOriginalRect.right(), mOriginalRect.center().y());
-				scale.rx() = (pivot.x() - snapXCoord(pos.x(), pivot.y(), pivot.y(), true, &mVertSnapLine)) / mOriginalRect.width();
+				roundPos = Utils::round(pos - pivot) + pivot;
+				scale.rx() = (pivot.x() - snapXCoord(roundPos.x(), pivot.y(), pivot.y(), true, &mVertSnapLine)) / mOriginalRect.width();
 				scale.ry() = keepProportions ? qAbs(scale.x()) : 1.0;
 				break;
 
 			case MARKER_BOTTOM_LEFT:
 				pivot = mOriginalRect.topRight();
-				scale = calcScale(pos, pivot, -1.0, 1.0, keepProportions);
+				roundPos = Utils::round(pos - pivot) + pivot;
+				scale = calcScale(roundPos, pivot, -1.0, 1.0, keepProportions);
 				break;
 
 			case MARKER_BOTTOM_CENTER:
 				pivot = QPointF(mOriginalRect.center().x(), mOriginalRect.top());
-				scale.ry() = (snapYCoord(pos.y(), pivot.x(), pivot.x(), true, &mHorzSnapLine) - pivot.y()) / mOriginalRect.height();
+				roundPos = Utils::round(pos - pivot) + pivot;
+				scale.ry() = (snapYCoord(roundPos.y(), pivot.x(), pivot.x(), true, &mHorzSnapLine) - pivot.y()) / mOriginalRect.height();
 				scale.rx() = keepProportions ? qAbs(scale.y()) : 1.0;
 				break;
 
 			case MARKER_BOTTOM_RIGHT:
 				pivot = mOriginalRect.topLeft();
-				scale = calcScale(pos, pivot, 1.0, 1.0, keepProportions);
+				roundPos = Utils::round(pos - pivot) + pivot;
+				scale = calcScale(roundPos, pivot, 1.0, 1.0, keepProportions);
 				break;
 
 			case MARKER_CENTER_RIGHT:
 				pivot = QPointF(mOriginalRect.left(), mOriginalRect.center().y());
-				scale.rx() = (snapXCoord(pos.x(), pivot.y(), pivot.y(), true, &mVertSnapLine) - pivot.x()) / mOriginalRect.width();
+				roundPos = Utils::round(pos - pivot) + pivot;
+				scale.rx() = (snapXCoord(roundPos.x(), pivot.y(), pivot.y(), true, &mVertSnapLine) - pivot.x()) / mOriginalRect.width();
 				scale.ry() = keepProportions ? qAbs(scale.x()) : 1.0;
 				break;
 
 			case MARKER_TOP_RIGHT:
 				pivot = mOriginalRect.bottomLeft();
-				scale = calcScale(pos, pivot, 1.0, -1.0, keepProportions);
+				roundPos = Utils::round(pos - pivot) + pivot;
+				scale = calcScale(roundPos, pivot, 1.0, -1.0, keepProportions);
 				break;
 
 			case MARKER_TOP_CENTER:
 				pivot = QPointF(mOriginalRect.center().x(), mOriginalRect.bottom());
-				scale.ry() = (pivot.y() - snapYCoord(pos.y(), pivot.x(), pivot.x(), true, &mHorzSnapLine)) / mOriginalRect.height();
+				roundPos = Utils::round(pos - pivot) + pivot;
+				scale.ry() = (pivot.y() - snapYCoord(roundPos.y(), pivot.x(), pivot.x(), true, &mHorzSnapLine)) / mOriginalRect.height();
 				scale.rx() = keepProportions ? qAbs(scale.y()) : 1.0;
 				break;
 
@@ -1095,26 +1116,24 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 				break;
 			}
 
+			// ограничиваем минимальный размер рамки выделения одним пикселем
+			if (qAbs(mOriginalRect.width() * scale.x()) < 1.0)
+				scale.rx() = (scale.x() >= 0.0 ? 1.0 : -1.0) / mOriginalRect.width();
+			if (qAbs(mOriginalRect.height() * scale.y()) < 1.0)
+				scale.ry() = (scale.y() >= 0.0 ? 1.0 : -1.0) / mOriginalRect.height();
+
 			// пересчитываем положение и размеры выделенных объектов
 			for (int i = 0; i < mSelectedObjects.size(); ++i)
 			{
-				// вычисляем новую позицию
-				QPointF position((mOriginalPositions[i].x() - pivot.x()) * scale.x() + pivot.x(),
-					(mOriginalPositions[i].y() - pivot.y()) * scale.y() + pivot.y());
+				// устанавливаем новую позицию
+				mSelectedObjects[i]->setPosition(QPointF((mOriginalPositions[i].x() - pivot.x()) * scale.x() + pivot.x(),
+					(mOriginalPositions[i].y() - pivot.y()) * scale.y() + pivot.y()));
 
-				// вычисляем новый размер
-				QSizeF size;
+				// устанавливаем новый размер
 				if (keepProportions || mOriginalAngles[i] == 0.0 || mOriginalAngles[i] == 180.0)
-					size = QSizeF(mOriginalSizes[i].width() * scale.x(), mOriginalSizes[i].height() * scale.y());
+					mSelectedObjects[i]->setSize(QSizeF(mOriginalSizes[i].width() * scale.x(), mOriginalSizes[i].height() * scale.y()));
 				else
-					size = QSizeF(mOriginalSizes[i].width() * scale.y(), mOriginalSizes[i].height() * scale.x());
-
-				// устанавливаем новую позицию и размер, если он не менее одного пикселя
-				if (qAbs(size.width()) >= 1.0 && qAbs(size.height()) >= 1.0)
-				{
-					mSelectedObjects[i]->setPosition(QPointF(qRound(position.x()), qRound(position.y())));
-					mSelectedObjects[i]->setSize(QSizeF(qRound(size.width()), qRound(size.height())));
-				}
+					mSelectedObjects[i]->setSize(QSizeF(mOriginalSizes[i].width() * scale.y(), mOriginalSizes[i].height() * scale.x()));
 			}
 
 			// пересчитываем общий прямоугольник выделения
@@ -1168,7 +1187,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 				QPointF position(pt.x() * qCos(newAngle) - pt.y() * qSin(newAngle) + mOriginalCenter.x(),
 					pt.x() * qSin(newAngle) + pt.y() * qCos(newAngle) + mOriginalCenter.y());
 				if (absAngle == 0.0 || absAngle == 90.0 || absAngle == 180.0 || absAngle == 270.0)
-					position = QPointF(qRound(position.x()), qRound(position.y()));
+					position = Utils::round(position);
 
 				// устанавливаем новую позицию и угол поворота
 				mSelectedObjects[i]->setPosition(position);
@@ -1186,6 +1205,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 			bool shift = (event->modifiers() & Qt::ShiftModifier) != 0;
 			QVector2D axis;
 			QPointF offset = calcTranslation(pos - mOriginalCenter, shift, axis);
+			offset = Utils::round(mOriginalCenter + offset) - mOriginalCenter;
 
 			// определяем координаты привязываемой точки
 			QPointF pt = mOriginalCenter + offset;
@@ -1240,7 +1260,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 
 		// отправляем сигнал об изменении объектов
 		if (mEditorState == STATE_MOVE || mEditorState == STATE_RESIZE || mEditorState == STATE_ROTATE || mEditorState == STATE_MOVE_CENTER)
-			emit objectsChanged(mSelectedObjects, mSnappedCenter);
+			emit objectsChanged(mSelectedObjects, mSnappedRect, mSnappedCenter);
 	}
 
 	// обновляем курсор мыши
@@ -1314,7 +1334,7 @@ void EditorWindow::keyPressEvent(QKeyEvent *event)
 		updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
 
 		// отправляем сигнал об изменении объектов
-		emit objectsChanged(mSelectedObjects, mSnappedCenter);
+		emit objectsChanged(mSelectedObjects, mSnappedRect, mSnappedCenter);
 	}
 	else if (event->key() == Qt::Key_Shift && !event->isAutoRepeat() && mEditorState != STATE_IDLE)
 	{
@@ -1677,7 +1697,7 @@ void EditorWindow::selectGameObjects(const QList<GameObject *> &objects)
 		// сохраняем список выделенных объектов
 		mSelectedObjects = objects;
 
-		// обновляем состояние режима поворота
+		// обновляем координаты центра вращения
 		if (!mSelectedObjects.empty())
 			mOriginalCenter = mSnappedCenter = mSelectedObjects.size() == 1 ? mSelectedObjects.front()->getRotationCenter() : mOriginalRect.center();
 
@@ -1685,7 +1705,25 @@ void EditorWindow::selectGameObjects(const QList<GameObject *> &objects)
 		updateLocalization();
 
 		// посылаем сигнал об изменении выделения
-		emit selectionChanged(mSelectedObjects, mSnappedCenter);
+		emit selectionChanged(mSelectedObjects, mSnappedRect, mSnappedCenter);
+	}
+}
+
+void EditorWindow::sortSelectedGameObjects()
+{
+	// сортируем выделенные объекты по глубине и пересоздаем списки исходных позиций, размеров и углов
+	if (!mSelectedObjects.empty())
+	{
+		mSelectedObjects = mLocation->getRootLayer()->sortGameObjects(mSelectedObjects);
+		mOriginalPositions.clear();
+		mOriginalSizes.clear();
+		mOriginalAngles.clear();
+		foreach (GameObject *object, mSelectedObjects)
+		{
+			mOriginalPositions.push_back(object->getPosition());
+			mOriginalSizes.push_back(object->getSize());
+			mOriginalAngles.push_back(object->getRotationAngle());
+		}
 	}
 }
 

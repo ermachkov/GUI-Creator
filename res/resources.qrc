@@ -45,5 +45,7 @@
         <file>images/browse.png</file>
         <file>images/edit.png</file>
         <file>images/localization.png</file>
+        <file>images/size_locked.png</file>
+        <file>images/size_unlocked.png</file>
     </qresource>
 </RCC>
