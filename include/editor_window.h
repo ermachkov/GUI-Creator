@@ -58,6 +58,18 @@ public:
 	// Возвращает координаты центра вращения
 	QPointF getRotationCenter() const;
 
+	// Проверяет, можно ли отменить текущую команду
+	bool canUndo() const;
+
+	// Проверяет, можно ли повторить текущую команду
+	bool canRedo() const;
+
+	// Отменяет текущую команду
+	void undo();
+
+	// Повторяет текущую команду
+	void redo();
+
 	// Вырезает выделенные объекты в буфер обмена
 	void cut();
 
@@ -119,6 +131,9 @@ signals:
 
 	// Сигнал об изменении координат мышки
 	void mouseMoved(const QPointF &pos);
+
+	// Сигнал об изменении текущей команды в стеке отмен
+	void undoCommandChanged();
 
 	// Сигнал об изменении слоя
 	void layerChanged(Location *location, BaseLayer *layer);

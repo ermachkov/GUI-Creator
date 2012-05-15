@@ -124,6 +124,11 @@ void GameObject::setRotationCenter(const QPointF &center)
 	mRotationCenter = QPointF(pt.x() / mSize.width(), pt.y() / mSize.height());
 }
 
+void GameObject::resetRotationCenter()
+{
+	mRotationCenter = QPointF(0.5, 0.5);
+}
+
 Layer *GameObject::getParentLayer() const
 {
 	return mParentLayer;

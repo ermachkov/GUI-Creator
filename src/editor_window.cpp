@@ -33,6 +33,7 @@ EditorWindow::EditorWindow(QWidget *parent, QGLWidget *shareWidget, const QStrin
 
 	// создаем новую локацию
 	mLocation = new Location(this);
+	connect(mLocation, SIGNAL(undoCommandChanged()), this, SIGNAL(undoCommandChanged()));
 }
 
 bool EditorWindow::load(const QString &fileName)
@@ -134,6 +135,26 @@ QRectF EditorWindow::getBoundingRect() const
 QPointF EditorWindow::getRotationCenter() const
 {
 	return mSnappedCenter;
+}
+
+bool EditorWindow::canUndo() const
+{
+	return mLocation->canUndo();
+}
+
+bool EditorWindow::canRedo() const
+{
+	return mLocation->canRedo();
+}
+
+void EditorWindow::undo()
+{
+	mLocation->undo();
+}
+
+void EditorWindow::redo()
+{
+	mLocation->redo();
 }
 
 void EditorWindow::cut()

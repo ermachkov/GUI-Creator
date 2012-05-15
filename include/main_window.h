@@ -59,6 +59,12 @@ private slots:
 	// Обработчик пункта меню Файл-Закрыть все
 	bool on_mCloseAllAction_triggered();
 
+	// Обработчик пункта меню Правка-Отменить
+	void on_mUndoAction_triggered();
+
+	// Обработчик пункта меню Правка-Повторить
+	void on_mRedoAction_triggered();
+
 	// Обработчик пункта меню Правка-Вырезать
 	void on_mCutAction_triggered();
 
@@ -137,6 +143,9 @@ private slots:
 	// Обработчик изменения положения курсора мышки на OpenGL окне
 	void onEditorWindowMouseMoved(const QPointF &pos);
 
+	// Обработчик изменения текущей команды в стеке отмен
+	void onEditorWindowUndoCommandChanged();
+
 	// Обработчик изменения слоя в окне слоёв
 	void onLayerWindowLayerChanged();
 
@@ -202,8 +211,8 @@ private:
 	// Обновляет пункты меню с последними файлами
 	void updateRecentFilesActions(const QString &fileName);
 
-	// Обновляет флаг неизмененной локации (звездочка) для текущей вкладки
-	void updateCleanState();
+	// Обновляет пункты меню Undo/Redo и звездочку в имени вкладки
+	void updateUndoRedoActions();
 
 	// Проверяет текущую локацию на наличие отсутствующих файлов
 	void checkMissedFiles();

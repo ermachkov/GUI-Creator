@@ -395,7 +395,7 @@ bool MainWindow::on_mSaveAction_triggered()
 	}
 
 	// обновляем звездочку в имени вкладки
-	updateCleanState();
+	updateUndoRedoActions();
 	return true;
 }
 
@@ -421,7 +421,7 @@ bool MainWindow::on_mSaveAsAction_triggered()
 
 	// обновляем список последних файлов и звездочку в имени вкладки
 	updateRecentFilesActions(fileName);
-	updateCleanState();
+	updateUndoRedoActions();
 	return true;
 }
 
@@ -444,11 +444,21 @@ bool MainWindow::on_mCloseAllAction_triggered()
 	return true;
 }
 
+void MainWindow::on_mUndoAction_triggered()
+{
+	mPropertyWindow->clearChildWidgetFocus();
+	getEditorWindow()->undo();
+}
+
+void MainWindow::on_mRedoAction_triggered()
+{
+	mPropertyWindow->clearChildWidgetFocus();
+	getEditorWindow()->redo();
+}
+
 void MainWindow::on_mCutAction_triggered()
 {
-	// сброс фокуса в окне свойств
 	mPropertyWindow->clearChildWidgetFocus();
-
 	getEditorWindow()->cut();
 }
 
@@ -464,9 +474,7 @@ void MainWindow::on_mPasteAction_triggered()
 
 void MainWindow::on_mDeleteAction_triggered()
 {
-	// сброс фокуса в окне свойств
 	mPropertyWindow->clearChildWidgetFocus();
-
 	getEditorWindow()->clear();
 }
 
@@ -620,13 +628,9 @@ void MainWindow::on_mTabWidget_currentChanged(int index)
 		// обновляем пункты меню, связанные с редактированием выделенных объектов
 		onEditorWindowSelectionChanged(editorWindow->getSelectedObjects(), QRectF(), QPointF());
 
-		// обновляем пункт меню Файл-Сохранить
-		mSaveAction->setEnabled(!editorWindow->isClean());
-
-		// обновляем заголовок окна
+		// обновляем пункты меню, связанные с отменой/повтором операций, и звездочку в имени вкладки
 		setWindowTitle("");
-		setWindowFilePath(editorWindow->getFileName());
-		setWindowModified(!editorWindow->isClean());
+		updateUndoRedoActions();
 
 		// устанавливаем текущую локацию
 		mLayersWindow->setCurrentLocation(editorWindow->getLocation());
@@ -640,6 +644,8 @@ void MainWindow::on_mTabWidget_currentChanged(int index)
 		mSaveAsAction->setEnabled(false);
 		mCloseAction->setEnabled(false);
 		mCloseAllAction->setEnabled(false);
+		mUndoAction->setEnabled(false);
+		mRedoAction->setEnabled(false);
 		mPasteAction->setEnabled(false);
 		mSelectAllAction->setEnabled(false);
 		mZoomMenu->setEnabled(false);
@@ -728,7 +734,7 @@ void MainWindow::onTranslationFileChanged(const QString &path)
 void MainWindow::onLocationChanged(const QString &commandName)
 {
 	getEditorWindow()->pushCommand(commandName);
-	updateCleanState();
+	updateUndoRedoActions();
 }
 
 void MainWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QRectF &boundingRect, const QPointF &rotationCenter)
@@ -747,6 +753,21 @@ void MainWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &objec
 void MainWindow::onEditorWindowMouseMoved(const QPointF &pos)
 {
 	mMousePosLabel->setText(QString("Мышь: %1, %2").arg(qFloor(pos.x())).arg(qFloor(pos.y())));
+}
+
+void MainWindow::onEditorWindowUndoCommandChanged()
+{
+	// сбрасываем выделение в окне редактирования
+	EditorWindow *editorWindow = getEditorWindow();
+	editorWindow->deselectAll();
+
+	// перезагружаем файл переводов
+	if (!editorWindow->isUntitled())
+		editorWindow->loadTranslationFile(getTranslationFileName(editorWindow->getFileName()));
+
+	// обновляем окно слоев и главное меню
+	mLayersWindow->setCurrentLocation(editorWindow->getLocation());
+	updateUndoRedoActions();
 }
 
 void MainWindow::onLayerWindowLayerChanged()
@@ -794,6 +815,7 @@ EditorWindow *MainWindow::createEditorWindow(const QString &fileName)
 		this, SLOT(onEditorWindowSelectionChanged(const QList<GameObject *> &, const QRectF &, const QPointF &)));
 	connect(editorWindow, SIGNAL(locationChanged(const QString &)), this, SLOT(onLocationChanged(const QString &)));
 	connect(editorWindow, SIGNAL(mouseMoved(const QPointF &)), this, SLOT(onEditorWindowMouseMoved(const QPointF &)));
+	connect(editorWindow, SIGNAL(undoCommandChanged()), this, SLOT(onEditorWindowUndoCommandChanged()));
 	connect(editorWindow, SIGNAL(layerChanged(Location *, BaseLayer *)), mLayersWindow, SIGNAL(layerChanged(Location *, BaseLayer *)));
 
 	// связывание сигналов изменения выделения объектов для отправки в ГУИ настроек
@@ -865,7 +887,7 @@ void MainWindow::updateRecentFilesActions(const QString &fileName)
 	mRecentFilesSeparator->setVisible(numRecentFiles != 0);
 }
 
-void MainWindow::updateCleanState()
+void MainWindow::updateUndoRedoActions()
 {
 	// добавляем/убираем звездочку в имени вкладки
 	EditorWindow *editorWindow = getEditorWindow();
@@ -876,8 +898,10 @@ void MainWindow::updateCleanState()
 	setWindowFilePath(editorWindow->getFileName());
 	setWindowModified(!clean);
 
-	// разрешаем/запрещаем пункт меню Файл-Сохранить
+	// разрешаем/запрещаем пункты меню Файл-Сохранить, Правка-Отменить, Правка-Повторить
 	mSaveAction->setEnabled(!clean);
+	mUndoAction->setEnabled(editorWindow->canUndo());
+	mRedoAction->setEnabled(editorWindow->canRedo());
 }
 
 void MainWindow::checkMissedFiles()

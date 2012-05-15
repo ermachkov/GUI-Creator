@@ -64,6 +64,9 @@ public:
 	// Устанавливает центр вращения в мировых координатах
 	void setRotationCenter(const QPointF &center);
 
+	// Возвращает центр вращения в исходное положение
+	void resetRotationCenter();
+
 	// Возвращает родительский слой
 	Layer *getParentLayer() const;
 

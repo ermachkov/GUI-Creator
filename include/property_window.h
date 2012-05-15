@@ -66,6 +66,8 @@ private slots:
 
 	void on_mRotationCenterYLineEdit_editingFinished();
 
+	void on_mResetRotationCenterPushButton_clicked();
+
 	void on_mSpriteFileNameBrowsePushButton_clicked();
 
 	void on_mSpriteOpacitySlider_valueChanged(int value);
@@ -85,8 +87,6 @@ private slots:
 	void onVertAlignmentClicked(QAbstractButton *button);
 
 	void onLineSpacingEditingFinished();
-
-//	void on_mLineSpacingComboBox_currentIndexChanged(const QString &arg);
 
 	void on_mLineSpacingComboBox_activated(const QString &arg);
 
@@ -139,7 +139,8 @@ private:
 
 	QList<GameObject *> mSelectedObjects;           // текущие выделенные объекты
 	QPointF             mRotationCenter;            // текущий центр вращения выделенных объектов
-	QRectF              mBoundingRect;              // текущий bounding rect выделенных объектов
+	// FIXME: выпилить
+	//QRectF              mBoundingRect;              // текущий bounding rect выделенных объектов
 
 	QButtonGroup        *mHorzAlignmentButtonGroup; // группировка кнопок горизонтального выравнивания
 	QButtonGroup        *mVertAlignmentButtonGroup; // группировка кнопок вертикального выравнивания

@@ -51,6 +51,18 @@ public:
 	// Помещает в стек отмен новую команду
 	void pushCommand(const QString &commandName);
 
+	// Проверяет, можно ли отменить текущую команду
+	bool canUndo() const;
+
+	// Проверяет, можно ли повторить текущую команду
+	bool canRedo() const;
+
+	// Отменяет текущую команду
+	void undo();
+
+	// Повторяет текущую команду
+	void redo();
+
 	// Создает новый слой
 	BaseLayer *createLayer(BaseLayer *parent = NULL, int index = 0);
 
@@ -90,7 +102,34 @@ public:
 	// Удаляет направляющую
 	void removeGuide(bool horz, int index);
 
+signals:
+
+	// Сигнал об изменении текущей команды в стеке отмен
+	void undoCommandChanged();
+
+private slots:
+
+	// Обработчик изменения индекса текущей команды в стеке отмен
+	void onUndoStackIndexChanged(int index);
+
 private:
+
+	// Класс команды отмены
+	class UndoCommand : public QUndoCommand
+	{
+	public:
+
+		// Конструктор
+		UndoCommand(const QString &text, Location *location);
+
+		// Восстанавливает ранее сохраненное состояние локации
+		void restore();
+
+	private:
+
+		Location    *mLocation;     // Указатель на локацию
+		QByteArray  mData;          // Сохраненное состояние локации
+	};
 
 	// Загружает локацию из бинарного потока
 	bool load(QDataStream &stream);
@@ -100,7 +139,10 @@ private:
 
 	BaseLayer       *mRootLayer;        // Корневой слой
 	BaseLayer       *mActiveLayer;      // Текущий активный слой
+
 	QUndoStack      *mUndoStack;        // Текущий стек отмен
+	int             mCommandIndex;      // Индекс текущей команды в стеке отмен
+	UndoCommand     *mInitialState;     // Начальное состояние локации
 
 	int             mObjectIndex;       // Текущий индекс для генерации уникальных идентификаторов объектов
 	int             mLayerIndex;        // Текущий индекс для генерации имен слоев

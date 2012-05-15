@@ -8,7 +8,7 @@
 #include "utils.h"
 
 Location::Location(QObject *parent)
-: QObject(parent), mObjectIndex(1), mLayerIndex(1), mLayerGroupIndex(1), mSpriteIndex(1), mLabelIndex(1)
+: QObject(parent), mCommandIndex(0), mObjectIndex(1), mLayerIndex(1), mLayerGroupIndex(1), mSpriteIndex(1), mLabelIndex(1)
 {
 	// создаем корневой слой
 	mRootLayer = new LayerGroup("");
@@ -16,12 +16,17 @@ Location::Location(QObject *parent)
 	// добавляем в него новый слой по умолчанию и делаем его активным
 	mActiveLayer = createLayer(mRootLayer);
 
-	// создаем стек отмен и сохраняем начальное состояние локации
+	// создаем стек отмен
 	mUndoStack = new QUndoStack(this);
+	connect(mUndoStack, SIGNAL(indexChanged(int)), this, SLOT(onUndoStackIndexChanged(int)));
+
+	// сохраняем начальное состояние локации
+	mInitialState = new UndoCommand("", this);
 }
 
 Location::~Location()
 {
+	delete mInitialState;
 	delete mRootLayer;
 }
 
@@ -99,6 +104,10 @@ bool Location::load(const QString &fileName)
 
 	// извлекаем из стека корневую таблицу
 	script.popTable();
+
+	// пересохраняем начальное состояние локации
+	delete mInitialState;
+	mInitialState = new UndoCommand("", this);
 
 	return true;
 }
@@ -227,7 +236,28 @@ void Location::setClean()
 
 void Location::pushCommand(const QString &commandName)
 {
-	mUndoStack->push(new QUndoCommand(commandName));
+	mCommandIndex = mUndoStack->index() + 1;
+	mUndoStack->push(new UndoCommand(commandName, this));
+}
+
+bool Location::canUndo() const
+{
+	return mUndoStack->canUndo();
+}
+
+bool Location::canRedo() const
+{
+	return mUndoStack->canRedo();
+}
+
+void Location::undo()
+{
+	mUndoStack->undo();
+}
+
+void Location::redo()
+{
+	mUndoStack->redo();
 }
 
 BaseLayer *Location::createLayer(BaseLayer *parent, int index)
@@ -354,10 +384,24 @@ void Location::removeGuide(bool horz, int index)
 	guides.removeAt(index);
 }
 
+void Location::onUndoStackIndexChanged(int index)
+{
+	// восстанавливаем ранее сохраненное состояние локации и посылаем сигнал об изменении текущей команды в стеке отмен
+	if (mCommandIndex != index)
+	{
+		mCommandIndex = index;
+		QUndoCommand *command = mCommandIndex > 0 ? const_cast<QUndoCommand *>(mUndoStack->command(mCommandIndex - 1)) : mInitialState;
+		dynamic_cast<UndoCommand *>(command)->restore();
+		emit undoCommandChanged();
+	}
+}
+
 bool Location::load(QDataStream &stream)
 {
+	// сохраняем текущий корневой слой для отложенного удаления при выходе из функции, чтобы минимизировать загрузку/выгрузку ресурсов
+	QScopedPointer<BaseLayer> oldRootLayer(mRootLayer);
+
 	// пересоздаем корневой слой
-	delete mRootLayer;
 	mRootLayer = new LayerGroup();
 
 	// загружаем слои
@@ -407,4 +451,17 @@ bool Location::save(QDataStream &stream)
 	stream << mHorzGuides << mVertGuides;
 
 	return stream.status() == QDataStream::Ok;
+}
+
+Location::UndoCommand::UndoCommand(const QString &text, Location *location)
+: QUndoCommand(text), mLocation(location)
+{
+	QDataStream stream(&mData, QIODevice::WriteOnly);
+	mLocation->save(stream);
+}
+
+void Location::UndoCommand::restore()
+{
+	QDataStream stream(&mData, QIODevice::ReadOnly);
+	mLocation->load(stream);
 }
