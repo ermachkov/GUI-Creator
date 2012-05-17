@@ -18,7 +18,7 @@ Options::Options(QSettings &settings)
 	mShowDots = settings.value("ShowDots", false).toBool();
 	mSnapToGrid = settings.value("SnapToGrid", false).toBool();
 	mSnapToVisibleLines = settings.value("SnapToVisibleLines", false).toBool();
-	mGridSpacing = settings.value("GridSpacing", 16).toInt();
+	mGridSpacing = settings.value("GridSpacing", 10).toInt();
 	mMajorLinesInterval = settings.value("MajorLinesInterval", 5).toInt();
 	settings.endGroup();
 

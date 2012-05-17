@@ -152,8 +152,8 @@ private slots:
 	// Обработчик изменения свойств объектов в окне свойств
 	void onPropertyWindowObjectsChanged(const QPointF &rotationCenter);
 
-	// Обработчик изменения локализации в окне свойств
-	void onPropertyWindowLocalizationChanged();
+	// Обработчик изменения разрешенных операций редактирования в окне свойств
+	void onPropertyWindowAllowedEditorActionsChanged();
 
 	// Обработчик сигнала изменения текстуры от текстурного менеджера
 	void onTextureChanged(const QString &fileName, const QSharedPointer<Texture> &texture);

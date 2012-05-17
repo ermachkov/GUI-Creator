@@ -112,8 +112,8 @@ public:
 	// Обновляет прямоугольник выделения и центр вращения
 	void updateSelection(const QPointF &rotationCenter);
 
-	// Обновляет состояние локализации
-	void updateLocalization();
+	// Обновляет разрешенные операции редактирования
+	void updateAllowedEditorActions();
 
 signals:
 
@@ -169,10 +169,10 @@ protected:
 
 private:
 
-	static const int MIN_GRID_SPACING = 8;      // Минимальный шаг сетки в пикселях
+	static const int MIN_GRID_SPACING = 10;     // Минимальный шаг сетки в пикселях
 	static const int GRID_SPACING_COEFF = 4;    // Множитель динамического изменения шага сетки
 	static const int MARKER_SIZE = 9;           // Размер маркера выделения в пикселях
-	static const int ROTATE_SIZE = 13;          // Размер маркера поворота в пикселях
+	static const int ROTATE_SIZE = 15;          // Размер маркера поворота в пикселях
 	static const int CENTER_SIZE = 13;          // Размер перекрестья центра вращения в пикселях
 	static const int RULER_SIZE = 20;           // Размер линейки в пикселях
 	static const int DIVISION_SIZE = 6;         // Длина одного деления линейки в пикселях
@@ -270,6 +270,7 @@ private:
 	QPoint              mFirstPos;          // Начальные оконные координаты мыши
 	QPoint              mLastPos;           // Последние оконные координаты мыши
 	QRectF              mSelectionRect;     // Рамка выделения
+	QFont               mRulerFont;         // Шрифт для подписей на линейках
 
 	QList<GameObject *> mSelectedObjects;   // Список выделенных объектов
 	QList<QPointF>      mOriginalPositions; // Список исходных координат объектов

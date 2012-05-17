@@ -21,6 +21,9 @@ EditorWindow::EditorWindow(QWidget *parent, QGLWidget *shareWidget, const QStrin
 	// разрешаем бросание объектов
 	setAcceptDrops(true);
 
+	// создаем шрифт для подписей на линейках
+	mRulerFont = QFont("Arial", 8);
+
 	// создаем курсор поворота
 	mRotateCursor = QCursor(QPixmap(":/images/rotate_cursor.png"));
 
@@ -28,8 +31,8 @@ EditorWindow::EditorWindow(QWidget *parent, QGLWidget *shareWidget, const QStrin
 	if (Options::getSingleton().isShowGuides())
 		mCameraPos = QPointF(-RULER_SIZE, -RULER_SIZE);
 
-	// обновляем состояние локализации
-	updateLocalization();
+	// обновляем разрешенные операции редактирования
+	updateAllowedEditorActions();
 
 	// создаем новую локацию
 	mLocation = new Location(this);
@@ -273,7 +276,7 @@ void EditorWindow::bringToFront()
 		// перемещаем выделенные объекты в начало списка у родительского слоя
 		bool moved = false;
 		Layer *parent = NULL;
-		int first;
+		int first = 0;
 		for (int i = 0; i < mSelectedObjects.size(); ++i)
 		{
 			// переходим на новый слой, если требуется
@@ -313,7 +316,7 @@ void EditorWindow::sendToBack()
 		// перемещаем выделенные объекты в конец списка у родительского слоя
 		bool moved = false;
 		Layer *parent = NULL;
-		int last;
+		int last = 0;
 		for (int i = mSelectedObjects.size() - 1; i >= 0; --i)
 		{
 			// переходим на новый слой, если требуется
@@ -353,7 +356,7 @@ void EditorWindow::moveUp()
 		// перемещаем выделенные объекты на одну позицию вверх
 		bool moved = false;
 		Layer *parent = NULL;
-		int first;
+		int first = 0;
 		for (int i = 0; i < mSelectedObjects.size(); ++i)
 		{
 			// переходим на новый слой, если требуется
@@ -392,7 +395,7 @@ void EditorWindow::moveDown()
 		// перемещаем выделенные объекты на одну позицию вниз
 		bool moved = false;
 		Layer *parent = NULL;
-		int last;
+		int last = 0;
 		for (int i = mSelectedObjects.size() - 1; i >= 0; --i)
 		{
 			// переходим на новый слой, если требуется
@@ -426,8 +429,8 @@ void EditorWindow::setCurrentLanguage(const QString &language)
 	// устанавливаем новый язык
 	mLocation->getRootLayer()->setCurrentLanguage(language);
 
-	// обновляем состояние локализации
-	updateLocalization();
+	// обновляем разрешенные операции редактирования
+	updateAllowedEditorActions();
 
 	// пересчитываем прямоугольник выделения и центр вращения
 	if (mEditorState == STATE_IDLE && !mSelectedObjects.empty())
@@ -485,13 +488,19 @@ void EditorWindow::updateSelection(const QPointF &rotationCenter)
 	}
 }
 
-void EditorWindow::updateLocalization()
+void EditorWindow::updateAllowedEditorActions()
 {
+	// определяем, разблокировано ли изменение размеров выделенных объектов
+	bool allSizeUnlocked = true;
+	foreach (GameObject *object, mSelectedObjects)
+		allSizeUnlocked = allSizeUnlocked && !object->isSizeLocked();
+
+	// проверяем текущую локаль
 	if (Project::getSingleton().getCurrentLanguage() == Project::getSingleton().getDefaultLanguage())
 	{
 		// в дефолтной локали разрешаем все операции редактирования
 		mMoveEnabled = true;
-		mResizeEnabled = true;
+		mResizeEnabled = allSizeUnlocked;
 		mRotationEnabled = true;
 		mMoveCenterEnabled = true;
 	}
@@ -506,7 +515,7 @@ void EditorWindow::updateLocalization()
 		foreach (GameObject *object, mSelectedObjects)
 			allLocalized = allLocalized && object->isLocalized();
 		mMoveEnabled = allLocalized;
-		mResizeEnabled = allLocalized;
+		mResizeEnabled = allLocalized && allSizeUnlocked;
 	}
 }
 
@@ -734,38 +743,71 @@ void EditorWindow::paintEvent(QPaintEvent *event)
 		painter.fillRect(0, 0, RULER_SIZE, height(), Qt::white);
 
 		// подбираем цену деления
-		qreal rulerSpacing = 8.0;
-		while (rulerSpacing * mZoom < 8.0)
-			rulerSpacing *= 4.0;
-		while (rulerSpacing * mZoom > 32.0)
-			rulerSpacing /= 4.0;
+		qreal rulerSpacing = 10.0;
+		while (rulerSpacing * mZoom < 10.0)
+			rulerSpacing *= 2.0;
+		while (rulerSpacing * mZoom > 20.0)
+			rulerSpacing /= 2.0;
 
 		// определяем номера делений для отрисовки
-		int left = static_cast<int>(qCeil((visibleRect.left() + RULER_SIZE / mZoom) / rulerSpacing));
-		int top = static_cast<int>(qCeil((visibleRect.top() + RULER_SIZE / mZoom) / rulerSpacing));
+		const int RULER_INTERVAL = 10;
+		int left = static_cast<int>(visibleRect.left() / rulerSpacing) - RULER_INTERVAL;
+		int top = static_cast<int>(visibleRect.top() / rulerSpacing) - RULER_INTERVAL;
 		int right = static_cast<int>(visibleRect.right() / rulerSpacing);
 		int bottom = static_cast<int>(visibleRect.bottom() / rulerSpacing);
 
-		// рисуем горизонтальную линейку
+		// рисуем деления на горизонтальной линейке
+		painter.setFont(mRulerFont);
 		painter.setPen(Qt::black);
+		QVector<QLineF> lines;
+		lines.reserve(right - left + 1);
 		for (int i = left; i <= right; ++i)
 		{
 			qreal x = qFloor((i * rulerSpacing - mCameraPos.x()) * mZoom) + 0.5;
-			if (i % 5 != 0)
-				painter.drawLine(QPointF(x, RULER_SIZE - DIVISION_SIZE + 0.5), QPointF(x, RULER_SIZE - 0.5));
+			if (i % RULER_INTERVAL != 0)
+				lines.push_back(QLineF(x, RULER_SIZE - DIVISION_SIZE + 0.5, x, RULER_SIZE - 0.5));
 			else
-				painter.drawLine(QPointF(x, 0.5), QPointF(x, RULER_SIZE - 0.5));
+				lines.push_back(QLineF(x, 0.5, x, RULER_SIZE - 0.5));
 		}
+		painter.drawLines(lines);
 
-		// рисуем вертикальную линейку
+		// рисуем деления на вертикальной линейке
+		lines.clear();
+		lines.reserve(bottom - top + 1);
 		for (int i = top; i <= bottom; ++i)
 		{
 			qreal y = qFloor((i * rulerSpacing - mCameraPos.y()) * mZoom) + 0.5;
-			if (i % 5 != 0)
-				painter.drawLine(QPointF(RULER_SIZE - DIVISION_SIZE + 0.5, y), QPointF(RULER_SIZE - 0.5, y));
+			if (i % RULER_INTERVAL != 0)
+				lines.push_back(QLineF(RULER_SIZE - DIVISION_SIZE + 0.5, y, RULER_SIZE - 0.5, y));
 			else
-				painter.drawLine(QPointF(0.5, y), QPointF(RULER_SIZE - 0.5, y));
+				lines.push_back(QLineF(0.5, y, RULER_SIZE - 0.5, y));
 		}
+		painter.drawLines(lines);
+
+		// рисуем подписи на горизонтальной линейке
+		const QFontMetrics &metrics = painter.fontMetrics();
+		int ascent = metrics.ascent();
+		for (int i = left; i <= right; ++i)
+			if (i % RULER_INTERVAL == 0)
+			{
+				int x = static_cast<int>((i * rulerSpacing - mCameraPos.x()) * mZoom);
+				painter.drawText(x + 4, (RULER_SIZE - DIVISION_SIZE - ascent) / 2 + ascent, QString::number(i * rulerSpacing, 'g', 8));
+			}
+
+		// рисуем подписи на вертикальной линейке
+		for (int i = top; i <= bottom; ++i)
+			if (i % RULER_INTERVAL == 0)
+			{
+				int y = static_cast<int>((i * rulerSpacing - mCameraPos.y()) * mZoom);
+				foreach (QChar ch, QString::number(i * rulerSpacing, 'g', 8))
+				{
+					painter.drawText((RULER_SIZE - DIVISION_SIZE - metrics.width(ch)) / 2, y + ascent + 2, QString(ch));
+					y += ascent;
+				}
+			}
+
+		// затираем фоном линеек левый верхний угол окна
+		painter.fillRect(0, 0, RULER_SIZE, RULER_SIZE, Qt::white);
 	}
 }
 
@@ -819,7 +861,7 @@ void EditorWindow::mousePressEvent(QMouseEvent *event)
 			// переходим в состояние изменения размера объектов
 			mEditorState = STATE_RESIZE;
 		}
-		else if (mRotationEnabled && findSelectionMarker(pos, ROTATE_SIZE / mZoom) != MARKER_NONE)
+		else if (mRotationEnabled && findSelectionMarker(pos, ROTATE_SIZE / mZoom) != MARKER_NONE && findSelectionMarker(pos, MARKER_SIZE / mZoom) == MARKER_NONE)
 		{
 			// переходим в состояние поворота объектов
 			mEditorState = STATE_ROTATE;
@@ -1722,8 +1764,8 @@ void EditorWindow::selectGameObjects(const QList<GameObject *> &objects)
 		if (!mSelectedObjects.empty())
 			mOriginalCenter = mSnappedCenter = mSelectedObjects.size() == 1 ? mSelectedObjects.front()->getRotationCenter() : mOriginalRect.center();
 
-		// обновляем состояние локализации
-		updateLocalization();
+		// обновляем разрешенные операции редактирования
+		updateAllowedEditorActions();
 
 		// посылаем сигнал об изменении выделения
 		emit selectionChanged(mSelectedObjects, mSnappedRect, mSnappedCenter);
@@ -1786,7 +1828,7 @@ void EditorWindow::updateMouseCursor(const QPointF &pos)
 				Qt::SizeFDiagCursor, Qt::SizeHorCursor, Qt::SizeBDiagCursor, Qt::SizeVerCursor};
 			setCursor(MARKER_CURSORS[marker - 1]);
 		}
-		else if (mRotationEnabled && findSelectionMarker(pos, ROTATE_SIZE / mZoom) != MARKER_NONE)
+		else if (mRotationEnabled && findSelectionMarker(pos, ROTATE_SIZE / mZoom) != MARKER_NONE && findSelectionMarker(pos, MARKER_SIZE / mZoom) == MARKER_NONE)
 		{
 			// курсор рядом с маркером выделения
 			setCursor(mRotateCursor);

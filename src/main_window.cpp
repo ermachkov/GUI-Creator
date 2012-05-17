@@ -73,7 +73,7 @@ MainWindow::MainWindow()
 			tabBar->setCurrentIndex(0);
 
 	// разворачивание окна редактора на весь экран
-	showMaximized();
+	setWindowState(Qt::WindowMaximized);
 
 	// обновляем пункты главного меню
 	updateMainMenuActions();
@@ -205,7 +205,7 @@ MainWindow::MainWindow()
 
 	// связываем сигналы об изменениях в окне свойств
 	connect(mPropertyWindow, SIGNAL(objectsChanged(const QPointF &)), this, SLOT(onPropertyWindowObjectsChanged(const QPointF &)));
-	connect(mPropertyWindow, SIGNAL(localizationChanged()), this, SLOT(onPropertyWindowLocalizationChanged()));
+	connect(mPropertyWindow, SIGNAL(allowedEditorActionsChanged()), this, SLOT(onPropertyWindowAllowedEditorActionsChanged()));
 
 	// связываем сигнал об изменении текстуры
 	connect(TextureManager::getSingletonPtr(), SIGNAL(textureChanged(const QString &, const QSharedPointer<Texture> &)),
@@ -714,10 +714,13 @@ void MainWindow::onLanguageChanged(const QString &language)
 	for (int i = 0; i < mTabWidget->count(); ++i)
 		getEditorWindow(i)->setCurrentLanguage(language);
 
-	// обновляем окно свойств
+	// обновляем окна слоев и свойств
 	EditorWindow *editorWindow = getEditorWindow();
 	if (editorWindow != NULL)
+	{
+		mLayersWindow->setCurrentLocation(editorWindow->getLocation());
 		mPropertyWindow->onEditorWindowSelectionChanged(editorWindow->getSelectedObjects(), editorWindow->getBoundingRect(), editorWindow->getRotationCenter());
+	}
 }
 
 void MainWindow::onTranslationFileChanged(const QString &path)
@@ -780,9 +783,9 @@ void MainWindow::onPropertyWindowObjectsChanged(const QPointF &rotationCenter)
 	getEditorWindow(mTabWidgetCurrentIndex)->updateSelection(rotationCenter);
 }
 
-void MainWindow::onPropertyWindowLocalizationChanged()
+void MainWindow::onPropertyWindowAllowedEditorActionsChanged()
 {
-	getEditorWindow()->updateLocalization();
+	getEditorWindow()->updateAllowedEditorActions();
 }
 
 void MainWindow::onTextureChanged(const QString &fileName, const QSharedPointer<Texture> &texture)

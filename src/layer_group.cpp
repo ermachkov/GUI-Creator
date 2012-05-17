@@ -234,6 +234,9 @@ void LayerGroup::setCurrentLanguage(const QString &language)
 	// устанавливаем текущий язык для всех дочерних слоев
 	foreach (BaseLayer *layer, mChildLayers)
 		layer->setCurrentLanguage(language);
+
+	// удаляем иконку предпросмотра
+	mThumbnail = QIcon();
 }
 
 void LayerGroup::loadTranslations(LuaScript *script)

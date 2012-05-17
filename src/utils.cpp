@@ -107,14 +107,20 @@ bool Utils::fileExists(const QString &path)
 
 QString Utils::quotify(const QString &text)
 {
-	// вставляем обратный слэш перед одинарными и двойными кавычками, а также перед самим обратным слэшем
+	// заменяем все LF на "\n" и экранируем спецсимволы обратными слэшами
 	QString str;
 	foreach (QChar ch, text)
-	{
-		if (ch == '\'' || ch == '\"' || ch == '\\')
-			str += '\\';
-		str += ch;
-	}
+		if (ch == '\n')
+		{
+			str += "\\n";
+		}
+		else
+		{
+			if (ch == '\'' || ch == '\"' || ch == '\\')
+				str += '\\';
+			str += ch;
+		}
+
 	return "\"" + str + "\"";
 }
 

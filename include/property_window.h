@@ -21,8 +21,8 @@ signals:
 	// отправка сигнала при изменении позиции, размера, цвета, угла поворота
 	void objectsChanged(const QPointF &rotationCenter);
 
-	// Сигнал об изменении локализации выделенных объектов
-	void localizationChanged();
+	// Сигнал об изменении разрешенных операций редактирования
+	void allowedEditorActionsChanged();
 
 public slots:
 
@@ -58,8 +58,6 @@ private slots:
 
 	void onRotationAngleEditingFinished();
 
-//	void on_mRotationAngleComboBox_currentIndexChanged(const QString &arg);
-
 	void on_mRotationAngleComboBox_activated(const QString &arg);
 
 	void on_mRotationCenterXLineEdit_editingFinished();
@@ -70,15 +68,19 @@ private slots:
 
 	void on_mSpriteFileNameBrowsePushButton_clicked();
 
-	void on_mSpriteOpacitySlider_valueChanged(int value);
+//	void on_mSpriteOpacitySlider_valueChanged(int value);
 
-//	void on_mLabelFileNameComboBox_currentIndexChanged(const QString &arg);
+	void on_mSpriteOpacitySlider_actionTriggered(int action);
+
+	void on_mSpriteOpacitySlider_sliderMoved(int position);
+
+	void on_mTextLineEdit_editingFinished();
+
+	void on_mTextEditPushButton_clicked();
 
 	void on_mLabelFileNameComboBox_activated(const QString &arg);
 
 	void onFontSizeEditingFinished();
-
-//	void on_mFontSizeComboBox_currentIndexChanged(const QString &arg);
 
 	void on_mFontSizeComboBox_activated(const QString &arg);
 
@@ -90,7 +92,11 @@ private slots:
 
 	void on_mLineSpacingComboBox_activated(const QString &arg);
 
-	void on_mLabelOpacitySlider_valueChanged(int value);
+//	void on_mLabelOpacitySlider_valueChanged(int value);
+
+	void on_mLabelOpacitySlider_actionTriggered(int action);
+
+	void on_mLabelOpacitySlider_sliderMoved(int position);
 
 	void on_mLocalizationPushButton_clicked();
 

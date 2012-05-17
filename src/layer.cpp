@@ -273,6 +273,9 @@ void Layer::setCurrentLanguage(const QString &language)
 	// устанавливаем текущий язык для всех дочерних игровых объектов
 	foreach (GameObject *object, mGameObjects)
 		object->setCurrentLanguage(language);
+
+	// удаляем иконку предпросмотра
+	mThumbnail = QIcon();
 }
 
 void Layer::loadTranslations(LuaScript *script)

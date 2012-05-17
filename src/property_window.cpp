@@ -52,6 +52,10 @@ PropertyWindow::PropertyWindow(QWidget *parent)
 	mFontSizeComboBox->setValidator(new QIntValidator(1, +1000, this));
 	mLineSpacingComboBox->setValidator(new QDoubleValidator(-100, +100, 6, this));
 
+	// настройка свойств
+	mLabelFileNameComboBox->lineEdit()->setPlaceholderText("Разные значения");
+	mLabelFileNameComboBox->lineEdit()->setReadOnly(true);
+
 	// загрузка и отображение списка доступных шрифтов в комбобоксе
 	scanFonts();
 }
@@ -111,13 +115,13 @@ bool PropertyWindow::eventFilter(QObject *object, QEvent *event)
 		QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
 		if (mouseEvent->button() == Qt::LeftButton)
 		{
-			if (object == mSpriteColorFrame)
+			if (object == mSpriteColorFrame && mSpriteColorFrame->isEnabled())
 			{
 				QColorDialog colorDialog;
 				colorDialog.setCurrentColor(mSpriteColorFrame->palette().color(QPalette::Window));
 
 				// вызов диалогового окна выбора цвета
-				if (colorDialog.exec() == colorDialog.Accepted)
+				if (colorDialog.exec() == QColorDialog::Accepted)
 				{
 					QColor color = colorDialog.currentColor();
 
@@ -143,7 +147,7 @@ bool PropertyWindow::eventFilter(QObject *object, QEvent *event)
 				colorDialog.setCurrentColor(mLabelColorFrame->palette().color(QPalette::Window));
 
 				// вызов диалогового окна выбора цвета
-				if (colorDialog.exec() == colorDialog.Accepted)
+				if (colorDialog.exec() == QColorDialog::Accepted)
 				{
 					QColor color = colorDialog.currentColor();
 
@@ -480,6 +484,9 @@ void PropertyWindow::on_mLockSizePushButton_clicked()
 		// set locked
 		mLockSizePushButton->setIcon(mLockTextureSizeIcon);
 	}
+
+	// отправляем сигнал об изменении разрешенных операций редактирования
+	emit allowedEditorActionsChanged();
 }
 
 void PropertyWindow::on_mFlipXCheckBox_clicked(bool checked)
@@ -661,7 +668,7 @@ void PropertyWindow::on_mSpriteFileNameBrowsePushButton_clicked()
 	// обновление окна общих свойств
 	updateCommonWidgets();
 }
-
+/*
 void PropertyWindow::on_mSpriteOpacitySlider_valueChanged(int value)
 {
 	foreach (GameObject *obj, mSelectedObjects)
@@ -673,6 +680,91 @@ void PropertyWindow::on_mSpriteOpacitySlider_valueChanged(int value)
 	}
 
 	mSpriteOpacityValueLabel->setText(QString::number(value * 100 / 255) + "%");
+}
+*/
+void PropertyWindow::on_mSpriteOpacitySlider_actionTriggered(int action)
+{
+	if (action != QAbstractSlider::SliderNoAction && action != QAbstractSlider::SliderMove)
+	{
+		int position = mSpriteOpacitySlider->sliderPosition();
+		on_mSpriteOpacitySlider_sliderMoved(position);
+	}
+}
+
+void PropertyWindow::on_mSpriteOpacitySlider_sliderMoved(int position)
+{
+	foreach (GameObject *obj, mSelectedObjects)
+	{
+		Sprite *it = dynamic_cast<Sprite *>(obj);
+		QColor color = it->getColor();
+		color.setAlpha(position);
+		it->setColor(color);
+	}
+
+	mSpriteOpacityValueLabel->setText(QString::number(position * 100 / 255) + "%");
+}
+
+void PropertyWindow::on_mTextLineEdit_editingFinished()
+{
+	QString text = mTextLineEdit->text();
+
+	// смена последовательности \n на '13'
+	text.replace("\\n", "\n");
+
+	foreach (GameObject *obj, mSelectedObjects)
+	{
+		Label *it = dynamic_cast<Label *>(obj);
+		it->setText(text);
+	}
+}
+
+void PropertyWindow::on_mTextEditPushButton_clicked()
+{
+	// считывание текста из GUI
+	QString text = mTextLineEdit->text();
+
+	// смена последовательности \n на '13'
+	text.replace("\\n", "\n");
+
+	//create a custom dialog box with multi line input
+	QDialog *textDialog = new QDialog(this);
+
+	//local variable
+	QVBoxLayout *vBoxLayout = new QVBoxLayout(textDialog);
+
+	//class variable
+	QPlainTextEdit *multilinePlainTextEdit = new QPlainTextEdit();
+	multilinePlainTextEdit->setPlainText(text);
+
+	vBoxLayout->addWidget(multilinePlainTextEdit);
+	QDialogButtonBox *buttonBox = new QDialogButtonBox();
+	buttonBox->setOrientation(Qt::Horizontal);
+	buttonBox->setStandardButtons(QDialogButtonBox::Cancel | QDialogButtonBox::Ok);
+
+	vBoxLayout->addWidget(buttonBox);
+
+	connect(buttonBox, SIGNAL(accepted()), textDialog, SLOT(accept()));
+	connect(buttonBox, SIGNAL(rejected()), textDialog, SLOT(reject()));
+
+	textDialog->setModal(true);
+
+	if (textDialog->exec()== QDialog::Accepted)
+	{
+		text = multilinePlainTextEdit->toPlainText();
+
+		foreach (GameObject *obj, mSelectedObjects)
+		{
+			Label *it = dynamic_cast<Label *>(obj);
+			it->setText(text);
+		}
+
+		// смена '13' на последовательность \n
+		text.replace("\n", "\\n");
+
+		mTextLineEdit->setText(text);
+	}
+
+	delete textDialog;
 }
 
 void PropertyWindow::on_mLabelFileNameComboBox_activated(const QString &arg)
@@ -699,24 +791,6 @@ void PropertyWindow::onFontSizeEditingFinished()
 	}
 }
 
-/* FIXME: delete
-void PropertyWindow::on_mFontSizeComboBox_currentIndexChanged(const QString &arg)
-{
-	qDebug() << "on_mFontSizeComboBox_currentIndexChanged";
-
-	if (arg == "")
-		return;
-
-	int fontSize = arg.toInt();
-
-	foreach (GameObject *obj, mSelectedObjects)
-	{
-		Label *it = dynamic_cast<Label *>(obj);
-		it->setFontSize(fontSize);
-	}
-}
-*/
-
 void PropertyWindow::on_mFontSizeComboBox_activated(const QString &arg)
 {
 	qDebug() << "on_mFontSizeComboBox_activated" << arg;
@@ -732,7 +806,7 @@ void PropertyWindow::on_mFontSizeComboBox_activated(const QString &arg)
 
 void PropertyWindow::onHorzAlignmentClicked(QAbstractButton *button)
 {
-	Label::HorzAlignment horzAlignment;
+	Label::HorzAlignment horzAlignment = Label::HORZ_ALIGN_LEFT;
 
 	if (button == mHorzAlignmentLeftPushButton)
 	{
@@ -759,7 +833,7 @@ void PropertyWindow::onHorzAlignmentClicked(QAbstractButton *button)
 
 void PropertyWindow::onVertAlignmentClicked(QAbstractButton *button)
 {
-	Label::VertAlignment vertAlignment;
+	Label::VertAlignment vertAlignment = Label::VERT_ALIGN_TOP;
 
 	if (button == mVertAlignmentTopPushButton)
 	{
@@ -809,9 +883,11 @@ void PropertyWindow::on_mLineSpacingComboBox_activated(const QString &arg)
 		it->setLineSpacing(lineSpacing);
 	}
 }
-
+/*
 void PropertyWindow::on_mLabelOpacitySlider_valueChanged(int value)
 {
+	qDebug() << "on_mLabelOpacitySlider_valueChanged";
+
 	foreach (GameObject *obj, mSelectedObjects)
 	{
 		Label *it = dynamic_cast<Label *>(obj);
@@ -821,6 +897,28 @@ void PropertyWindow::on_mLabelOpacitySlider_valueChanged(int value)
 	}
 
 	mLabelOpacityValueLabel->setText(QString::number(value * 100 / 255) + "%");
+}
+*/
+void PropertyWindow::on_mLabelOpacitySlider_actionTriggered(int action)
+{
+	if (action != QAbstractSlider::SliderNoAction && action != QAbstractSlider::SliderMove)
+	{
+		int position = mSpriteOpacitySlider->sliderPosition();
+		on_mLabelOpacitySlider_sliderMoved(position);
+	}
+}
+
+void PropertyWindow::on_mLabelOpacitySlider_sliderMoved(int position)
+{
+	foreach (GameObject *obj, mSelectedObjects)
+	{
+		Label *it = dynamic_cast<Label *>(obj);
+		QColor color = it->getColor();
+		color.setAlpha(position);
+		it->setColor(color);
+	}
+
+	mLabelOpacityValueLabel->setText(QString::number(position * 100 / 255) + "%");
 }
 
 void PropertyWindow::on_mLocalizationPushButton_clicked()
@@ -832,8 +930,8 @@ void PropertyWindow::on_mLocalizationPushButton_clicked()
 	// FIXME: не забыть про дубликат в onEditorWindowSelectionChanged
 	updateWidgetsVisibledAndEnabled();
 
-	// отправляем сигнал об изменении локализации выделенных объектов
-	emit localizationChanged();
+	// отправляем сигнал об изменении разрешенных операций редактирования
+	emit allowedEditorActionsChanged();
 }
 
 void PropertyWindow::updateWidgetsVisibledAndEnabled()
@@ -859,6 +957,17 @@ void PropertyWindow::updateWidgetsVisibledAndEnabled()
 	QString currentLanguage = Project::getSingleton().getCurrentLanguage();
 	QString defaultLanguage = Project::getSingleton().getDefaultLanguage();
 
+	// определение идентичности типа выделенных объектов
+	QStringList types;
+	foreach (GameObject *object, mSelectedObjects)
+		types.push_back(typeid(*object).name());
+	bool isAllOneType = types.count(types.front()) == types.size();
+
+	// определение локализованы ли все выделенные объекты или нет
+	bool isAllLocalized = true;
+	foreach (GameObject *object, mSelectedObjects)
+		isAllLocalized = isAllLocalized && object->isLocalized();
+
 	if (currentLanguage == defaultLanguage)
 	{
 		// enable all properties
@@ -866,22 +975,36 @@ void PropertyWindow::updateWidgetsVisibledAndEnabled()
 	}
 	else
 	{
-		// определение локализованы ли все выделенные объекты или нет
-		bool allLocalized = true;
-		foreach (GameObject *object, mSelectedObjects)
-			allLocalized = allLocalized && object->isLocalized();
-
-		if (allLocalized)
+		if (isAllLocalized)
 		{
 			// dissable all
 			setGridLayoutRowsEnabled(mScrollAreaLayout, 0, mScrollAreaLayout->rowCount(), false);
-			// enable specific:
-			// - pos, size, flip, rotationAngle, rotationCenter
-			setGridLayoutRowsEnabled(mScrollAreaLayout, 2, 5, true);
-			// - fileName(Sprite)
-			setGridLayoutRowsEnabled(mScrollAreaLayout, 7, 2, true);
-			// - fileName(Label), fontSize
-			setGridLayoutRowsEnabled(mScrollAreaLayout, 12, 2, true);
+
+			if (isAllOneType)
+			{
+				// - pos, size, flip
+				setGridLayoutRowsEnabled(mScrollAreaLayout, 2, 3, true);
+
+				if (dynamic_cast<Sprite *>(mSelectedObjects.front()) != NULL)
+				{
+					// - fileName(Sprite)
+					setGridLayoutRowsEnabled(mScrollAreaLayout, 7, 1, true);
+				}
+				else if (dynamic_cast<Label *>(mSelectedObjects.front()) != NULL)
+				{
+					// - fileName(Label), fontSize
+					setGridLayoutRowsEnabled(mScrollAreaLayout, 12, 2, true);
+				}
+				else
+				{
+					qWarning() << "Error can't find type of object";
+				}
+			}
+			else
+			{
+				// - pos, size
+				setGridLayoutRowsEnabled(mScrollAreaLayout, 2, 2, true);
+			}
 		}
 		else
 		{
@@ -901,7 +1024,7 @@ void PropertyWindow::updateWidgetsVisibledAndEnabled()
 	{
 		// visible common properties for multi selection
 		setGridLayoutRowsVisible(mScrollAreaLayout, 2, 2, true);
-		setGridLayoutRowsVisible(mScrollAreaLayout, 6, 2, true);
+		setGridLayoutRowsVisible(mScrollAreaLayout, 6, 1, true);
 	}
 	else
 	{
@@ -910,11 +1033,7 @@ void PropertyWindow::updateWidgetsVisibledAndEnabled()
 	}
 	updateCommonWidgets();
 
-	// определение идентичности типа выделенных объектов
-	QStringList types;
-	foreach (GameObject *object, mSelectedObjects)
-		types.push_back(typeid(*object).name());
-	if (types.count(types.front()) != types.size())
+	if (!isAllOneType)
 	{
 		// выделенные объекты имеют разные типы
 		return;
@@ -1223,7 +1342,11 @@ void PropertyWindow::updateLabelWidgets()
 			equalLabelOpacity = false;
 	}
 
-	mTextLineEdit->setText(equalText ? first->getText() : "");
+	// смена '13' на последовательность \n
+	QString text = first->getText();
+	text.replace("\n", "\\n");
+	mTextLineEdit->setText(equalText ? text : "");
+
 	if (equalFileName)
 	{
 		int index = mLabelFileNameComboBox->findText(QFileInfo(first->getFileName()).fileName());
