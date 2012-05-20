@@ -6,12 +6,12 @@
 #include "utils.h"
 
 GameObject::GameObject()
-: mSizeLocked(true), mParentLayer(NULL)
+: mParentLayer(NULL)
 {
 }
 
 GameObject::GameObject(const QString &name, int id, Layer *parent)
-: mName(name), mObjectID(id), mSizeLocked(true), mRotationAngle(0.0), mRotationCenter(0.5, 0.5), mParentLayer(NULL)
+: mName(name), mObjectID(id), mRotationAngle(0.0), mRotationCenter(0.5, 0.5), mParentLayer(NULL)
 {
 	// добавляем себя в родительский слой
 	if (parent != NULL)
@@ -20,8 +20,8 @@ GameObject::GameObject(const QString &name, int id, Layer *parent)
 
 GameObject::GameObject(const GameObject &object)
 : mName(object.mName), mObjectID(object.mObjectID), mPosition(object.mPosition), mSize(object.mSize),
-  mSizeLocked(object.mSizeLocked), mRotationAngle(object.mRotationAngle), mRotationCenter(object.mRotationCenter),
-  mParentLayer(NULL), mPositionXMap(object.mPositionXMap), mPositionYMap(object.mPositionYMap),
+  mRotationAngle(object.mRotationAngle), mRotationCenter(object.mRotationCenter), mParentLayer(NULL),
+  mPositionXMap(object.mPositionXMap), mPositionYMap(object.mPositionYMap),
   mWidthMap(object.mWidthMap), mHeightMap(object.mHeightMap)
 {
 	// обновляем текущую трансформацию
@@ -89,16 +89,6 @@ void GameObject::setSize(const QSizeF &size)
 	QString language = Project::getSingleton().getCurrentLanguage();
 	mWidthMap[language] = mSize.width();
 	mHeightMap[language] = mSize.height();
-}
-
-bool GameObject::isSizeLocked() const
-{
-	return mSizeLocked;
-}
-
-void GameObject::setSizeLocked(bool locked)
-{
-	mSizeLocked = locked;
 }
 
 qreal GameObject::getRotationAngle() const

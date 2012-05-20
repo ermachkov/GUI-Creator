@@ -5,6 +5,7 @@
 #include "location.h"
 #include "options.h"
 #include "project.h"
+#include "sprite.h"
 #include "utils.h"
 
 EditorWindow::EditorWindow(QWidget *parent, QGLWidget *shareWidget, const QString &fileName, QWidget *spriteWidget, QWidget *fontWidget)
@@ -490,17 +491,21 @@ void EditorWindow::updateSelection(const QPointF &rotationCenter)
 
 void EditorWindow::updateAllowedEditorActions()
 {
-	// определяем, разблокировано ли изменение размеров выделенных объектов
-	bool allSizeUnlocked = true;
+	// определяем, не заблокировано ли изменение размеров выделенных объектов
+	bool sizeLocked = false;
 	foreach (GameObject *object, mSelectedObjects)
-		allSizeUnlocked = allSizeUnlocked && !object->isSizeLocked();
+	{
+		Sprite *sprite = dynamic_cast<Sprite *>(object);
+		if (sprite != NULL && sprite->isSizeLocked())
+			sizeLocked = true;
+	}
 
 	// проверяем текущую локаль
 	if (Project::getSingleton().getCurrentLanguage() == Project::getSingleton().getDefaultLanguage())
 	{
 		// в дефолтной локали разрешаем все операции редактирования
 		mMoveEnabled = true;
-		mResizeEnabled = allSizeUnlocked;
+		mResizeEnabled = !sizeLocked;
 		mRotationEnabled = true;
 		mMoveCenterEnabled = true;
 	}
@@ -513,9 +518,10 @@ void EditorWindow::updateAllowedEditorActions()
 		// разрешаем перемещение и изменение размеров, только если все выделенные объекты локализованы
 		bool allLocalized = true;
 		foreach (GameObject *object, mSelectedObjects)
-			allLocalized = allLocalized && object->isLocalized();
+			if (!object->isLocalized())
+				allLocalized = false;
 		mMoveEnabled = allLocalized;
-		mResizeEnabled = allLocalized && allSizeUnlocked;
+		mResizeEnabled = allLocalized && !sizeLocked;
 	}
 }
 

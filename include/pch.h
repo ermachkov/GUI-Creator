@@ -1,6 +1,9 @@
 #ifndef PCH_H
 #define PCH_H
 
+// STL
+#include <typeinfo>
+
 // Qt
 #include <QtCore>
 #include <QtGui>

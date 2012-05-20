@@ -3,6 +3,7 @@
 
 #include "ui_property_window.h"
 
+class BaseLayer;
 class GameObject;
 
 class PropertyWindow : public QDockWidget, private Ui::PropertyWindow
@@ -11,15 +12,22 @@ class PropertyWindow : public QDockWidget, private Ui::PropertyWindow
 
 public:
 
-	explicit PropertyWindow(QWidget *parent = 0);
+	// Конструктор
+	PropertyWindow(QWidget *parent);
 
 	// сброс фокуса в окне свойств
 	void clearChildWidgetFocus();
 
 signals:
 
-	// отправка сигнала при изменении позиции, размера, цвета, угла поворота
+	// Сигнал об изменении локации
+	void locationChanged(const QString &commandName);
+
+	// Сигнал об изменении позиции, размера, угла поворота, центра вращения
 	void objectsChanged(const QPointF &rotationCenter);
+
+	// Сигнал об изменении слоя
+	void layerChanged(BaseLayer *layer);
 
 	// Сигнал об изменении разрешенных операций редактирования
 	void allowedEditorActionsChanged();
@@ -40,7 +48,7 @@ private slots:
 
 	void on_mNameLineEdit_editingFinished();
 
-	void on_mTextEditPushButton_clicked(bool checked);
+	void on_mCopyIdPushButton_clicked();
 
 	void on_mPositionXLineEdit_editingFinished();
 
@@ -68,8 +76,6 @@ private slots:
 
 	void on_mSpriteFileNameBrowsePushButton_clicked();
 
-//	void on_mSpriteOpacitySlider_valueChanged(int value);
-
 	void on_mSpriteOpacitySlider_actionTriggered(int action);
 
 	void on_mSpriteOpacitySlider_sliderMoved(int position);
@@ -92,8 +98,6 @@ private slots:
 
 	void on_mLineSpacingComboBox_activated(const QString &arg);
 
-//	void on_mLabelOpacitySlider_valueChanged(int value);
-
 	void on_mLabelOpacitySlider_actionTriggered(int action);
 
 	void on_mLabelOpacitySlider_sliderMoved(int position);
@@ -105,7 +109,7 @@ private:
 	static const int PRECISION = 8;
 
 	// логика показа свойств выделенных объектов
-	void updateWidgetsVisibledAndEnabled();
+	void updateWidgetsVisibleAndEnabled();
 
 	// Устанавливает видимость для заданного диапазона строк в грид лейауте
 	void setGridLayoutRowsVisible(QGridLayout *layout, int firstRow, int numRows, bool visible);
@@ -114,10 +118,21 @@ private:
 	void setLayoutItemVisible(QLayoutItem *item, bool visible);
 
 	// Активирует/деактивирует элемент для заданного диапазона строк в грид лейауте
-	void setGridLayoutRowsEnabled(QGridLayout *layout, int firstRow, int numRows, bool enable);
+	void setGridLayoutRowsEnabled(QGridLayout *layout, int firstRow, int numRows, bool enabled);
 
 	// Активирует/деактивирует элемент лейаута
-	void setLayoutItemEnabled(QLayoutItem *item, bool enable);
+	void setLayoutItemEnabled(QLayoutItem *item, bool enabled);
+
+	// ф-ции возврата значений выделенных объектов
+	QString getCurrentPositionX() const;
+	QString getCurrentPositionY() const;
+	QString getCurrentSizeW() const;
+	QString getCurrentSizeH() const;
+	QString getCurrentRotationAngle() const;
+	QString getCurrentRotationCenterX() const;
+	QString getCurrentRotationCenterY() const;
+	QString getCurrentFontSize() const;
+	QString getCurrentLineSpacing() const;
 
 	// отображение значений параметров объектов в виджетах ГУИ
 	void updateCommonWidgets();
@@ -125,7 +140,7 @@ private:
 	void updateLabelWidgets();
 
 	// просчет текущего общего ограничевающего прямоугольника
-	QRectF calculateCurrentBoundingRect();
+	QRectF calculateCurrentBoundingRect() const;
 
 	// просчет процентеого расположения центра вращения
 	QPointF calculatePercentPosition(const QRectF &boundingRect, const QPointF &rotationCenter);
@@ -145,8 +160,6 @@ private:
 
 	QList<GameObject *> mSelectedObjects;           // текущие выделенные объекты
 	QPointF             mRotationCenter;            // текущий центр вращения выделенных объектов
-	// FIXME: выпилить
-	//QRectF              mBoundingRect;              // текущий bounding rect выделенных объектов
 
 	QButtonGroup        *mHorzAlignmentButtonGroup; // группировка кнопок горизонтального выравнивания
 	QButtonGroup        *mVertAlignmentButtonGroup; // группировка кнопок вертикального выравнивания

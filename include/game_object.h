@@ -46,12 +46,6 @@ public:
 	// Устанавливает размеры объекта
 	void setSize(const QSizeF &size);
 
-	// Возвращает флаг блокировки изменения размеров
-	bool isSizeLocked() const;
-
-	// Устанавливает флаг блокировки изменения размеров
-	void setSizeLocked(bool locked);
-
 	// Возвращает угол поворота объекта в градусах
 	qreal getRotationAngle() const;
 
@@ -155,7 +149,6 @@ protected:
 	int         mObjectID;          // Идентификатор объекта
 	QPointF     mPosition;          // Мировые координаты объекта
 	QSizeF      mSize;              // Размеры объекта в пикселях
-	bool        mSizeLocked;        // Флаг блокировки изменения размеров
 	qreal       mRotationAngle;     // Угол поворота объекта в градусах по часовой стрелке
 	QPointF     mRotationCenter;    // Центр вращения в нормализованных локальных координатах
 	Layer       *mParentLayer;      // Указатель на родительский слой

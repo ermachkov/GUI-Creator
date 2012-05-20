@@ -30,15 +30,15 @@
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>-147</y>
+         <y>0</y>
          <width>381</width>
-         <height>561</height>
+         <height>565</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="mScrollAreaWidgetLayout">
         <item>
          <layout class="QGridLayout" name="mScrollAreaLayout">
-          <item row="1" column="1" colspan="2">
+          <item row="1" column="1" colspan="4">
            <widget class="QLineEdit" name="mObjectIDLineEdit">
             <property name="readOnly">
              <bool>true</bool>
@@ -783,6 +783,26 @@
             </property>
             <property name="placeholderText">
              <string>Разные значения</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="5">
+           <widget class="QPushButton" name="mCopyIdPushButton">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="icon">
+             <iconset resource="../res/resources.qrc">
+              <normaloff>:/images/edit_copy.png</normaloff>:/images/edit_copy.png</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>16</width>
+              <height>16</height>
+             </size>
             </property>
            </widget>
           </item>

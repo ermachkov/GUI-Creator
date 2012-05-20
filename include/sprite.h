@@ -27,6 +27,12 @@ public:
 	// Возвращает размер текстуры в пикселях
 	QSizeF getTextureSize() const;
 
+	// Возвращает флаг блокировки изменения размеров
+	bool isSizeLocked() const;
+
+	// Устанавливает флаг блокировки изменения размеров
+	void setSizeLocked(bool locked);
+
 	// Возвращает цвет спрайта
 	QColor getColor() const;
 
@@ -76,6 +82,7 @@ private:
 
 	QString                 mFileName;          // Имя файла с текстурой
 	QSharedPointer<Texture> mTexture;           // Текстура спрайта
+	bool                    mSizeLocked;        // Флаг блокировки изменения размеров
 	QColor                  mColor;             // Цвет спрайта
 
 	StringMap               mFileNameMap;       // Список локализованных имен файлов

@@ -7,11 +7,12 @@
 #include "utils.h"
 
 Sprite::Sprite()
+: mSizeLocked(true)
 {
 }
 
 Sprite::Sprite(const QString &name, int id, const QPointF &pos, const QString &fileName, Layer *parent)
-: GameObject(name, id, parent), mFileName(fileName), mColor(Qt::white)
+: GameObject(name, id, parent), mFileName(fileName), mSizeLocked(true), mColor(Qt::white)
 {
 	// загружаем текстуру спрайта
 	mTexture = TextureManager::getSingleton().loadTexture(mFileName);
@@ -76,6 +77,16 @@ QSizeF Sprite::getTextureSize() const
 {
 	QString language = isLocalized() ? Project::getSingleton().getCurrentLanguage() : Project::getSingleton().getDefaultLanguage();
 	return QSizeF(mTextureWidthMap[language], mTextureHeightMap[language]);
+}
+
+bool Sprite::isSizeLocked() const
+{
+	return mSizeLocked;
+}
+
+void Sprite::setSizeLocked(bool locked)
+{
+	mSizeLocked = locked;
 }
 
 QColor Sprite::getColor() const

@@ -33,6 +33,9 @@ public:
 
 protected:
 
+	// Вызывается при получении события
+	virtual bool event(QEvent *event);
+
 	// Вызывается по срабатыванию таймера
 	virtual void timerEvent(QTimerEvent *event);
 
@@ -222,6 +225,8 @@ private:
 	PropertyWindow      *mPropertyWindow;           // Окно свойств объекта
 	LayersWindow        *mLayersWindow;             // Окно слоев
 	HistoryWindow       *mHistoryWindow;            // Окно истории
+
+	bool                mRenderEnabled;             // Флаг разрешения отрисовки по таймеру
 	int                 mUntitledIndex;             // Текущий номер для новых файлов
 	int                 mTabWidgetCurrentIndex;     // Текущий индекс вкладки
 

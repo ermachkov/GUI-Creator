@@ -14,7 +14,7 @@
 #include "utils.h"
 
 MainWindow::MainWindow()
-: mUntitledIndex(1), mTabWidgetCurrentIndex(-1), mTranslationCounter(0)
+: mRenderEnabled(true), mUntitledIndex(1), mTabWidgetCurrentIndex(-1), mTranslationCounter(0)
 {
 	setupUi(this);
 
@@ -253,10 +253,21 @@ EditorWindow *MainWindow::getEditorWindow(int index) const
 	return static_cast<EditorWindow *>(mTabWidget->widget(index));
 }
 
+bool MainWindow::event(QEvent *event)
+{
+	// разрешаем/запрещаем отрисовку по таймеру при блокировке/разблокировке главного окна модальными диалогами
+	if (event->type() == QEvent::WindowBlocked)
+		mRenderEnabled = false;
+	else if (event->type() == QEvent::WindowUnblocked)
+		mRenderEnabled = true;
+
+	return QMainWindow::event(event);
+}
+
 void MainWindow::timerEvent(QTimerEvent *event)
 {
 	// перерисовываем текущую открытую вкладку
-	if (mTabWidget->currentWidget() != NULL)
+	if (mRenderEnabled && mTabWidget->currentWidget() != NULL)
 		mTabWidget->currentWidget()->update();
 
 	// обновляем состояния файлов переводов
@@ -285,9 +296,6 @@ void MainWindow::timerEvent(QTimerEvent *event)
 				}
 			}
 	}
-
-	// обрабатываем все события в очереди
-	QCoreApplication::processEvents();
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
