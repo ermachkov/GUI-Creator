@@ -33,6 +33,15 @@ public:
 	// Возвращает целочисленное значение по индексу
 	bool getInt(int index, int &value) const;
 
+	// Возвращает беззнаковое целочисленное значение с вершины стека
+	bool getUnsignedInt(unsigned int &value, bool pop = true) const;
+
+	// Возвращает беззнаковое целочисленное значение по имени
+	bool getUnsignedInt(const QString &name, unsigned int &value) const;
+
+	// Возвращает беззнаковое целочисленное значение по индексу
+	bool getUnsignedInt(int index, unsigned int &value) const;
+
 	// Возвращает вещественное значение с вершины стека
 	bool getReal(qreal &value, bool pop = true) const;
 

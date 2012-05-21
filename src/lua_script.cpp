@@ -92,6 +92,36 @@ bool LuaScript::getInt(int index, int &value) const
 	return getInt(value);
 }
 
+bool LuaScript::getUnsignedInt(unsigned int &value, bool pop) const
+{
+	// проверяем значение на вершине стека
+	if (lua_isnumber(mLuaState, -1) != 0)
+	{
+		value = static_cast<unsigned int>(lua_tonumber(mLuaState, -1));
+		if (pop)
+			lua_pop(mLuaState, 1);
+		return true;
+	}
+
+	// удаляем неверный элемент из стека
+	if (pop)
+		lua_pop(mLuaState, 1);
+	return false;
+}
+
+bool LuaScript::getUnsignedInt(const QString &name, unsigned int &value) const
+{
+	lua_getfield(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -1, name.toStdString().c_str());
+	return getUnsignedInt(value);
+}
+
+bool LuaScript::getUnsignedInt(int index, unsigned int &value) const
+{
+	lua_pushinteger(mLuaState, index);
+	lua_gettable(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -2);
+	return getUnsignedInt(value);
+}
+
 bool LuaScript::getReal(qreal &value, bool pop) const
 {
 	// проверяем значение на вершине стека

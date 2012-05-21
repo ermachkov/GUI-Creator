@@ -204,6 +204,7 @@ MainWindow::MainWindow()
 	connect(mLayersWindow, SIGNAL(layerChanged()), this, SLOT(onLayerWindowLayerChanged()));
 
 	// связываем сигналы об изменениях в окне свойств
+	connect(mPropertyWindow, SIGNAL(locationChanged(const QString &)), this, SLOT(onLocationChanged(const QString &)));
 	connect(mPropertyWindow, SIGNAL(objectsChanged(const QPointF &)), this, SLOT(onPropertyWindowObjectsChanged(const QPointF &)));
 	connect(mPropertyWindow, SIGNAL(allowedEditorActionsChanged()), this, SLOT(onPropertyWindowAllowedEditorActionsChanged()));
 
@@ -243,9 +244,9 @@ MainWindow::~MainWindow()
 	Options::destroy();
 }
 
-EditorWindow *MainWindow::getEditorWindow() const
+EditorWindow *MainWindow::getCurrentEditorWindow() const
 {
-	return static_cast<EditorWindow *>(mTabWidget->currentWidget());
+	return getEditorWindow(mTabWidgetCurrentIndex);
 }
 
 EditorWindow *MainWindow::getEditorWindow(int index) const
@@ -391,7 +392,7 @@ void MainWindow::on_mOpenAction_triggered()
 bool MainWindow::on_mSaveAction_triggered()
 {
 	// если файл не был ни разу сохранен, показываем диалоговое окно сохранения файла
-	EditorWindow *editorWindow = getEditorWindow();
+	EditorWindow *editorWindow = getCurrentEditorWindow();
 	if (editorWindow->isUntitled())
 		return on_mSaveAsAction_triggered();
 
@@ -410,7 +411,7 @@ bool MainWindow::on_mSaveAction_triggered()
 bool MainWindow::on_mSaveAsAction_triggered()
 {
 	// показываем диалоговое окно сохранения файла
-	EditorWindow *editorWindow = getEditorWindow();
+	EditorWindow *editorWindow = getCurrentEditorWindow();
 	QString dir = editorWindow->isUntitled() ? Options::getSingleton().getLastOpenedDirectory() + editorWindow->getFileName() : editorWindow->getFileName();
 	QString filter = "Файлы " + QCoreApplication::applicationName() + " (*.lua);;Все файлы (*)";
 	QString fileName = QFileDialog::getSaveFileName(this, "Сохранить как", dir, filter);
@@ -455,35 +456,35 @@ bool MainWindow::on_mCloseAllAction_triggered()
 void MainWindow::on_mUndoAction_triggered()
 {
 	mPropertyWindow->clearChildWidgetFocus();
-	getEditorWindow()->undo();
+	getCurrentEditorWindow()->undo();
 }
 
 void MainWindow::on_mRedoAction_triggered()
 {
 	mPropertyWindow->clearChildWidgetFocus();
-	getEditorWindow()->redo();
+	getCurrentEditorWindow()->redo();
 }
 
 void MainWindow::on_mCutAction_triggered()
 {
 	mPropertyWindow->clearChildWidgetFocus();
-	getEditorWindow()->cut();
+	getCurrentEditorWindow()->cut();
 }
 
 void MainWindow::on_mCopyAction_triggered()
 {
-	getEditorWindow()->copy();
+	getCurrentEditorWindow()->copy();
 }
 
 void MainWindow::on_mPasteAction_triggered()
 {
-	getEditorWindow()->paste();
+	getCurrentEditorWindow()->paste();
 }
 
 void MainWindow::on_mDeleteAction_triggered()
 {
 	mPropertyWindow->clearChildWidgetFocus();
-	getEditorWindow()->clear();
+	getCurrentEditorWindow()->clear();
 }
 
 void MainWindow::on_mOptionsAction_triggered()
@@ -498,13 +499,13 @@ void MainWindow::on_mOptionsAction_triggered()
 
 void MainWindow::on_mSelectAllAction_triggered()
 {
-	getEditorWindow()->selectAll();
+	getCurrentEditorWindow()->selectAll();
 }
 
 void MainWindow::on_mZoomInAction_triggered()
 {
 	// ищем ближайший следующий масштаб в списке
-	qreal zoom = getEditorWindow()->getZoom();
+	qreal zoom = getCurrentEditorWindow()->getZoom();
 	for (int i = 0; i < mZoomList.size(); ++i)
 		if (zoom < mZoomList[i])
 		{
@@ -520,7 +521,7 @@ void MainWindow::on_mZoomInAction_triggered()
 void MainWindow::on_mZoomOutAction_triggered()
 {
 	// ищем ближайший предыдущий масштаб в списке
-	qreal zoom = getEditorWindow()->getZoom();
+	qreal zoom = getCurrentEditorWindow()->getZoom();
 	for (int i = mZoomList.size() - 1; i >= 0; --i)
 		if (zoom > mZoomList[i])
 		{
@@ -560,26 +561,29 @@ void MainWindow::on_mEnableSmartGuidesAction_triggered(bool checked)
 
 void MainWindow::on_mBringToFrontAction_triggered()
 {
-	getEditorWindow()->bringToFront();
+	getCurrentEditorWindow()->bringToFront();
 }
 
 void MainWindow::on_mSendToBackAction_triggered()
 {
-	getEditorWindow()->sendToBack();
+	getCurrentEditorWindow()->sendToBack();
 }
 
 void MainWindow::on_mMoveUpAction_triggered()
 {
-	getEditorWindow()->moveUp();
+	getCurrentEditorWindow()->moveUp();
 }
 
 void MainWindow::on_mMoveDownAction_triggered()
 {
-	getEditorWindow()->moveDown();
+	getCurrentEditorWindow()->moveDown();
 }
 
 bool MainWindow::on_mTabWidget_tabCloseRequested(int index)
 {
+	// сброс фокуса в окне свойств
+	mPropertyWindow->clearChildWidgetFocus();
+
 	// запрашиваем подтверждение на сохранение, если файл был изменен
 	EditorWindow *editorWindow = getEditorWindow(index);
 	bool close = true;
@@ -629,7 +633,7 @@ void MainWindow::on_mTabWidget_currentChanged(int index)
 	if (index != -1)
 	{
 		// вызываем обработчик изменения масштаба
-		EditorWindow *editorWindow = getEditorWindow(index);
+		EditorWindow *editorWindow = getCurrentEditorWindow();
 		QString zoomStr = QString::number(qRound(editorWindow->getZoom() * 100.0)) + '%';
 		onZoomChanged(zoomStr);
 
@@ -696,7 +700,7 @@ void MainWindow::onZoomChanged(const QString &zoomStr)
 	qreal zoom = str.toDouble() / 100.0;
 
 	// установка масштаба
-	EditorWindow *editorWindow = getEditorWindow();
+	EditorWindow *editorWindow = getCurrentEditorWindow();
 	if (editorWindow != NULL)
 		editorWindow->setZoom(zoom);
 }
@@ -723,7 +727,7 @@ void MainWindow::onLanguageChanged(const QString &language)
 		getEditorWindow(i)->setCurrentLanguage(language);
 
 	// обновляем окна слоев и свойств
-	EditorWindow *editorWindow = getEditorWindow();
+	EditorWindow *editorWindow = getCurrentEditorWindow();
 	if (editorWindow != NULL)
 	{
 		mLayersWindow->setCurrentLocation(editorWindow->getLocation());
@@ -744,7 +748,7 @@ void MainWindow::onTranslationFileChanged(const QString &path)
 
 void MainWindow::onLocationChanged(const QString &commandName)
 {
-	getEditorWindow()->pushCommand(commandName);
+	getCurrentEditorWindow()->pushCommand(commandName);
 	updateUndoRedoActions();
 }
 
@@ -769,7 +773,7 @@ void MainWindow::onEditorWindowMouseMoved(const QPointF &pos)
 void MainWindow::onEditorWindowUndoCommandChanged()
 {
 	// сбрасываем выделение в окне редактирования
-	EditorWindow *editorWindow = getEditorWindow();
+	EditorWindow *editorWindow = getCurrentEditorWindow();
 	editorWindow->deselectAll();
 
 	// перезагружаем файл переводов
@@ -783,17 +787,17 @@ void MainWindow::onEditorWindowUndoCommandChanged()
 
 void MainWindow::onLayerWindowLayerChanged()
 {
-	getEditorWindow()->deselectAll();
+	getCurrentEditorWindow()->deselectAll();
 }
 
 void MainWindow::onPropertyWindowObjectsChanged(const QPointF &rotationCenter)
 {
-	getEditorWindow(mTabWidgetCurrentIndex)->updateSelection(rotationCenter);
+	getCurrentEditorWindow()->updateSelection(rotationCenter);
 }
 
 void MainWindow::onPropertyWindowAllowedEditorActionsChanged()
 {
-	getEditorWindow()->updateAllowedEditorActions();
+	getCurrentEditorWindow()->updateAllowedEditorActions();
 }
 
 void MainWindow::onTextureChanged(const QString &fileName, const QSharedPointer<Texture> &texture)
@@ -803,7 +807,7 @@ void MainWindow::onTextureChanged(const QString &fileName, const QSharedPointer<
 		getEditorWindow(i)->changeTexture(fileName, texture);
 
 	// обновляем окно свойств
-	EditorWindow *editorWindow = getEditorWindow();
+	EditorWindow *editorWindow = getCurrentEditorWindow();
 	if (editorWindow != NULL)
 		mPropertyWindow->onEditorWindowObjectsChanged(editorWindow->getSelectedObjects(), editorWindow->getBoundingRect(), editorWindow->getRotationCenter());
 }
@@ -901,7 +905,7 @@ void MainWindow::updateRecentFilesActions(const QString &fileName)
 void MainWindow::updateUndoRedoActions()
 {
 	// добавляем/убираем звездочку в имени вкладки
-	EditorWindow *editorWindow = getEditorWindow();
+	EditorWindow *editorWindow = getCurrentEditorWindow();
 	bool clean = editorWindow->isClean();
 	mTabWidget->setTabText(mTabWidget->currentIndex(), QFileInfo(editorWindow->getFileName()).fileName() + (clean ? "" : "*"));
 
@@ -918,7 +922,7 @@ void MainWindow::updateUndoRedoActions()
 void MainWindow::checkMissedFiles()
 {
 	// получаем список отсутствующих файлов
-	QStringList missedFiles = getEditorWindow()->getMissedFiles();
+	QStringList missedFiles = getCurrentEditorWindow()->getMissedFiles();
 	if (!missedFiles.empty())
 	{
 		// сортируем список и сокращаем его до 5 элементов максимум
@@ -942,7 +946,7 @@ MainWindow::PercentIntValidator::PercentIntValidator(int bottom, int top, MainWi
 void MainWindow::PercentIntValidator::fixup(QString &input) const
 {
 	// откатываемся к прежнему значению масштаба
-	EditorWindow *editorWindow = mParent->getEditorWindow();
+	EditorWindow *editorWindow = mParent->getCurrentEditorWindow();
 	if (editorWindow != NULL)
 		input = QString::number(qRound(editorWindow->getZoom() * 100.0)) + '%';
 }

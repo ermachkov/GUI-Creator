@@ -40,15 +40,15 @@ PropertyWindow::PropertyWindow(QWidget *parent)
 	mLocalizationWidget->setVisible(false);
 
 	// установка валидаторов
-	mPositionXLineEdit->setValidator(new QDoubleValidator(-10000, +10000, 6, this));
-	mPositionYLineEdit->setValidator(new QDoubleValidator(-10000, +10000, 6, this));
-	mSizeWLineEdit->setValidator(new QDoubleValidator(1, +10000, 6, this));
-	mSizeHLineEdit->setValidator(new QDoubleValidator(1, +10000, 6, this));
-	mRotationAngleComboBox->setValidator(new QDoubleValidator(-360, +360, 6, this));
-	mRotationCenterXLineEdit->setValidator(new QDoubleValidator(-10000, +10000, 6, this));
-	mRotationCenterYLineEdit->setValidator(new QDoubleValidator(-10000, +10000, 6, this));
-	mFontSizeComboBox->setValidator(new QIntValidator(1, +1000, this));
-	mLineSpacingComboBox->setValidator(new QDoubleValidator(-100, +100, 6, this));
+	mPositionXLineEdit->setValidator(new PropertyDoubleValidator(-1000000.0, 1000000.0, PRECISION, this, &PropertyWindow::getCurrentPositionX));
+	mPositionYLineEdit->setValidator(new PropertyDoubleValidator(-1000000.0, 1000000.0, PRECISION, this, &PropertyWindow::getCurrentPositionY));
+	mSizeWLineEdit->setValidator(new PropertyDoubleValidator(1.0, 1000000.0, PRECISION, this, &PropertyWindow::getCurrentSizeW));
+	mSizeHLineEdit->setValidator(new PropertyDoubleValidator(1.0, 1000000.0, PRECISION, this, &PropertyWindow::getCurrentSizeH));
+	mRotationAngleComboBox->setValidator(new PropertyDoubleValidator(0.0, 359.999999, PRECISION, this, &PropertyWindow::getCurrentRotationAngle));
+	mRotationCenterXLineEdit->setValidator(new PropertyDoubleValidator(-1000000.0, 1000000.0, PRECISION, this, &PropertyWindow::getCurrentRotationCenterX));
+	mRotationCenterYLineEdit->setValidator(new PropertyDoubleValidator(-1000000.0, 1000000.0, PRECISION, this, &PropertyWindow::getCurrentRotationCenterY));
+	mFontSizeComboBox->setValidator(new PropertyIntValidator(1, 1000, this, &PropertyWindow::getCurrentFontSize));
+	mLineSpacingComboBox->setValidator(new PropertyDoubleValidator(0.0, 10.0, PRECISION, this, &PropertyWindow::getCurrentLineSpacing));
 
 	// настройка свойств
 	mLabelFileNameComboBox->lineEdit()->setPlaceholderText("Разные значения");
@@ -175,22 +175,24 @@ bool PropertyWindow::eventFilter(QObject *object, QEvent *event)
 
 void PropertyWindow::on_mNameLineEdit_editingFinished()
 {
-	qDebug() << "on_mNameLineEdit_editingFinished" << mNameLineEdit->text();
-
 	Q_ASSERT(mSelectedObjects.size() == 1);
 
-	if (mNameLineEdit->text() == "")
+	// откатываем изменения, если имя пустое
+	if (mNameLineEdit->text().isEmpty())
 	{
-		mNameLineEdit->setText(mSelectedObjects.first()->getName());
+		mNameLineEdit->setText(mSelectedObjects.front()->getName());
 		return;
 	}
 
-	// FIXME: delete foreach
-	foreach (GameObject *obj, mSelectedObjects)
-		obj->setName(mNameLineEdit->text());
+	// изменяем имя объекта
+	if (mNameLineEdit->text() != mSelectedObjects.front()->getName())
+	{
+		mSelectedObjects.front()->setName(mNameLineEdit->text());
+		emit locationChanged("Изменение имени объекта");
+	}
 }
 
-void PropertyWindow::on_mCopyIdPushButton_clicked()
+void PropertyWindow::on_mCopyIDPushButton_clicked()
 {
 	QApplication::clipboard()->setText(mObjectIDLineEdit->text());
 }
@@ -1466,4 +1468,25 @@ void PropertyWindow::scanFonts()
 	QStringList listEntries = currentDir.entryList();
 
 	mLabelFileNameComboBox->addItems(listEntries);
+}
+
+PropertyWindow::PropertyIntValidator::PropertyIntValidator(int bottom, int top, PropertyWindow *parent, FixupFunc fixupFunc)
+: QIntValidator(bottom, top, parent), mParent(parent), mFixupFunc(fixupFunc)
+{
+}
+
+void PropertyWindow::PropertyIntValidator::fixup(QString &input) const
+{
+	input = (mParent->*mFixupFunc)();
+}
+
+PropertyWindow::PropertyDoubleValidator::PropertyDoubleValidator(double bottom, double top, int decimals, PropertyWindow *parent, FixupFunc fixupFunc)
+: QDoubleValidator(bottom, top, decimals, parent), mParent(parent), mFixupFunc(fixupFunc)
+{
+	setNotation(StandardNotation);
+}
+
+void PropertyWindow::PropertyDoubleValidator::fixup(QString &input) const
+{
+	input = (mParent->*mFixupFunc)();
 }

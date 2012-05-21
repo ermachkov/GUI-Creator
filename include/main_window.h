@@ -26,7 +26,7 @@ public:
 	virtual ~MainWindow();
 
 	// Возвращает текущее окно редактирования
-	EditorWindow *getEditorWindow() const;
+	EditorWindow *getCurrentEditorWindow() const;
 
 	// Возвращает окно редактирования с заданным индексом
 	EditorWindow *getEditorWindow(int index) const;
@@ -199,6 +199,7 @@ private:
 
 	private:
 
+		// Указатель на родительский класс
 		MainWindow *mParent;
 	};
 

@@ -306,7 +306,7 @@ void LayersTreeWidget::dropEvent(QDropEvent *event)
 	QTreeWidget::dropEvent(event);
 
 	// itemAdded - новый добавленный элемент
-	QTreeWidgetItem *itemAdded;
+	QTreeWidgetItem *itemAdded = NULL;
 
 	// поиск нового добавленного элемента QTreeWidgetItem в дереве
 	QList<QTreeWidgetItem *> stackItem;
@@ -350,7 +350,7 @@ void LayersTreeWidget::dropEvent(QDropEvent *event)
 	// синхронизация дерева BaseLayer с деревом Item
 
 	// создание дубликата только если копирование а не перетаскивание
-	BaseLayer *baseAdded;
+	BaseLayer *baseAdded = NULL;
 	if (currentDropAction == Qt::CopyAction)
 	{
 		// дублирование дерева BaseLayer с прикреплением к новому родителю

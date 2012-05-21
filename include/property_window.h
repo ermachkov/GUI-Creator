@@ -48,7 +48,7 @@ private slots:
 
 	void on_mNameLineEdit_editingFinished();
 
-	void on_mCopyIdPushButton_clicked();
+	void on_mCopyIDPushButton_clicked();
 
 	void on_mPositionXLineEdit_editingFinished();
 
@@ -106,6 +106,44 @@ private slots:
 
 private:
 
+	// Тип указателя на метод для отката неверно введенного значения
+	typedef QString (PropertyWindow::*FixupFunc)() const;
+
+	// Валидатор для целочисленных свойств
+	class PropertyIntValidator : public QIntValidator
+	{
+	public:
+
+		// Конструктор
+		PropertyIntValidator(int bottom, int top, PropertyWindow *parent, FixupFunc fixupFunc);
+
+		// Вызывается для отката неверного значения
+		virtual void fixup(QString &input) const;
+
+	private:
+
+		PropertyWindow  *mParent;       // Указатель на родительский класс
+		FixupFunc       mFixupFunc;     // Указатель на метод для отката неверно введенного значения
+	};
+
+	// Валидатор для вещественных свойств
+	class PropertyDoubleValidator : public QDoubleValidator
+	{
+	public:
+
+		// Конструктор
+		PropertyDoubleValidator(double bottom, double top, int decimals, PropertyWindow *parent, FixupFunc fixupFunc);
+
+		// Вызывается для отката неверного значения
+		virtual void fixup(QString &input) const;
+
+	private:
+
+		PropertyWindow  *mParent;       // Указатель на родительский класс
+		FixupFunc       mFixupFunc;     // Указатель на метод для отката неверно введенного значения
+	};
+
+	// Точность представления вещественных свойств
 	static const int PRECISION = 8;
 
 	// логика показа свойств выделенных объектов

@@ -174,10 +174,11 @@ bool Label::load(LuaScript &script)
 		return false;
 
 	// загружаем данные надписи
-	int horzAlignment, vertAlignment, color;
+	int horzAlignment, vertAlignment;
+	unsigned int color;
 	if (!script.getString("text", mText) || !readStringMap(script, "fileName", mFileNameMap) || !readRealMap(script, "size", mFontSizeMap)
 		|| !script.getInt("horzAlignment", horzAlignment) || !script.getInt("vertAlignment", vertAlignment)
-		|| !script.getReal("lineSpacing", mLineSpacing) || !script.getInt("color", color))
+		|| !script.getReal("lineSpacing", mLineSpacing) || !script.getUnsignedInt("color", color))
 		return false;
 	mHorzAlignment = static_cast<HorzAlignment>(horzAlignment);
 	mVertAlignment = static_cast<VertAlignment>(vertAlignment);

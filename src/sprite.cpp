@@ -138,9 +138,9 @@ bool Sprite::load(LuaScript &script)
 		return false;
 
 	// загружаем данные спрайта
-	int color;
+	unsigned int color;
 	if (!readStringMap(script, "fileName", mFileNameMap) || !readRealMap(script, "textureWidth", mTextureWidthMap)
-		|| !readRealMap(script, "textureHeight", mTextureHeightMap) || !script.getInt("color", color))
+		|| !readRealMap(script, "textureHeight", mTextureHeightMap) || !script.getUnsignedInt("color", color))
 		return false;
 	mColor = QColor::fromRgba(color);
 
