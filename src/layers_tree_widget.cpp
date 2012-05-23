@@ -259,6 +259,11 @@ void LayersTreeWidget::onEditorWindowLayerChanged(Location *location, BaseLayer 
 		findItemByBaseLayer(layer)->setIcon(DATA_COLUMN, icon);
 }
 
+void LayersTreeWidget::onPropertyWindowLayerChanged(BaseLayer *layer)
+{
+	onEditorWindowLayerChanged(mCurrentLocation, layer);
+}
+
 void LayersTreeWidget::dragEnterEvent(QDragEnterEvent *event)
 {
 	// проверяем, что перетаскивается элемент из LayersTreeWidget

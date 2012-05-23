@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "property_window.h"
 #include "label.h"
+#include "layer.h"
 #include "project.h"
 #include "sprite.h"
 #include "utils.h"
@@ -69,7 +70,7 @@ void PropertyWindow::clearChildWidgetFocus()
 			widgetWithFocus->clearFocus();
 }
 
-void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QRectF &boundingRect, const QPointF &rotationCenter)
+void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter)
 {
 	// принудительно снимаем фокус с активного виджета, если он находится в окне свойств
 	// чтобы он выдал сигнал editingFinished для завершения редактирования и применения изменений
@@ -78,13 +79,10 @@ void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &o
 	// сохранение выделенных объектов во внутренний список
 	mSelectedObjects = objects;
 
-	// сохранение bounding rect
-	//mBoundingRect = boundingRect;
-
 	// сохранение исходного центра вращения во внутреннюю переменную
 	mRotationCenter = rotationCenter;
 
-	// FIXME: не забыть про дубликат в on_mLocalizationPushButton_clicked
+	// целиком обновляем окно свойств
 	updateWidgetsVisibleAndEnabled();
 
 	// запрещаем дальнейшее сжатие последней колонки
@@ -92,18 +90,15 @@ void PropertyWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &o
 	mScrollAreaLayout->setColumnMinimumWidth(5, width);
 }
 
-void PropertyWindow::onEditorWindowObjectsChanged(const QList<GameObject *> &objects, const QRectF &boundingRect, const QPointF &rotationCenter)
+void PropertyWindow::onEditorWindowObjectsChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter)
 {
 	// сохранение выделенных объектов во внутренний список
 	mSelectedObjects = objects;
 
-	// сохранение bounding rect
-	//mBoundingRect = boundingRect;
-
 	// сохранение исходного центра вращения во внутреннюю переменную
 	mRotationCenter = rotationCenter;
 
-	// считывание заново общих свойств
+	// обновляем только общие свойства объектов
 	if (!objects.empty())
 		updateCommonWidgets();
 }
@@ -199,264 +194,22 @@ void PropertyWindow::on_mCopyIDPushButton_clicked()
 
 void PropertyWindow::on_mPositionXLineEdit_editingFinished()
 {
-	// FIXME: учет множественного выделения
-
-	if (mSelectedObjects.size() == 1)
-	{
-		// одиночное выделение
-		GameObject *obj = mSelectedObjects.first();
-		QPointF position = obj->getPosition();
-		position.setX(mPositionXLineEdit->text().toDouble());
-		obj->setPosition(position);
-
-		// просчет нового расположения центра вращения
-		mRotationCenter = mSelectedObjects.front()->getRotationCenter();
-	}
-	else
-	{
-		QRectF currentBoundingRect = calculateCurrentBoundingRect();
-
-		// просчет смещения
-		qreal deltaX = mPositionXLineEdit->text().toDouble() - currentBoundingRect.left();;
-
-		// множественное выделение
-		foreach (GameObject *obj, mSelectedObjects)
-		{
-			QPointF position = obj->getPosition();
-			position.setX(position.x() + deltaX);
-			obj->setPosition(position);
-		}
-
-		// просчет нового расположения центра вращения
-		mRotationCenter.setX(mRotationCenter.x() + deltaX);
-	}
-
-	// сохранение значения нового центра вращения в GUI
-	mRotationCenterXLineEdit->setText(QString::number(mRotationCenter.x(), 'g', PRECISION));
-
-	emit objectsChanged(mRotationCenter);
+	setNewPosition();
 }
 
 void PropertyWindow::on_mPositionYLineEdit_editingFinished()
 {
-	// FIXME: учет множественного выделения
-
-	if (mSelectedObjects.size() == 1)
-	{
-		// одиночное выделение
-
-		GameObject *obj = mSelectedObjects.first();
-		QPointF position = obj->getPosition();
-		position.setY(mPositionYLineEdit->text().toDouble());
-		obj->setPosition(position);
-
-		// просчет нового расположения центра вращения
-		mRotationCenter = mSelectedObjects.front()->getRotationCenter();
-	}
-	else
-	{
-		// множественное выделение
-
-		QRectF currentBoundingRect = calculateCurrentBoundingRect();
-
-		// просчет смещения
-		qreal deltaY = mPositionYLineEdit->text().toDouble() - currentBoundingRect.top();
-
-		foreach (GameObject *obj, mSelectedObjects)
-		{
-			QPointF position = obj->getPosition();
-			position.setY(position.y() + deltaY);
-			obj->setPosition(position);
-		}
-
-		// просчет нового расположения центра вращения
-		mRotationCenter.setY(mRotationCenter.y() + deltaY);
-	}
-
-	// сохранение значения нового центра вращения в GUI
-	mRotationCenterYLineEdit->setText(QString::number(mRotationCenter.y(), 'g', PRECISION));
-
-	emit objectsChanged(mRotationCenter);
+	setNewPosition();
 }
 
 void PropertyWindow::on_mSizeWLineEdit_editingFinished()
 {
-	// входящее значение W должно быть > 0
-
-	Q_ASSERT(!mSelectedObjects.empty());
-
-	if (mSelectedObjects.size() == 1)
-	{
-		GameObject *obj = mSelectedObjects.first();
-		QSizeF size = obj->getSize();
-		size.setWidth(mSizeWLineEdit->text().toDouble());
-		size.setHeight(mSizeHLineEdit->text().toDouble());
-		obj->setSize(size);
-
-		mRotationCenter = obj->getRotationCenter();
-	}
-	else
-	{
-		QRectF oldBoundingRect = calculateCurrentBoundingRect();
-		QSizeF percentDelta(mSizeWLineEdit->text().toDouble() / oldBoundingRect.width(), mSizeHLineEdit->text().toDouble() / oldBoundingRect.height());
-
-		// если хотя бы один повернут
-		bool keepProportions = false;
-		foreach (GameObject *obj, mSelectedObjects)
-		{
-			qreal angle = obj->getRotationAngle();
-			if (angle != 0.0 && angle != 90.0 && angle != 180.0 && angle != 270)
-				keepProportions = true;
-		}
-
-		foreach (GameObject *obj, mSelectedObjects)
-		{
-			qreal angle = obj->getRotationAngle();
-			QSizeF size = obj->getSize();
-			QPointF position = obj->getPosition();
-
-			if (keepProportions)
-			{
-				qreal zoom = percentDelta.width();
-
-				size.setWidth(size.width() * zoom);
-				size.setHeight(size.height() * zoom);
-
-				position.setX(oldBoundingRect.left() + (position.x() - oldBoundingRect.left()) * zoom);
-				position.setY(oldBoundingRect.top() + (position.y() - oldBoundingRect.top()) * zoom);
-			}
-			else
-			{
-				if (angle == 0.0 || angle == 180.0)
-				{
-					size.setWidth(size.width() * percentDelta.width());
-					size.setHeight(size.height() * percentDelta.height());
-				}
-				else if (angle == 90.0 || angle == 270.0)
-				{
-					size.setWidth(size.width() * percentDelta.height());
-					size.setHeight(size.height() * percentDelta.width());
-				}
-				position.setX(oldBoundingRect.left() + (position.x() - oldBoundingRect.left()) * percentDelta.width());
-				position.setY(oldBoundingRect.top() + (position.y() - oldBoundingRect.top()) * percentDelta.height());
-			}
-
-			obj->setSize(size);
-			obj->setPosition(position);
-		}
-
-		if (keepProportions)
-		{
-			qreal zoom = percentDelta.width();
-			mRotationCenter.setX(oldBoundingRect.left() + (mRotationCenter.x() - oldBoundingRect.left()) * zoom);
-			mRotationCenter.setY(oldBoundingRect.top() + (mRotationCenter.y() - oldBoundingRect.top()) * zoom);
-
-			//mSizeWLineEdit
-			qreal newH = mSizeHLineEdit->text().toDouble() * zoom;
-			mSizeHLineEdit->setText(QString::number(newH, 'g', PRECISION));
-		}
-		else
-		{
-			mRotationCenter.setX(oldBoundingRect.left() + (mRotationCenter.x() - oldBoundingRect.left()) * percentDelta.width());
-			mRotationCenter.setY(oldBoundingRect.top() + (mRotationCenter.y() - oldBoundingRect.top()) * percentDelta.height());
-		}
-	}
-
-	// сохранение значения нового центра вращения в GUI
-	mRotationCenterXLineEdit->setText(QString::number(mRotationCenter.x(), 'g', PRECISION));
-	mRotationCenterYLineEdit->setText(QString::number(mRotationCenter.y(), 'g', PRECISION));
-
-	emit objectsChanged(mRotationCenter);
+	setNewSize(true);
 }
 
 void PropertyWindow::on_mSizeHLineEdit_editingFinished()
 {
-	// входящее значение H должно быть > 0
-
-	Q_ASSERT(!mSelectedObjects.empty());
-
-	if (mSelectedObjects.size() == 1)
-	{
-		GameObject *obj = mSelectedObjects.first();
-		QSizeF size = obj->getSize();
-		size.setWidth(mSizeWLineEdit->text().toDouble());
-		size.setHeight(mSizeHLineEdit->text().toDouble());
-		obj->setSize(size);
-
-		mRotationCenter = obj->getRotationCenter();
-	}
-	else
-	{
-		QRectF oldBoundingRect = calculateCurrentBoundingRect();
-		QSizeF percentDelta(mSizeWLineEdit->text().toDouble() / oldBoundingRect.width(), mSizeHLineEdit->text().toDouble() / oldBoundingRect.height());
-
-		// если хотя бы один повернут
-		bool keepProportions = false;
-		foreach (GameObject *obj, mSelectedObjects)
-		{
-			qreal angle = obj->getRotationAngle();
-			if (angle != 0.0 && angle != 90.0 && angle != 180.0 && angle != 270)
-				keepProportions = true;
-		}
-
-		foreach (GameObject *obj, mSelectedObjects)
-		{
-			qreal angle = obj->getRotationAngle();
-			QSizeF size = obj->getSize();
-			QPointF position = obj->getPosition();
-
-			if (keepProportions)
-			{
-				qreal zoom = percentDelta.height();
-
-				size.setWidth(size.width() * zoom);
-				size.setHeight(size.height() * zoom);
-
-				position.setX(oldBoundingRect.left() + (position.x() - oldBoundingRect.left()) * zoom);
-				position.setY(oldBoundingRect.top() + (position.y() - oldBoundingRect.top()) * zoom);
-			}
-			else
-			{
-				if (angle == 0.0 || angle == 180.0)
-				{
-					size.setWidth(size.width() * percentDelta.width());
-					size.setHeight(size.height() * percentDelta.height());
-				}
-				else if (angle == 90.0 || angle == 270.0)
-				{
-					size.setWidth(size.width() * percentDelta.height());
-					size.setHeight(size.height() * percentDelta.width());
-				}
-				position.setX(oldBoundingRect.left() + (position.x() - oldBoundingRect.left()) * percentDelta.width());
-				position.setY(oldBoundingRect.top() + (position.y() - oldBoundingRect.top()) * percentDelta.height());
-			}
-
-			obj->setSize(size);
-			obj->setPosition(position);
-		}
-
-		if (keepProportions)
-		{
-			qreal zoom = percentDelta.height();
-			mRotationCenter.setX(oldBoundingRect.left() + (mRotationCenter.x() - oldBoundingRect.left()) * zoom);
-			mRotationCenter.setY(oldBoundingRect.top() + (mRotationCenter.y() - oldBoundingRect.top()) * zoom);
-
-			qreal newW = mSizeWLineEdit->text().toDouble() * zoom;
-			mSizeWLineEdit->setText(QString::number(newW, 'g', PRECISION));
-			//mSizeHLineEdit
-		}
-		else
-		{
-			mRotationCenter.setX(oldBoundingRect.left() + (mRotationCenter.x() - oldBoundingRect.left()) * percentDelta.width());
-			mRotationCenter.setY(oldBoundingRect.top() + (mRotationCenter.y() - oldBoundingRect.top()) * percentDelta.height());
-		}
-	}
-
-	// сохранение значения нового центра вращения в GUI
-	mRotationCenterXLineEdit->setText(QString::number(mRotationCenter.x(), 'g', PRECISION));
-	mRotationCenterYLineEdit->setText(QString::number(mRotationCenter.y(), 'g', PRECISION));
-
-	emit objectsChanged(mRotationCenter);
+	setNewSize(false);
 }
 
 void PropertyWindow::on_mLockSizePushButton_clicked()
@@ -1119,7 +872,7 @@ QString PropertyWindow::getCurrentSizeH() const
 
 QString PropertyWindow::getCurrentRotationAngle() const
 {
-	// TODO: вернуть угол поворота для множественного выделения
+	// TODO: поддержка множественного выделения
 	return mSelectedObjects.size() == 1 ? QString::number(mSelectedObjects.front()->getRotationAngle(), 'g', PRECISION) : "";
 }
 
@@ -1157,6 +910,138 @@ QString PropertyWindow::getCurrentLineSpacing() const
 			equalLineSpacing = false;
 	}
 	return equalLineSpacing ? QString::number(first->getLineSpacing()) : "";
+}
+
+void PropertyWindow::setNewPosition()
+{
+	Q_ASSERT(!mSelectedObjects.empty());
+
+	// проверяем, что юзер действительно ввел новые значения
+	QPointF oldPosition(getCurrentPositionX().toDouble(), getCurrentPositionY().toDouble());
+	QPointF newPosition(mPositionXLineEdit->text().toDouble(), mPositionYLineEdit->text().toDouble());
+	if (newPosition != oldPosition)
+	{
+		if (mSelectedObjects.size() == 1)
+		{
+			// одиночное выделение
+			GameObject *obj = mSelectedObjects.front();
+			obj->setPosition(newPosition);
+			mRotationCenter = obj->getRotationCenter();
+		}
+		else
+		{
+			// множественное выделение
+			QRectF currentBoundingRect = calculateCurrentBoundingRect();
+
+			// просчет смещения
+			QPointF delta = newPosition - currentBoundingRect.topLeft();
+			foreach (GameObject *obj, mSelectedObjects)
+				obj->setPosition(obj->getPosition() + delta);
+
+			// просчет нового расположения центра вращения
+			mRotationCenter += delta;
+		}
+
+		// посылаем сигналы об изменении локации, слоев и объектов
+		emitLocationAndLayerChangedSignals("Изменение позиции объектов");
+		emit objectsChanged(mRotationCenter);
+	}
+
+	// обновляем гуи
+	mPositionXLineEdit->setText(getCurrentPositionX());
+	mPositionYLineEdit->setText(getCurrentPositionY());
+	mRotationCenterXLineEdit->setText(getCurrentRotationCenterX());
+	mRotationCenterYLineEdit->setText(getCurrentRotationCenterY());
+}
+
+void PropertyWindow::setNewSize(bool widthChanged)
+{
+	Q_ASSERT(!mSelectedObjects.empty());
+
+	// проверяем, что юзер действительно ввел новые значения
+	QSizeF oldSize(getCurrentSizeW().toDouble(), getCurrentSizeH().toDouble());
+	QSizeF newSize(mSizeWLineEdit->text().toDouble(), mSizeHLineEdit->text().toDouble());
+	if (newSize != oldSize)
+	{
+		if (mSelectedObjects.size() == 1)
+		{
+			// одиночное выделение
+			GameObject *obj = mSelectedObjects.front();
+			QSizeF size = obj->getSize();
+			obj->setSize(QSizeF(Utils::sign(size.width()) * newSize.width(), Utils::sign(size.height()) * newSize.height()));
+			mRotationCenter = obj->getRotationCenter();
+		}
+		else
+		{
+			// если хотя бы один повернут
+			bool keepProportions = false;
+			foreach (GameObject *obj, mSelectedObjects)
+			{
+				qreal angle = obj->getRotationAngle();
+				if (angle != 0.0 && angle != 90.0 && angle != 180.0 && angle != 270.0)
+					keepProportions = true;
+			}
+
+			// вычисляем коэффициент масштабирования
+			QPointF scale(newSize.width() / oldSize.width(), newSize.height() / oldSize.height());
+			if (keepProportions)
+			{
+				if (widthChanged)
+					scale.ry() = scale.x();
+				else
+					scale.rx() = scale.y();
+			}
+
+			// пересчитываем положение и размеры выделенных объектов
+			QRectF oldBoundingRect = calculateCurrentBoundingRect();
+			foreach (GameObject *obj, mSelectedObjects)
+			{
+				// устанавливаем новую позицию
+				QPointF position = obj->getPosition();
+				obj->setPosition(QPointF(oldBoundingRect.left() + (position.x() - oldBoundingRect.left()) * scale.x(),
+					oldBoundingRect.top() + (position.y() - oldBoundingRect.top()) * scale.y()));
+
+				// устанавливаем новый размер
+				QSizeF size = obj->getSize();
+				qreal angle = obj->getRotationAngle();
+				if (keepProportions || angle == 0.0 || angle == 180.0)
+					obj->setSize(QSizeF(size.width() * scale.x(), size.height() * scale.y()));
+				else
+					obj->setSize(QSizeF(size.width() * scale.y(), size.height() * scale.x()));
+			}
+
+			// пересчитываем координаты центра вращения
+			mRotationCenter = QPointF(oldBoundingRect.left() + (mRotationCenter.x() - oldBoundingRect.left()) * scale.x(),
+				oldBoundingRect.top() + (mRotationCenter.y() - oldBoundingRect.top()) * scale.y());
+		}
+
+		// посылаем сигналы об изменении локации, слоев и объектов
+		emitLocationAndLayerChangedSignals("Изменение размеров объектов");
+		emit objectsChanged(mRotationCenter);
+	}
+
+	// обновляем гуи
+	mPositionXLineEdit->setText(getCurrentPositionX());
+	mPositionYLineEdit->setText(getCurrentPositionY());
+	mSizeWLineEdit->setText(getCurrentSizeW());
+	mSizeHLineEdit->setText(getCurrentSizeH());
+	mRotationCenterXLineEdit->setText(getCurrentRotationCenterX());
+	mRotationCenterYLineEdit->setText(getCurrentRotationCenterY());
+}
+
+void PropertyWindow::emitLocationAndLayerChangedSignals(const QString &commandName)
+{
+	// выдаем сигнал об изменении локации
+	emit locationChanged(commandName);
+
+	// формируем список измененных слоев
+	QSet<BaseLayer *> layers;
+	foreach (GameObject *object, mSelectedObjects)
+		layers |= object->getParentLayer();
+
+	// выдаем сигналы об изменении слоев
+	foreach (BaseLayer *layer, layers)
+		emit layerChanged(layer);
 }
 
 void PropertyWindow::updateCommonWidgets()

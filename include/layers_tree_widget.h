@@ -55,8 +55,11 @@ public slots:
 	// обработчик - удаления слоев и групп слоев
 	void onDelete();
 
-	// обработчик - произошли изменения в окне редактирования
+	// Обработчик изменения слоя в окне редактирования
 	void onEditorWindowLayerChanged(Location *location, BaseLayer *layer);
+
+	// Обработчик изменения слоя в окне свойств
+	void onPropertyWindowLayerChanged(BaseLayer *layer);
 
 protected:
 

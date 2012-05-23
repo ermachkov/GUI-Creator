@@ -141,7 +141,7 @@ private slots:
 	void onLocationChanged(const QString &commandName);
 
 	// Обработчик изменения выделения в окне редактирования
-	void onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QRectF &boundingRect, const QPointF &rotationCenter);
+	void onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter);
 
 	// Обработчик изменения положения курсора мышки на OpenGL окне
 	void onEditorWindowMouseMoved(const QPointF &pos);

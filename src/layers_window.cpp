@@ -18,6 +18,7 @@ LayersWindow::LayersWindow(QGLWidget *primaryGLWidget, QWidget *parent)
 	connect(mDeletePushButton, SIGNAL(clicked()), mLayersTreeWidget, SLOT(onDelete()));
 
 	connect(this, SIGNAL(layerChanged(Location *, BaseLayer *)), mLayersTreeWidget, SLOT(onEditorWindowLayerChanged(Location *, BaseLayer *)));
+	connect(this, SIGNAL(layerChanged(BaseLayer *)), mLayersTreeWidget, SLOT(onPropertyWindowLayerChanged(BaseLayer *)));
 
 	// перенаправление сигналов из LayersTreeWidget
 	connect(mLayersTreeWidget, SIGNAL(locationChanged(const QString &)), this, SLOT(onLayersTreeWidgetLocationChanged(const QString &)));

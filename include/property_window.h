@@ -15,7 +15,7 @@ public:
 	// Конструктор
 	PropertyWindow(QWidget *parent);
 
-	// сброс фокуса в окне свойств
+	// Сброс фокуса в окне свойств
 	void clearChildWidgetFocus();
 
 signals:
@@ -23,25 +23,26 @@ signals:
 	// Сигнал об изменении локации
 	void locationChanged(const QString &commandName);
 
-	// Сигнал об изменении позиции, размера, угла поворота, центра вращения
-	void objectsChanged(const QPointF &rotationCenter);
-
 	// Сигнал об изменении слоя
 	void layerChanged(BaseLayer *layer);
+
+	// Сигнал об изменении позиции, размера, угла поворота, центра вращения
+	void objectsChanged(const QPointF &rotationCenter);
 
 	// Сигнал об изменении разрешенных операций редактирования
 	void allowedEditorActionsChanged();
 
 public slots:
 
-	// обработчик изменения выделения объектов
-	void onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QRectF &boundingRect, const QPointF &rotationCenter);
+	// Обработчик изменения выделения объектов
+	void onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter);
 
-	// обработчик изменения свойств объекта
-	void onEditorWindowObjectsChanged(const QList<GameObject *> &objects, const QRectF &boundingRect, const QPointF &rotationCenter);
+	// Обработчик изменения общих свойств объектов
+	void onEditorWindowObjectsChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter);
 
 protected:
 
+	// Фильтр событий для QFrame с цветами
 	virtual bool eventFilter(QObject *object, QEvent *event);
 
 private slots:
@@ -171,6 +172,15 @@ private:
 	QString getCurrentRotationCenterY() const;
 	QString getCurrentFontSize() const;
 	QString getCurrentLineSpacing() const;
+
+	// Устанавливает новую позицию для выделенных объектов
+	void setNewPosition();
+
+	// Устанавливает новый размер для выделенных объектов
+	void setNewSize(bool widthChanged);
+
+	// Выдает сигналы об изменении локации и слоев, в которых находятся выделенные объекты
+	void emitLocationAndLayerChangedSignals(const QString &commandName);
 
 	// отображение значений параметров объектов в виджетах ГУИ
 	void updateCommonWidgets();

@@ -24,11 +24,14 @@ signals:
 	// Сигнал об изменении локации
 	void locationChanged(const QString &commandName);
 
-	// Сигнал об изменении слоя
+	// Сигнал об изменении слоя в окне слоев
 	void layerChanged();
 
 	// Сигнал об изменении слоя в окне редактирования
 	void layerChanged(Location *location, BaseLayer *layer);
+
+	// Сигнал об изменении слоя в окне свойств
+	void layerChanged(BaseLayer *layer);
 
 private slots:
 

@@ -7,7 +7,7 @@
 helloWorld =
 {
 	-- Paths to resource directories relative to the project root directory
-	locationsDirectory = "levels/",
+	locationsDirectory = "scenes/",
 	localizationDirectory = "l10n/",
 	spritesDirectory = "sprites/",
 	fontsDirectory = "fonts/",

@@ -52,9 +52,6 @@ public:
 	// Возвращает список выделенных объектов
 	QList<GameObject *> getSelectedObjects() const;
 
-	// Возвращает ограничивающий прямоугольник выделенных объектов
-	QRectF getBoundingRect() const;
-
 	// Возвращает координаты центра вращения
 	QPointF getRotationCenter() const;
 
@@ -121,10 +118,10 @@ signals:
 	void zoomChanged(const QString &zoomStr);
 
 	// Сигнал об изменении выделения
-	void selectionChanged(const QList<GameObject *> &objects, const QRectF &boundingRect, const QPointF &rotationCenter);
+	void selectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter);
 
 	// Сигнал об изменении свойств выделенных объектов
-	void objectsChanged(const QList<GameObject *> &objects, const QRectF &boundingRect, const QPointF &rotationCenter);
+	void objectsChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter);
 
 	// Сигнал об изменении локации
 	void locationChanged(const QString &commandName);

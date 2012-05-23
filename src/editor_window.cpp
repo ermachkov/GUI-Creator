@@ -131,11 +131,6 @@ QList<GameObject *> EditorWindow::getSelectedObjects() const
 	return mSelectedObjects;
 }
 
-QRectF EditorWindow::getBoundingRect() const
-{
-	return mSnappedRect;
-}
-
 QPointF EditorWindow::getRotationCenter() const
 {
 	return mSnappedCenter;
@@ -1329,7 +1324,7 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 
 		// отправляем сигнал об изменении объектов
 		if (mEditorState == STATE_MOVE || mEditorState == STATE_RESIZE || mEditorState == STATE_ROTATE || mEditorState == STATE_MOVE_CENTER)
-			emit objectsChanged(mSelectedObjects, mSnappedRect, mSnappedCenter);
+			emit objectsChanged(mSelectedObjects, mSnappedCenter);
 	}
 
 	// обновляем курсор мыши
@@ -1403,7 +1398,7 @@ void EditorWindow::keyPressEvent(QKeyEvent *event)
 		updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
 
 		// отправляем сигнал об изменении объектов
-		emit objectsChanged(mSelectedObjects, mSnappedRect, mSnappedCenter);
+		emit objectsChanged(mSelectedObjects, mSnappedCenter);
 	}
 	else if (event->key() == Qt::Key_Shift && !event->isAutoRepeat() && mEditorState != STATE_IDLE)
 	{
@@ -1774,7 +1769,7 @@ void EditorWindow::selectGameObjects(const QList<GameObject *> &objects)
 		updateAllowedEditorActions();
 
 		// посылаем сигнал об изменении выделения
-		emit selectionChanged(mSelectedObjects, mSnappedRect, mSnappedCenter);
+		emit selectionChanged(mSelectedObjects, mSnappedCenter);
 	}
 }
 
