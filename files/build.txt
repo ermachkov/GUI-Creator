@@ -1,0 +1,19 @@
+*** FTGL ***
+
+>> Сборка с MinGW <<
+1. Загрузить последнюю версию FTGL из SVN репозитория в любой каталог
+   svn co https://ftgl.svn.sourceforge.net/svnroot/ftgl/trunk ftgl
+2. В MinGW Shell перейти в каталог FTGL
+   cd /c/path/to/dir/ftgl
+3. Наложить патч для совместимости с Love2D
+   patch -p0 -i /c/path/to/dir/files/ftgl.patch
+4. Заменить символы перевода строки CR+LF на LF в файле configure.ac
+   dos2unix -U configure.ac
+5. Сгенерировать Autoconf/Automake скрипты сборки
+   ./autogen.sh
+6. Сконфигурировать проект - задать путь установки, отключить сборку DLL
+   ./configure --prefix="/c/path/to/dir/deps" --disable-shared
+7. Собрать проект
+   make
+8. Установить проект в каталог с зависимостями
+   make install

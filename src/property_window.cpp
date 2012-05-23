@@ -214,25 +214,15 @@ void PropertyWindow::on_mSizeHLineEdit_editingFinished()
 
 void PropertyWindow::on_mLockSizePushButton_clicked()
 {
-	Q_ASSERT(!mSelectedObjects.empty());
+	Q_ASSERT(mSelectedObjects.size() == 1);
 
-	bool sizeLocked = false;
-	foreach (GameObject *obj, mSelectedObjects)
-	{
-		Sprite *sprite = dynamic_cast<Sprite *>(obj);
-		if (sprite != NULL && sprite->isSizeLocked())
-			sizeLocked = true;
-	}
+	// инвертируем флаг блокировки изменения размеров
+	Sprite *sprite = dynamic_cast<Sprite *>(mSelectedObjects.front());
+	Q_ASSERT(sprite != NULL);
+	bool sizeLocked = !sprite->isSizeLocked();
+	sprite->setSizeLocked(sizeLocked);
 
-	sizeLocked = !sizeLocked;
-
-	foreach (GameObject *obj, mSelectedObjects)
-	{
-		Sprite *sprite = dynamic_cast<Sprite *>(obj);
-		if (sprite != NULL)
-			sprite->setSizeLocked(sizeLocked);
-	}
-
+	// обновляем гуи
 	mSizeWLineEdit->setReadOnly(sizeLocked);
 	mSizeHLineEdit->setReadOnly(sizeLocked);
 
@@ -244,136 +234,123 @@ void PropertyWindow::on_mLockSizePushButton_clicked()
 
 void PropertyWindow::on_mFlipXCheckBox_clicked(bool checked)
 {
-	// просчет расположения старого центра вращения в процентах
-	QPointF percentCenter = calculatePercentPosition(calculateCurrentBoundingRect(), mRotationCenter);
-	//QPointF percentCenter = calculatePercentPosition(mBoundingRect, mRotationCenter);
+	// TODO: поддержка множественного выделения
+	Q_ASSERT(mSelectedObjects.size() == 1);
 
-	foreach (GameObject *obj, mSelectedObjects)
-	{
-		QSizeF size = obj->getSize();
-		size.setWidth(checked ? -qAbs(size.width()) : qAbs(size.width()));
-		obj->setSize(size);
-	}
+	// отражаем объект по горизонтали относительно центра
+	GameObject *obj = mSelectedObjects.front();
+	QSizeF size = obj->getSize();
+	qreal angle = Utils::degToRad(obj->getRotationAngle());
+	QPointF delta(size.width() * qCos(angle), size.width() * qSin(angle));
+	obj->setPosition(obj->getPosition() + delta);
+	obj->setSize(QSizeF(-size.width(), size.height()));
+	mRotationCenter = obj->getRotationCenter();
 
-	// обновление значения нового центра вращения для объекта, если он один
-	if (mSelectedObjects.size() == 1)
-	{
-		mRotationCenter == mSelectedObjects.front()->getRotationCenter();
-	}
-	else
-	{
-		// просчет нового расположения центра вращения по процентам
-		mRotationCenter = calculatePosition(calculateCurrentBoundingRect(), percentCenter);
-		mSelectedObjects.front()->setRotationCenter(mRotationCenter);
-	}
+	// обновляем гуи
+	mPositionXLineEdit->setText(getCurrentPositionX());
+	mPositionYLineEdit->setText(getCurrentPositionY());
+	mRotationCenterXLineEdit->setText(getCurrentRotationCenterX());
+	mRotationCenterYLineEdit->setText(getCurrentRotationCenterY());
 
-	// сохранение значения нового центра вращения в GUI
-	mRotationCenterXLineEdit->setText(QString::number(mRotationCenter.x(), 'g', PRECISION));
-
+	// посылаем сигналы об изменении локации, слоев и объектов
+	emitLocationAndLayerChangedSignals("Отражение объектов по горизонтали");
 	emit objectsChanged(mRotationCenter);
 }
 
 void PropertyWindow::on_mFlipYCheckBox_clicked(bool checked)
 {
-	// просчет расположения старого центра вращения в процентах
-	QPointF percentCenter = calculatePercentPosition(calculateCurrentBoundingRect(), mRotationCenter);
-	//QPointF percentCenter = calculatePercentPosition(mBoundingRect, mRotationCenter);
+	// TODO: поддержка множественного выделения
+	Q_ASSERT(mSelectedObjects.size() == 1);
 
-	foreach (GameObject *obj, mSelectedObjects)
-	{
-		QSizeF size = obj->getSize();
-		size.setHeight(checked ? -qAbs(size.height()) : qAbs(size.height()));
-		obj->setSize(size);
-	}
+	// отражаем объект по вертикали относительно центра
+	GameObject *obj = mSelectedObjects.front();
+	QSizeF size = obj->getSize();
+	qreal angle = Utils::degToRad(obj->getRotationAngle());
+	QPointF delta(-size.height() * qSin(angle), size.height() * qCos(angle));
+	obj->setPosition(obj->getPosition() + delta);
+	obj->setSize(QSizeF(size.width(), -size.height()));
+	mRotationCenter = obj->getRotationCenter();
 
-	// просчет нового расположения центра вращения по процентам
-	mRotationCenter = calculatePosition(calculateCurrentBoundingRect(), percentCenter);
+	// обновляем гуи
+	mPositionXLineEdit->setText(getCurrentPositionX());
+	mPositionYLineEdit->setText(getCurrentPositionY());
+	mRotationCenterXLineEdit->setText(getCurrentRotationCenterX());
+	mRotationCenterYLineEdit->setText(getCurrentRotationCenterY());
 
-	// обновление значения нового центра вращения для объекта, если он один
-	if (mSelectedObjects.size() == 1)
-	{
-		mRotationCenter == mSelectedObjects.front()->getRotationCenter();
-	}
-	else
-	{
-		// просчет нового расположения центра вращения по процентам
-		mRotationCenter = calculatePosition(calculateCurrentBoundingRect(), percentCenter);
-		mSelectedObjects.front()->setRotationCenter(mRotationCenter);
-	}
-
-	// сохранение значения нового центра вращения в GUI
-	mRotationCenterYLineEdit->setText(QString::number(mRotationCenter.y(), 'g', PRECISION));
-
+	// посылаем сигналы об изменении локации, слоев и объектов
+	emitLocationAndLayerChangedSignals("Отражение объектов по вертикали");
 	emit objectsChanged(mRotationCenter);
 }
 
 void PropertyWindow::onRotationAngleEditingFinished()
 {
-	foreach (GameObject *obj, mSelectedObjects)
-		obj->setRotationAngle(mRotationAngleComboBox->lineEdit()->text().toDouble());
+	// TODO: поддержка множественного выделения
+	Q_ASSERT(mSelectedObjects.size() == 1);
 
-	emit objectsChanged(mRotationCenter);
+	// проверяем, что юзер действительно ввел новое значение
+	qreal oldAngle = getCurrentRotationAngle().toDouble();
+	qreal newAngle = mRotationAngleComboBox->lineEdit()->text().toDouble();
+	if (newAngle != oldAngle)
+	{
+		// поворачиваем объект вокруг центра вращения на разницу между новым и старым углом
+		GameObject *obj = mSelectedObjects.front();
+		qreal angle = Utils::degToRad(newAngle - oldAngle);
+		QPointF vec = obj->getPosition() - mRotationCenter;
+		obj->setPosition(QPointF(vec.x() * qCos(angle) - vec.y() * qSin(angle) + mRotationCenter.x(),
+			vec.x() * qSin(angle) + vec.y() * qCos(angle) + mRotationCenter.y()));
+		obj->setRotationAngle(newAngle);
 
-	// обновление окна общих свойств (позиция)
-	updateCommonWidgets();
+		// посылаем сигналы об изменении локации, слоев и объектов
+		emitLocationAndLayerChangedSignals("Изменение угла поворота объектов");
+		emit objectsChanged(mRotationCenter);
+	}
+
+	// обновляем гуи
+	mPositionXLineEdit->setText(getCurrentPositionX());
+	mPositionYLineEdit->setText(getCurrentPositionY());
+	int index = mRotationAngleComboBox->findText(getCurrentRotationAngle());
+	mRotationAngleComboBox->setCurrentIndex(index);
+	if (index == -1)
+		mRotationAngleComboBox->lineEdit()->setText(getCurrentRotationAngle());
 }
 
-void PropertyWindow::on_mRotationAngleComboBox_activated(const QString &arg)
+void PropertyWindow::on_mRotationAngleComboBox_activated(const QString &text)
 {
-	foreach (GameObject *obj, mSelectedObjects)
-		obj->setRotationAngle(arg.toDouble());
-
-	emit objectsChanged(mRotationCenter);
-
-	// обновление окна общих свойств (позиция)
-	updateCommonWidgets();
+	onRotationAngleEditingFinished();
 }
 
 void PropertyWindow::on_mRotationCenterXLineEdit_editingFinished()
 {
-	qreal newRotationCenterX = mRotationCenterXLineEdit->text().toDouble();
-
-	mRotationCenter = QPointF(newRotationCenterX, mRotationCenterYLineEdit->text().toDouble());
-
-	// обновление значения нового центра вращения для объекта, если он один
-	if (mSelectedObjects.size() == 1)
-		mSelectedObjects.front()->setRotationCenter(mRotationCenter);
-
-	emit objectsChanged(mRotationCenter);
+	setNewRotationCenter();
 }
 
 void PropertyWindow::on_mRotationCenterYLineEdit_editingFinished()
 {
-	qreal newRotationCenterY = mRotationCenterYLineEdit->text().toDouble();
-
-	mRotationCenter = QPointF(mRotationCenterXLineEdit->text().toDouble(), newRotationCenterY);
-
-	// обновление значения нового центра вращения для объекта, если он один
-	if (mSelectedObjects.size() == 1)
-		mSelectedObjects.front()->setRotationCenter(mRotationCenter);
-
-	emit objectsChanged(mRotationCenter);
+	setNewRotationCenter();
 }
 
 void PropertyWindow::on_mResetRotationCenterPushButton_clicked()
 {
 	Q_ASSERT(!mSelectedObjects.empty());
 
+	// определяем координаты центра выделения
+	QPointF center;
 	if (mSelectedObjects.size() == 1)
 	{
 		mSelectedObjects.front()->resetRotationCenter();
-		mRotationCenter = mSelectedObjects.front()->getRotationCenter();
+		center = mSelectedObjects.front()->getRotationCenter();
 	}
 	else
 	{
-		mRotationCenter = calculateCurrentBoundingRect().center();
+		center = calculateCurrentBoundingRect().center();
 	}
 
 	// сохранение значения нового центра вращения в GUI
-	mRotationCenterXLineEdit->setText(QString::number(mRotationCenter.x(), 'g', PRECISION));
-	mRotationCenterYLineEdit->setText(QString::number(mRotationCenter.y(), 'g', PRECISION));
+	mRotationCenterXLineEdit->setText(QString::number(center.x(), 'g', PRECISION));
+	mRotationCenterYLineEdit->setText(QString::number(center.y(), 'g', PRECISION));
 
-	emit objectsChanged(mRotationCenter);
+	// устанавливаем новый центр вращения
+	setNewRotationCenter();
 }
 
 void PropertyWindow::on_mSpriteFileNameBrowsePushButton_clicked()
@@ -1025,6 +1002,32 @@ void PropertyWindow::setNewSize(bool widthChanged)
 	mPositionYLineEdit->setText(getCurrentPositionY());
 	mSizeWLineEdit->setText(getCurrentSizeW());
 	mSizeHLineEdit->setText(getCurrentSizeH());
+	mRotationCenterXLineEdit->setText(getCurrentRotationCenterX());
+	mRotationCenterYLineEdit->setText(getCurrentRotationCenterY());
+}
+
+void PropertyWindow::setNewRotationCenter()
+{
+	Q_ASSERT(!mSelectedObjects.empty());
+
+	// проверяем, что юзер действительно ввел новые значения
+	QPointF oldRotationCenter(getCurrentRotationCenterX().toDouble(), getCurrentRotationCenterY().toDouble());
+	QPointF newRotationCenter(mRotationCenterXLineEdit->text().toDouble(), mRotationCenterYLineEdit->text().toDouble());
+	if (newRotationCenter != oldRotationCenter)
+	{
+		// сохраняем координаты нового центра вращения
+		mRotationCenter = newRotationCenter;
+
+		// обновление значения нового центра вращения для объекта, если он один
+		if (mSelectedObjects.size() == 1)
+			mSelectedObjects.front()->setRotationCenter(mRotationCenter);
+
+		// посылаем сигналы об изменении локации и объектов
+		emit locationChanged("Изменение центра вращения");
+		emit objectsChanged(mRotationCenter);
+	}
+
+	// обновляем гуи
 	mRotationCenterXLineEdit->setText(getCurrentRotationCenterX());
 	mRotationCenterYLineEdit->setText(getCurrentRotationCenterY());
 }

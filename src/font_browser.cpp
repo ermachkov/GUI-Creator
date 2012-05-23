@@ -12,8 +12,6 @@ FontBrowser::FontBrowser(QWidget *parent)
 	mFileModel = new FontFileSystemModel(this);
 
 	connect(mFileModel, SIGNAL(directoryLoaded(const QString &)), this, SLOT(onDirectoryLoaded(const QString &)));
-	connect(mFileModel, SIGNAL(fileRenamed(const QString &, const QString &, const QString &)), this, SLOT(onFileRenamed(const QString &, const QString &, const QString &)));
-	connect(mFileModel, SIGNAL(rootPathChanged(const QString &)), this, SLOT(onRootPathChanged(const QString &)));
 
 	mFileModel->setFilter(QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot );
 	QStringList fileNameFilters;
@@ -29,10 +27,6 @@ FontBrowser::FontBrowser(QWidget *parent)
 	// установка делегата
 	mPreviewItemDelegate = new PreviewItemDelegate(this, mFileModel);
 	mFontListView->setItemDelegate(mPreviewItemDelegate);
-}
-
-FontBrowser::~FontBrowser()
-{
 }
 
 QWidget *FontBrowser::getFontWidget() const
@@ -61,15 +55,6 @@ void FontBrowser::onDirectoryLoaded(const QString &)
 
 	// очистка списка загруженных шрифтов
 	mPreviewItemDelegate->clearAllImages();
-}
-
-void FontBrowser::onFileRenamed(const QString &path, const QString &oldName, const QString &newName)
-{
-}
-
-void FontBrowser::onRootPathChanged(const QString &newPath)
-{
-
 }
 
 void FontBrowser::on_mFontListView_activated(const QModelIndex &index)
@@ -113,7 +98,6 @@ FontBrowser::PreviewItemDelegate::PreviewItemDelegate(QObject *parent, FontFileS
 {
 	// создание фреймбуффера первоначального размера
 	recreateFrameBuffer(32, 256);
-
 }
 
 FontBrowser::PreviewItemDelegate::~PreviewItemDelegate()

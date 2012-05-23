@@ -17,10 +17,7 @@ public:
 	};
 
 	// Конструктор
-	explicit FontBrowser(QWidget *parent = 0);
-
-	// Деструктор
-	virtual ~FontBrowser();
+	FontBrowser(QWidget *parent);
 
 	// Возвращает указатель на виджет со списком шрифтов
 	QWidget *getFontWidget() const;
@@ -31,8 +28,6 @@ public:
 private slots:
 
 	void onDirectoryLoaded(const QString &);
-	void onFileRenamed(const QString &path, const QString &oldName, const QString &newName);
-	void onRootPathChanged(const QString &newPath);
 
 	void on_mFontListView_activated(const QModelIndex &index);
 
@@ -42,7 +37,7 @@ private:
 	{
 	public:
 
-		explicit FontFileSystemModel(FontBrowser *parent);
+		FontFileSystemModel(FontBrowser *parent);
 
 		Qt::ItemFlags flags(const QModelIndex &index) const;
 

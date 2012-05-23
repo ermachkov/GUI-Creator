@@ -1247,9 +1247,9 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 
 				// поворачиваем объект на привязанный угол
 				qreal newAngle = Utils::degToRad(absAngle - mOriginalAngles[i]);
-				QPointF pt = mOriginalPositions[i] - mOriginalCenter;
-				QPointF position(pt.x() * qCos(newAngle) - pt.y() * qSin(newAngle) + mOriginalCenter.x(),
-					pt.x() * qSin(newAngle) + pt.y() * qCos(newAngle) + mOriginalCenter.y());
+				QPointF vec = mOriginalPositions[i] - mOriginalCenter;
+				QPointF position(vec.x() * qCos(newAngle) - vec.y() * qSin(newAngle) + mOriginalCenter.x(),
+					vec.x() * qSin(newAngle) + vec.y() * qCos(newAngle) + mOriginalCenter.y());
 				if (absAngle == 0.0 || absAngle == 90.0 || absAngle == 180.0 || absAngle == 270.0)
 					position = Utils::round(position);
 

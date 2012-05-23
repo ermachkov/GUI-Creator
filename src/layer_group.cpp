@@ -217,16 +217,18 @@ QList<GameObject *> LayerGroup::sortGameObjects(const QList<GameObject *> &objec
 
 void LayerGroup::snapXCoord(qreal x, qreal y1, qreal y2, const QList<GameObject *> &excludedObjects, qreal &snappedX, qreal &distance, QLineF &line) const
 {
-	// проходим по всем дочерним слоям
-	foreach (BaseLayer *layer, mChildLayers)
-		layer->snapXCoord(x, y1, y2, excludedObjects, snappedX, distance, line);
+	// проходим по всем дочерним слоям, если группа слоев видима и не заблокирована
+	if (mVisibleState == LAYER_VISIBLE && mLockState == LAYER_UNLOCKED)
+		foreach (BaseLayer *layer, mChildLayers)
+			layer->snapXCoord(x, y1, y2, excludedObjects, snappedX, distance, line);
 }
 
 void LayerGroup::snapYCoord(qreal y, qreal x1, qreal x2, const QList<GameObject *> &excludedObjects, qreal &snappedY, qreal &distance, QLineF &line) const
 {
-	// проходим по всем дочерним слоям
-	foreach (BaseLayer *layer, mChildLayers)
-		layer->snapYCoord(y, x1, x2, excludedObjects, snappedY, distance, line);
+	// проходим по всем дочерним слоям, если группа слоев видима и не заблокирована
+	if (mVisibleState == LAYER_VISIBLE && mLockState == LAYER_UNLOCKED)
+		foreach (BaseLayer *layer, mChildLayers)
+			layer->snapYCoord(y, x1, x2, excludedObjects, snappedY, distance, line);
 }
 
 void LayerGroup::setCurrentLanguage(const QString &language)

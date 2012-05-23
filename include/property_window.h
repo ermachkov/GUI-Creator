@@ -67,7 +67,7 @@ private slots:
 
 	void onRotationAngleEditingFinished();
 
-	void on_mRotationAngleComboBox_activated(const QString &arg);
+	void on_mRotationAngleComboBox_activated(const QString &text);
 
 	void on_mRotationCenterXLineEdit_editingFinished();
 
@@ -179,6 +179,9 @@ private:
 	// Устанавливает новый размер для выделенных объектов
 	void setNewSize(bool widthChanged);
 
+	// Устанавливает новый центр вращения для выделенных объектов
+	void setNewRotationCenter();
+
 	// Выдает сигналы об изменении локации и слоев, в которых находятся выделенные объекты
 	void emitLocationAndLayerChangedSignals(const QString &commandName);
 
@@ -190,7 +193,7 @@ private:
 	// просчет текущего общего ограничевающего прямоугольника
 	QRectF calculateCurrentBoundingRect() const;
 
-	// просчет процентеого расположения центра вращения
+	// просчет процентного расположения центра вращения
 	QPointF calculatePercentPosition(const QRectF &boundingRect, const QPointF &rotationCenter);
 
 	// просчет расположения центра вращения по процентному

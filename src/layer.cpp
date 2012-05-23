@@ -254,18 +254,24 @@ QList<GameObject *> Layer::sortGameObjects(const QList<GameObject *> &objects) c
 
 void Layer::snapXCoord(qreal x, qreal y1, qreal y2, const QList<GameObject *> &excludedObjects, qreal &snappedX, qreal &distance, QLineF &line) const
 {
-	// проходим по всем дочерним игровым объектам
-	foreach (GameObject *object, mGameObjects)
-		if (!excludedObjects.contains(object))
-			object->snapXCoord(x, y1, y2, snappedX, distance, line);
+	// проходим по всем дочерним игровым объектам, если слой видим и не заблокирован
+	if (mVisibleState == LAYER_VISIBLE && mLockState == LAYER_UNLOCKED)
+	{
+		foreach (GameObject *object, mGameObjects)
+			if (!excludedObjects.contains(object))
+				object->snapXCoord(x, y1, y2, snappedX, distance, line);
+	}
 }
 
 void Layer::snapYCoord(qreal y, qreal x1, qreal x2, const QList<GameObject *> &excludedObjects, qreal &snappedY, qreal &distance, QLineF &line) const
 {
-	// проходим по всем дочерним игровым объектам
-	foreach (GameObject *object, mGameObjects)
-		if (!excludedObjects.contains(object))
-			object->snapYCoord(y, x1, x2, snappedY, distance, line);
+	// проходим по всем дочерним игровым объектам, если слой видим и не заблокирован
+	if (mVisibleState == LAYER_VISIBLE && mLockState == LAYER_UNLOCKED)
+	{
+		foreach (GameObject *object, mGameObjects)
+			if (!excludedObjects.contains(object))
+				object->snapYCoord(y, x1, x2, snappedY, distance, line);
+	}
 }
 
 void Layer::setCurrentLanguage(const QString &language)
