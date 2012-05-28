@@ -3,8 +3,7 @@
 -- All changes made in this file will be lost. DO NOT EDIT!
 -- *****************************************************************************
 
--- Project root table. Do not declare global variables with the same name!
-helloWorld =
+return
 {
 	-- Paths to resource directories relative to the project root directory
 	locationsDirectory = "scenes/",

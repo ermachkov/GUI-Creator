@@ -157,6 +157,10 @@ void SpriteBrowser::onThumbnailLoaded(QString absoluteFileName, QImage image)
 		{
 			// установка только что загруженой иконки
 			items.front()->setIcon(iterTC.value().getIcon());
+
+			// разрешение перетаскивания если загрузка успешна
+			if (!image.isNull())
+				items.front()->setFlags(items.front()->flags() | Qt::ItemIsDragEnabled);
 		}
 	}
 }
@@ -283,7 +287,9 @@ void SpriteBrowser::update(QString oldPath, QString newPath)
 	{
 		if (*iterEntries != "..")
 		{
+			// FIXME:
 			QListWidgetItem *item = new QListWidgetItem(mIconFolder, *iterEntries, mListWidget);
+			//QListWidgetItem *item = new QListWidgetItem(style()->standardIcon(QStyle::SP_DirIcon), *iterEntries, mListWidget);
 
 			// запрещаем перетаскивание папок
 			item->setFlags(item->flags() & ~Qt::ItemIsDragEnabled);
@@ -395,6 +401,12 @@ void SpriteBrowser::update(QString oldPath, QString newPath)
 		// создание иконки в ГУИ
 		QListWidgetItem *item = new QListWidgetItem(fileName, mListWidget);
 		item->setIcon(iterTC->getIcon());
+
+		// запрет перетаскивания по умолчанию пока иконка не загружена в кэш
+		if (iterTC.value().isIconLoaded())
+			item->setFlags(item->flags() | Qt::ItemIsDragEnabled);
+		else
+			item->setFlags(item->flags() & ~Qt::ItemIsDragEnabled);
 
 		// сохраняем полный путь к файлу для поддержки перетаскивания
 		item->setData(Qt::UserRole, getRootPath() + mRelativePath + fileName);

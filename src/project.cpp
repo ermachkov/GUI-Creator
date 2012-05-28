@@ -108,13 +108,9 @@ bool Project::loadProjectFile(const QString &fileName)
 	// определяем путь к корневому каталогу
 	mRootDirectory = Utils::addTrailingSlash(QFileInfo(mFileName).canonicalPath());
 
-	// загружаем Lua скрипт
+	// загружаем Lua скрипт и проверяем, что он вернул корневую таблицу
 	LuaScript script;
-	if (!script.load(mFileName))
-		return false;
-
-	// читаем корневую таблицу
-	if (!script.pushTable(Utils::toCamelCase(QFileInfo(mFileName).baseName())))
+	if (!script.load(mFileName, 1) || !script.pushTable())
 		return false;
 
 	// загружаем относительные пути к ресурсным каталогам
@@ -181,9 +177,8 @@ bool Project::saveProjectFile(const QString &fileName)
 	// записываем шапку файла
 	Utils::writeFileHeader(stream);
 
-	// записываем корневую таблицу
-	stream << endl << "-- Project root table. Do not declare global variables with the same name!" << endl;
-	stream << Utils::toCamelCase(QFileInfo(fileName).baseName()) << " =" << endl;
+	// записываем код для возврата корневой таблицы
+	stream << endl << "return" << endl;
 	stream << "{" << endl;
 
 	// записываем относительные пути к ресурсным каталогам

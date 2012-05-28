@@ -1,4 +1,4 @@
-mainScreen_translations =
+return
 {
 	[8] =
 	{

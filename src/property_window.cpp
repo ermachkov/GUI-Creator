@@ -7,7 +7,7 @@
 #include "utils.h"
 
 PropertyWindow::PropertyWindow(QWidget *parent)
-: QDockWidget(parent)
+: QDockWidget(parent), mOpacitySliderMoved(false)
 {
 	setupUi(this);
 
@@ -112,14 +112,10 @@ bool PropertyWindow::eventFilter(QObject *object, QEvent *event)
 		{
 			if (object == mSpriteColorFrame && mSpriteColorFrame->isEnabled())
 			{
-				QColorDialog colorDialog;
-				colorDialog.setCurrentColor(mSpriteColorFrame->palette().color(QPalette::Window));
-
 				// вызов диалогового окна выбора цвета
-				if (colorDialog.exec() == QColorDialog::Accepted)
+				QColor color = QColorDialog::getColor(mSpriteColorFrame->palette().color(QPalette::Window), this);
+				if (color.isValid() && color != mSpriteColorFrame->palette().color(QPalette::Window))
 				{
-					QColor color = colorDialog.currentColor();
-
 					// установка выбранного цвета ГУЮ
 					QPalette palette = mSpriteColorFrame->palette();
 					palette.setColor(QPalette::Window, color);
@@ -132,20 +128,19 @@ bool PropertyWindow::eventFilter(QObject *object, QEvent *event)
 						color.setAlpha(it->getColor().alpha());
 						it->setColor(color);
 					}
+
+					// посылаем сигналы об изменении локации и слоев
+					emitLocationAndLayerChangedSignals("Изменение цвета спрайтов");
 				}
 
 				return true;
 			}
 			else if (object == mLabelColorFrame && mLabelColorFrame->isEnabled())
 			{
-				QColorDialog colorDialog;
-				colorDialog.setCurrentColor(mLabelColorFrame->palette().color(QPalette::Window));
-
 				// вызов диалогового окна выбора цвета
-				if (colorDialog.exec() == QColorDialog::Accepted)
+				QColor color = QColorDialog::getColor(mLabelColorFrame->palette().color(QPalette::Window), this);
+				if (color.isValid() && color != mLabelColorFrame->palette().color(QPalette::Window))
 				{
-					QColor color = colorDialog.currentColor();
-
 					// установка выбранного цвета ГУЮ
 					QPalette palette = mLabelColorFrame->palette();
 					palette.setColor(QPalette::Window, color);
@@ -158,6 +153,9 @@ bool PropertyWindow::eventFilter(QObject *object, QEvent *event)
 						color.setAlpha(it->getColor().alpha());
 						it->setColor(color);
 					}
+
+					// посылаем сигналы об изменении локации и слоев
+					emitLocationAndLayerChangedSignals("Изменение цвета надписей");
 				}
 
 				return true;
@@ -356,280 +354,282 @@ void PropertyWindow::on_mResetRotationCenterPushButton_clicked()
 void PropertyWindow::on_mSpriteFileNameBrowsePushButton_clicked()
 {
 	// показываем диалоговое окно открытия файла
-	QString fileName = getRootPath();
-	if (mSpriteFileNameLineEdit->text() != "")
-		fileName += mSpriteFileNameLineEdit->text();
-
+	QString fileName = getSpritesPath() + mSpriteFileNameLineEdit->text();
 	QString filter = "Файлы изображений (*.jpg *.jpeg *.png);;Все файлы (*)";
-
 	fileName = QFileDialog::getOpenFileName(this, "Открыть", fileName, filter);
 	if (!Utils::isFileNameValid(fileName, getSpritesPath(), this))
 		return;
 
-	// удаление из имени файла имени коренной директории
-	QString relativePath = fileName.mid(getRootPath().size());
-
-	// просчет расположения старого центра вращения в процентах
-	QPointF percentCenter = calculatePercentPosition(calculateCurrentBoundingRect(), mRotationCenter);
-
-	// установка новоq текстуры объектам
-	foreach (GameObject *obj, mSelectedObjects)
+	// проверяем, что юзер действительно ввел новое значение
+	QString oldPath = Project::getSingleton().getSpritesDirectory() + mSpriteFileNameLineEdit->text();
+	QString newPath = fileName.mid(getRootPath().size());
+	if (newPath != oldPath)
 	{
-		Sprite *it = dynamic_cast<Sprite *>(obj);
-		it->setFileName(relativePath);
-	}
+		// просчет расположения старого центра вращения в процентах
+		QPointF percentCenter = calculatePercentPosition(calculateCurrentBoundingRect(), mRotationCenter);
 
-	// обновление значения нового центра вращения для объекта, если он один
-	if (mSelectedObjects.size() == 1)
-	{
-		mRotationCenter == mSelectedObjects.front()->getRotationCenter();
-	}
-	else
-	{
-		// просчет нового расположения центра вращения по процентам
-		mRotationCenter = calculatePosition(calculateCurrentBoundingRect(), percentCenter);
-	}
+		// установка новой текстуры объектам
+		foreach (GameObject *obj, mSelectedObjects)
+		{
+			Sprite *it = dynamic_cast<Sprite *>(obj);
+			it->setFileName(newPath);
+		}
 
-	// отображение относительного пути к спрайту в ГУИ
-	mSpriteFileNameLineEdit->setText(relativePath);
+		// обновление значения нового центра вращения для объекта
+		if (mSelectedObjects.size() == 1)
+			mRotationCenter = mSelectedObjects.front()->getRotationCenter();
+		else
+			mRotationCenter = calculatePosition(calculateCurrentBoundingRect(), percentCenter);
 
-	emit objectsChanged(mRotationCenter);
+		// обновляем гуи
+		updateCommonWidgets();
+		updateSpriteWidgets();
 
-	// обновление окна общих свойств
-	updateCommonWidgets();
-}
-
-void PropertyWindow::on_mSpriteOpacitySlider_actionTriggered(int action)
-{
-	if (action != QAbstractSlider::SliderNoAction && action != QAbstractSlider::SliderMove)
-	{
-		int position = mSpriteOpacitySlider->sliderPosition();
-		on_mSpriteOpacitySlider_sliderMoved(position);
+		// посылаем сигналы об изменении локации, слоев и объектов
+		emitLocationAndLayerChangedSignals("Изменение текстуры спрайтов");
+		emit objectsChanged(mRotationCenter);
 	}
 }
 
-void PropertyWindow::on_mSpriteOpacitySlider_sliderMoved(int position)
+void PropertyWindow::on_mSpriteOpacitySlider_sliderMoved(int value)
 {
+	// устанавливаем прозрачность всем выделенным объектам
 	foreach (GameObject *obj, mSelectedObjects)
 	{
 		Sprite *it = dynamic_cast<Sprite *>(obj);
 		QColor color = it->getColor();
-		color.setAlpha(position);
+		color.setAlpha(value);
 		it->setColor(color);
 	}
 
-	mSpriteOpacityValueLabel->setText(QString::number(position * 100 / 255) + "%");
+	// устанавливаем текст подписи
+	mSpriteOpacityValueLabel->setText(QString::number(value * 100 / 255) + "%");
+
+	// устанавливаем флаг перемещения ползунка
+	mOpacitySliderMoved = true;
+}
+
+void PropertyWindow::on_mSpriteOpacitySlider_valueChanged(int value)
+{
+	// проверяем, что прозрачность действительно изменилась
+	if (value != getCurrentSpriteOpacity() || mOpacitySliderMoved)
+	{
+		on_mSpriteOpacitySlider_sliderMoved(value);
+		mOpacitySliderMoved = false;
+		emitLocationAndLayerChangedSignals("Изменение прозрачности спрайтов");
+	}
 }
 
 void PropertyWindow::on_mTextLineEdit_editingFinished()
 {
-	QString text = mTextLineEdit->text();
-
-	// смена последовательности \n на '13'
-	text.replace("\\n", "\n");
-
-	foreach (GameObject *obj, mSelectedObjects)
+	// проверяем, что юзер действительно ввел новое значение
+	QString oldText = getCurrentText();
+	QString newText = mTextLineEdit->text();
+	newText.replace("\\n", "\n");
+	if (newText != oldText)
 	{
-		Label *it = dynamic_cast<Label *>(obj);
-		it->setText(text);
+		// устанавливаем новый текст для выделенных объектов
+		foreach (GameObject *obj, mSelectedObjects)
+		{
+			Label *it = dynamic_cast<Label *>(obj);
+			it->setText(newText);
+		}
+
+		// посылаем сигналы об изменении локации и слоев
+		emitLocationAndLayerChangedSignals("Изменение текста надписей");
 	}
 }
 
 void PropertyWindow::on_mTextEditPushButton_clicked()
 {
-	// считывание текста из GUI
-	QString text = mTextLineEdit->text();
-
-	// смена последовательности \n на '13'
-	text.replace("\\n", "\n");
-
-	//create a custom dialog box with multi line input
+	// создаем новое диалоговое окно
 	QDialog *textDialog = new QDialog(this);
-
-	//local variable
-	QVBoxLayout *vBoxLayout = new QVBoxLayout(textDialog);
-
-	//class variable
-	QPlainTextEdit *multilinePlainTextEdit = new QPlainTextEdit();
-	multilinePlainTextEdit->setPlainText(text);
-
-	vBoxLayout->addWidget(multilinePlainTextEdit);
-	QDialogButtonBox *buttonBox = new QDialogButtonBox();
-	buttonBox->setOrientation(Qt::Horizontal);
-	buttonBox->setStandardButtons(QDialogButtonBox::Cancel | QDialogButtonBox::Ok);
-
-	vBoxLayout->addWidget(buttonBox);
-
-	connect(buttonBox, SIGNAL(accepted()), textDialog, SLOT(accept()));
-	connect(buttonBox, SIGNAL(rejected()), textDialog, SLOT(reject()));
-
 	textDialog->setModal(true);
 
-	if (textDialog->exec()== QDialog::Accepted)
+	// лейаут для диалогового окна
+	QVBoxLayout *vBoxLayout = new QVBoxLayout(textDialog);
+
+	// многострочное поле ввода
+	QPlainTextEdit *plainTextEdit = new QPlainTextEdit(getCurrentText());
+	vBoxLayout->addWidget(plainTextEdit);
+
+	// кнопки OK/Cancel
+	QDialogButtonBox *dialogButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+	vBoxLayout->addWidget(dialogButtonBox);
+	connect(dialogButtonBox, SIGNAL(accepted()), textDialog, SLOT(accept()));
+	connect(dialogButtonBox, SIGNAL(rejected()), textDialog, SLOT(reject()));
+
+	// показываем диалоговое окно
+	if (textDialog->exec() == QDialog::Accepted)
 	{
-		text = multilinePlainTextEdit->toPlainText();
-
-		foreach (GameObject *obj, mSelectedObjects)
-		{
-			Label *it = dynamic_cast<Label *>(obj);
-			it->setText(text);
-		}
-
-		// смена '13' на последовательность \n
+		QString text = plainTextEdit->toPlainText();
 		text.replace("\n", "\\n");
-
 		mTextLineEdit->setText(text);
+		on_mTextLineEdit_editingFinished();
 	}
 
+	// удаляем диалог по завершению ввода
 	delete textDialog;
 }
 
-void PropertyWindow::on_mLabelFileNameComboBox_activated(const QString &arg)
+void PropertyWindow::on_mLabelFileNameComboBox_activated(const QString &text)
 {
-   qDebug() << "on_mLabelFileNameComboBox_activated" << arg;
+	// проверяем, что юзер действительно ввел новое значение
+	QString oldPath = getCurrentLabelFileName();
+	QString newPath = Project::getSingleton().getFontsDirectory() + text;
+	if (newPath != oldPath)
+	{
+		// устанавливаем новый шрифт для выделенных объектов
+		foreach (GameObject *obj, mSelectedObjects)
+		{
+			Label *it = dynamic_cast<Label *>(obj);
+			it->setFileName(newPath);
+		}
 
-   foreach (GameObject *obj, mSelectedObjects)
-   {
-	   Label *it = dynamic_cast<Label *>(obj);
-	   it->setFileName(Project::getSingleton().getFontsDirectory() + arg);
-   }
+		// посылаем сигналы об изменении локации и слоев
+		emitLocationAndLayerChangedSignals("Изменение шрифта надписей");
+	}
 }
 
 void PropertyWindow::onFontSizeEditingFinished()
 {
-	qDebug() << "on_mPositionXLineEdit_editingFinished";
-
-	int fontSize = mFontSizeComboBox->lineEdit()->text().toInt();
-
-	foreach (GameObject *obj, mSelectedObjects)
+	// проверяем, что юзер действительно ввел новое значение
+	int oldFontSize = getCurrentFontSize().toInt();
+	int newFontSize = mFontSizeComboBox->lineEdit()->text().toInt();
+	if (newFontSize != oldFontSize)
 	{
-		Label *it = dynamic_cast<Label *>(obj);
-		it->setFontSize(fontSize);
+		// устанавливаем новый размер шрифта для выделенных объектов
+		foreach (GameObject *obj, mSelectedObjects)
+		{
+			Label *it = dynamic_cast<Label *>(obj);
+			it->setFontSize(newFontSize);
+		}
+
+		// посылаем сигналы об изменении локации и слоев
+		emitLocationAndLayerChangedSignals("Изменение размера шрифта надписей");
 	}
+
+	// обновляем гуи
+	int index = mFontSizeComboBox->findText(getCurrentFontSize());
+	mFontSizeComboBox->setCurrentIndex(index);
+	if (index == -1)
+		mFontSizeComboBox->lineEdit()->setText(getCurrentFontSize());
 }
 
-void PropertyWindow::on_mFontSizeComboBox_activated(const QString &arg)
+void PropertyWindow::on_mFontSizeComboBox_activated(const QString &text)
 {
-	qDebug() << "on_mFontSizeComboBox_activated" << arg;
-
-	int fontSize = arg.toInt();
-
-	foreach (GameObject *obj, mSelectedObjects)
-	{
-		Label *it = dynamic_cast<Label *>(obj);
-		it->setFontSize(fontSize);
-	}
+	onFontSizeEditingFinished();
 }
 
 void PropertyWindow::onHorzAlignmentClicked(QAbstractButton *button)
 {
-	Label::HorzAlignment horzAlignment = Label::HORZ_ALIGN_LEFT;
-
+	Label::HorzAlignment horzAlignment;
 	if (button == mHorzAlignmentLeftPushButton)
-	{
-		mHorzAlignmentLeftPushButton->setChecked(true);
 		horzAlignment = Label::HORZ_ALIGN_LEFT;
-	}
 	else if (button == mHorzAlignmentCenterPushButton)
-	{
-		mHorzAlignmentCenterPushButton->setChecked(true);
 		horzAlignment = Label::HORZ_ALIGN_CENTER;
-	}
-	else if (button == mHorzAlignmentRightPushButton)
-	{
-		mHorzAlignmentRightPushButton->setChecked(true);
+	else
 		horzAlignment = Label::HORZ_ALIGN_RIGHT;
-	}
 
+	// устанавливаем новое горизонтальное выравнивание для выделенных объектов
 	foreach (GameObject *obj, mSelectedObjects)
 	{
 		Label *it = dynamic_cast<Label *>(obj);
 		it->setHorzAlignment(horzAlignment);
 	}
+
+	// посылаем сигналы об изменении локации и слоев
+	emitLocationAndLayerChangedSignals("Изменение выравнивания надписей");
 }
 
 void PropertyWindow::onVertAlignmentClicked(QAbstractButton *button)
 {
-	Label::VertAlignment vertAlignment = Label::VERT_ALIGN_TOP;
-
+	Label::VertAlignment vertAlignment;
 	if (button == mVertAlignmentTopPushButton)
-	{
-		mVertAlignmentTopPushButton->setChecked(true);
 		vertAlignment = Label::VERT_ALIGN_TOP;
-	}
 	else if (button == mVertAlignmentCenterPushButton)
-	{
-		mVertAlignmentCenterPushButton->setChecked(true);
 		vertAlignment = Label::VERT_ALIGN_CENTER;
-	}
-	else if (button == mVertAlignmentBottomPushButton)
-	{
-		mVertAlignmentBottomPushButton->setChecked(true);
+	else
 		vertAlignment = Label::VERT_ALIGN_BOTTOM;
-	}
 
+	// устанавливаем новое вертикальное выравнивание для выделенных объектов
 	foreach (GameObject *obj, mSelectedObjects)
 	{
 		Label *it = dynamic_cast<Label *>(obj);
 		it->setVertAlignment(vertAlignment);
 	}
+
+	// посылаем сигналы об изменении локации и слоев
+	emitLocationAndLayerChangedSignals("Изменение выравнивания надписей");
 }
 
 void PropertyWindow::onLineSpacingEditingFinished()
 {
-	qDebug() << "onLineSpacingEditingFinished";
-
-	float lineSpacing = mLineSpacingComboBox->lineEdit()->text().toDouble();
-
-	foreach (GameObject *obj, mSelectedObjects)
+	// проверяем, что юзер действительно ввел новое значение
+	qreal oldLineSpacing = getCurrentLineSpacing().toDouble();
+	qreal newLineSpacing = mLineSpacingComboBox->lineEdit()->text().toDouble();
+	if (newLineSpacing != oldLineSpacing)
 	{
-		Label *it = dynamic_cast<Label *>(obj);
-		it->setLineSpacing(lineSpacing);
+		// устанавливаем новый межстрочный интервал для выделенных объектов
+		foreach (GameObject *obj, mSelectedObjects)
+		{
+			Label *it = dynamic_cast<Label *>(obj);
+			it->setLineSpacing(newLineSpacing);
+		}
+
+		// посылаем сигналы об изменении локации и слоев
+		emitLocationAndLayerChangedSignals("Изменение межстрочного интервала надписей");
 	}
+
+	// обновляем гуи
+	int index = mLineSpacingComboBox->findText(getCurrentLineSpacing());
+	mLineSpacingComboBox->setCurrentIndex(index);
+	if (index == -1)
+		mLineSpacingComboBox->lineEdit()->setText(getCurrentLineSpacing());
 }
 
-void PropertyWindow::on_mLineSpacingComboBox_activated(const QString &arg)
+void PropertyWindow::on_mLineSpacingComboBox_activated(const QString &text)
 {
-	qDebug() << "on_mLineSpacingComboBox_activated";
-
-	qreal lineSpacing = arg.toDouble();
-
-	foreach (GameObject *obj, mSelectedObjects)
-	{
-		Label *it = dynamic_cast<Label *>(obj);
-		it->setLineSpacing(lineSpacing);
-	}
+	onLineSpacingEditingFinished();
 }
 
-void PropertyWindow::on_mLabelOpacitySlider_actionTriggered(int action)
+void PropertyWindow::on_mLabelOpacitySlider_sliderMoved(int value)
 {
-	if (action != QAbstractSlider::SliderNoAction && action != QAbstractSlider::SliderMove)
-	{
-		int position = mSpriteOpacitySlider->sliderPosition();
-		on_mLabelOpacitySlider_sliderMoved(position);
-	}
-}
-
-void PropertyWindow::on_mLabelOpacitySlider_sliderMoved(int position)
-{
+	// устанавливаем прозрачность всем выделенным объектам
 	foreach (GameObject *obj, mSelectedObjects)
 	{
 		Label *it = dynamic_cast<Label *>(obj);
 		QColor color = it->getColor();
-		color.setAlpha(position);
+		color.setAlpha(value);
 		it->setColor(color);
 	}
 
-	mLabelOpacityValueLabel->setText(QString::number(position * 100 / 255) + "%");
+	// устанавливаем текст подписи
+	mLabelOpacityValueLabel->setText(QString::number(value * 100 / 255) + "%");
+
+	// устанавливаем флаг перемещения ползунка
+	mOpacitySliderMoved = true;
+}
+
+void PropertyWindow::on_mLabelOpacitySlider_valueChanged(int value)
+{
+	// проверяем, что прозрачность действительно изменилась
+	if (value != getCurrentLabelOpacity() || mOpacitySliderMoved)
+	{
+		on_mLabelOpacitySlider_sliderMoved(value);
+		mOpacitySliderMoved = false;
+		emitLocationAndLayerChangedSignals("Изменение прозрачности надписей");
+	}
 }
 
 void PropertyWindow::on_mLocalizationPushButton_clicked()
 {
+	// создаем локализацию для всех еще не локализованных объектов
 	foreach (GameObject *object, mSelectedObjects)
 		if (!object->isLocalized())
 			object->setLocalized(true);
 
-	// FIXME: не забыть про дубликат в onEditorWindowSelectionChanged
+	// целиком обновляем окно свойств
 	updateWidgetsVisibleAndEnabled();
 
 	// отправляем сигнал об изменении разрешенных операций редактирования
@@ -638,22 +638,22 @@ void PropertyWindow::on_mLocalizationPushButton_clicked()
 
 void PropertyWindow::updateWidgetsVisibleAndEnabled()
 {
-	// invisible localization button
+	// скрыть кнопку локализации
 	mLocalizationWidget->setVisible(false);
 
 	if (mSelectedObjects.empty())
 	{
-		// invisible property window
+		// скрыть окно свойств
 		mScrollArea->setVisible(false);
-		// visible noselection text
+		// показать надпись "нет выделения"
 		mNoSelectedObjectsLabel->setVisible(true);
 		return;
 	}
 
-	// visible property window
+	// показать окно свойств
 	mScrollArea->setVisible(true);
 
-	// invisible noselection text
+	// скрыть надпись "нет выделения"
 	mNoSelectedObjectsLabel->setVisible(false);
 
 	QString currentLanguage = Project::getSingleton().getCurrentLanguage();
@@ -679,7 +679,7 @@ void PropertyWindow::updateWidgetsVisibleAndEnabled()
 	{
 		if (isAllLocalized)
 		{
-			// dissable all
+			// disable all properties
 			setGridLayoutRowsEnabled(mScrollAreaLayout, 0, mScrollAreaLayout->rowCount(), false);
 
 			if (isAllOneType)
@@ -710,15 +710,15 @@ void PropertyWindow::updateWidgetsVisibleAndEnabled()
 		}
 		else
 		{
-			// invisible property window
+			// скрыть окно свойств
 			mScrollArea->setVisible(false);
-			// visible localization button
+			// показать кнопку локализации
 			mLocalizationWidget->setVisible(true);
 			return;
 		}
 	}
 
-	// invisible all properties
+	// скрыть
 	setGridLayoutRowsVisible(mScrollAreaLayout, 0, mScrollAreaLayout->rowCount(), false);
 
 	// проверяем, есть ли спрайты в выделении
@@ -727,10 +727,9 @@ void PropertyWindow::updateWidgetsVisibleAndEnabled()
 		if (dynamic_cast<Sprite *>(obj) != NULL)
 			hasSprites = true;
 
-	// visible common properties
 	if (mSelectedObjects.size() > 1)
 	{
-		// visible common properties for multi selection
+		// множественное выделение
 		setGridLayoutRowsVisible(mScrollAreaLayout, 2, 2, true);
 		setGridLayoutRowsVisible(mScrollAreaLayout, 6, 1, true);
 
@@ -742,7 +741,7 @@ void PropertyWindow::updateWidgetsVisibleAndEnabled()
 	}
 	else
 	{
-		// visible common properties for single selection
+		// одиночное выделение
 		setGridLayoutRowsVisible(mScrollAreaLayout, 0, 7, true);
 
 		// скрываем кнопку блокировки размера, если выделен не спрайт
@@ -759,13 +758,13 @@ void PropertyWindow::updateWidgetsVisibleAndEnabled()
 
 	if (dynamic_cast<Sprite *>(mSelectedObjects.front()) != NULL)
 	{
-		// visible Sprite properties
+		// установка видимости свойтвам спрайта
 		setGridLayoutRowsVisible(mScrollAreaLayout, 7, 4, true);
 		updateSpriteWidgets();
 	}
 	else if (dynamic_cast<Label *>(mSelectedObjects.front()) != NULL)
 	{
-		// visible Label properties
+		// установка видимости свойтвам надписи
 		setGridLayoutRowsVisible(mScrollAreaLayout, 11, 8, true);
 		updateLabelWidgets();
 	}
@@ -863,6 +862,47 @@ QString PropertyWindow::getCurrentRotationCenterY() const
 	return QString::number(mRotationCenter.y(), 'g', PRECISION);
 }
 
+int PropertyWindow::getCurrentSpriteOpacity(bool *equal) const
+{
+	bool equalSpriteOpacity = true;
+	Sprite *first = dynamic_cast<Sprite *>(mSelectedObjects.front());
+	foreach (GameObject *obj, mSelectedObjects)
+	{
+		Sprite *it = dynamic_cast<Sprite *>(obj);
+		if (it->getColor().alpha() != first->getColor().alpha())
+			equalSpriteOpacity = false;
+	}
+	if (equal != NULL)
+		*equal = equalSpriteOpacity;
+	return equalSpriteOpacity ? first->getColor().alpha() : 0;
+}
+
+QString PropertyWindow::getCurrentText() const
+{
+	bool equalText = true;
+	Label *first = dynamic_cast<Label *>(mSelectedObjects.front());
+	foreach (GameObject *obj, mSelectedObjects)
+	{
+		Label *it = dynamic_cast<Label *>(obj);
+		if (it->getText() != first->getText())
+			equalText = false;
+	}
+	return equalText ? first->getText() : "";
+}
+
+QString PropertyWindow::getCurrentLabelFileName() const
+{
+	bool equalLabelFileName = true;
+	Label *first = dynamic_cast<Label *>(mSelectedObjects.front());
+	foreach (GameObject *obj, mSelectedObjects)
+	{
+		Label *it = dynamic_cast<Label *>(obj);
+		if (it->getFileName() != first->getFileName())
+			equalLabelFileName = false;
+	}
+	return equalLabelFileName ? first->getFileName() : "";
+}
+
 QString PropertyWindow::getCurrentFontSize() const
 {
 	bool equalFontSize = true;
@@ -887,6 +927,21 @@ QString PropertyWindow::getCurrentLineSpacing() const
 			equalLineSpacing = false;
 	}
 	return equalLineSpacing ? QString::number(first->getLineSpacing()) : "";
+}
+
+int PropertyWindow::getCurrentLabelOpacity(bool *equal) const
+{
+	bool equalLabelOpacity = true;
+	Label *first = dynamic_cast<Label *>(mSelectedObjects.front());
+	foreach (GameObject *obj, mSelectedObjects)
+	{
+		Label *it = dynamic_cast<Label *>(obj);
+		if (it->getColor().alpha() != first->getColor().alpha())
+			equalLabelOpacity = false;
+	}
+	if (equal != NULL)
+		*equal = equalLabelOpacity;
+	return equalLabelOpacity ? first->getColor().alpha() : 0;
 }
 
 void PropertyWindow::setNewPosition()
@@ -1100,7 +1155,6 @@ void PropertyWindow::updateSpriteWidgets()
 	// флаги идентичности значений свойств объектов в группе
 	bool equalFileName = true;
 	bool equalSpriteColor = true;
-	bool equalSpriteOpacity = true;
 	bool equalSpriteTextureSizeW = true;
 	bool equalSpriteTextureSizeH = true;
 
@@ -1118,9 +1172,6 @@ void PropertyWindow::updateSpriteWidgets()
 		if (it->getColor().rgb() != first->getColor().rgb())
 			equalSpriteColor = false;
 
-		if (it->getColor().alpha() != first->getColor().alpha())
-			equalSpriteOpacity = false;
-
 		if (it->getTextureSize().width() != first->getTextureSize().width())
 			equalSpriteTextureSizeW = false;
 
@@ -1129,7 +1180,10 @@ void PropertyWindow::updateSpriteWidgets()
 	}
 
 	// имя файла с текстурой
-	mSpriteFileNameLineEdit->setText(equalFileName ? first->getFileName() : "");
+	QString fileName = equalFileName ? first->getFileName() : "";
+	if (fileName.startsWith(Project::getSingleton().getSpritesDirectory()))
+		fileName.remove(0, Project::getSingleton().getSpritesDirectory().size());
+	mSpriteFileNameLineEdit->setText(fileName);
 
 	// размер текстуры
 	mTextureSizeWLineEdit->setText(equalSpriteTextureSizeW ? QString::number(first->getTextureSize().width()) : "");
@@ -1150,28 +1204,18 @@ void PropertyWindow::updateSpriteWidgets()
 	mSpriteColorFrame->setPalette(palette);
 
 	// прозрачность
-	if (equalSpriteOpacity)
-	{
-		int alpha = first->getColor().alpha();
-		mSpriteOpacitySlider->setSliderPosition(alpha);
-		mSpriteOpacityValueLabel->setText(QString::number(alpha * 100 / 255) + "%");
-	}
-	else
-	{
-		mSpriteOpacitySlider->setSliderPosition(0);
-		mSpriteOpacityValueLabel->setText("");
-	}
+	bool equalSpriteOpacity;
+	int alpha = getCurrentSpriteOpacity(&equalSpriteOpacity);
+	mSpriteOpacitySlider->setValue(alpha);
+	mSpriteOpacityValueLabel->setText(equalSpriteOpacity ? QString::number(alpha * 100 / 255) + "%" : "");
 }
 
 void PropertyWindow::updateLabelWidgets()
 {
 	// флаги идентичности значений свойств объектов в группе
-	bool equalText = true;
-	bool equalFileName = true;
 	bool equalHorzAlignment = true;
 	bool equalVertAlignment = true;
 	bool equalLabelColor = true;
-	bool equalLabelOpacity = true;
 
 	Q_ASSERT(!mSelectedObjects.empty());
 
@@ -1181,12 +1225,6 @@ void PropertyWindow::updateLabelWidgets()
 	{
 		Label *it = dynamic_cast<Label *>(obj);
 
-		if (it->getText() != first->getText())
-			equalText = false;
-
-		if (it->getFileName() != first->getFileName())
-			equalFileName = false;
-
 		if (it->getHorzAlignment() != first->getHorzAlignment())
 			equalHorzAlignment = false;
 
@@ -1195,31 +1233,24 @@ void PropertyWindow::updateLabelWidgets()
 
 		if (it->getColor().rgb() != first->getColor().rgb())
 			equalLabelColor = false;
-
-		if (it->getColor().alpha() != first->getColor().alpha())
-			equalLabelOpacity = false;
 	}
 
 	// текст надписи
-	QString text = first->getText();
+	QString text = getCurrentText();
 	text.replace("\n", "\\n");
-	mTextLineEdit->setText(equalText ? text : "");
+	mTextLineEdit->setText(text);
 
 	// имя файла со шрифтом
-	if (equalFileName)
-	{
-		int index = mLabelFileNameComboBox->findText(QFileInfo(first->getFileName()).fileName());
-		mLabelFileNameComboBox->setCurrentIndex(index);
-		if (index == -1)
-			mLabelFileNameComboBox->lineEdit()->setText(QFileInfo(first->getFileName()).fileName());
-	}
-	else
-	{
-		mLabelFileNameComboBox->setCurrentIndex(-1);
-	}
+	QString fileName = getCurrentLabelFileName();
+	if (fileName.startsWith(Project::getSingleton().getFontsDirectory()))
+		fileName.remove(0, Project::getSingleton().getFontsDirectory().size());
+	int index = mLabelFileNameComboBox->findText(fileName);
+	mLabelFileNameComboBox->setCurrentIndex(index);
+	if (index == -1)
+		mLabelFileNameComboBox->lineEdit()->setText(fileName);
 
 	// размер шрифта
-	int index = mFontSizeComboBox->findText(getCurrentFontSize());
+	index = mFontSizeComboBox->findText(getCurrentFontSize());
 	mFontSizeComboBox->setCurrentIndex(index);
 	if (index == -1)
 		mFontSizeComboBox->lineEdit()->setText(getCurrentFontSize());
@@ -1285,17 +1316,10 @@ void PropertyWindow::updateLabelWidgets()
 	mLabelColorFrame->setPalette(palette);
 
 	// прозрачность
-	if (equalLabelOpacity)
-	{
-		int alpha = first->getColor().alpha();
-		mLabelOpacitySlider->setSliderPosition(alpha);
-		mLabelOpacityValueLabel->setText(QString::number(alpha * 100 / 255) + "%");
-	}
-	else
-	{
-		mLabelOpacitySlider->setSliderPosition(0);
-		mLabelOpacityValueLabel->setText("");
-	}
+	bool equalLabelOpacity;
+	int alpha = getCurrentLabelOpacity(&equalLabelOpacity);
+	mLabelOpacitySlider->setValue(alpha);
+	mLabelOpacityValueLabel->setText(equalLabelOpacity ? QString::number(alpha * 100 / 255) + "%" : "");
 }
 
 QRectF PropertyWindow::calculateCurrentBoundingRect() const

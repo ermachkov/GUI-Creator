@@ -3,8 +3,7 @@
 -- All changes made in this file will be lost. DO NOT EDIT!
 -- *****************************************************************************
 
--- Location root table. Do not declare global variables with the same name!
-mainScreen =
+return
 {
 	-- Layers table
 	layers =

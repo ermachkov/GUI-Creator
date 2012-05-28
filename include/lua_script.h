@@ -13,7 +13,7 @@ public:
 	~LuaScript();
 
 	// Загружает Lua-скрипт
-	bool load(const QString &fileName);
+	bool load(const QString &fileName, int numReturnValues = 0);
 
 	// Возвращает строковое значение с вершины стека
 	bool getString(QString &value, bool pop = true) const;
@@ -62,6 +62,9 @@ public:
 
 	// Возвращает длину текущей таблицы
 	int getLength() const;
+
+	// Помещает в стек значение с вершины стека, если оно является таблицей
+	bool pushTable();
 
 	// Помещает таблицу в стек по имени
 	bool pushTable(const QString &name);

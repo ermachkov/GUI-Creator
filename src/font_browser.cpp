@@ -83,8 +83,8 @@ Qt::ItemFlags FontBrowser::FontFileSystemModel::flags(const QModelIndex &index) 
 	if (!index.isValid())
 		return flags;
 
-	// модификация флагов перетаскивания
-	flags ^= Qt::ItemIsDragEnabled;
+	// очистка флагов перетаскивания
+	flags &= ~Qt::ItemIsDragEnabled;
 
 	// разрешение перетаскивания если не директория и файл загружен
 	if (!isDir(index) && mFontBrowser->isImageLoaded(index))

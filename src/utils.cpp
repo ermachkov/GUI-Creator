@@ -45,7 +45,7 @@ QString Utils::addTrailingSlash(const QString &path)
 
 bool Utils::isFileNameValid(const QString &fileName)
 {
-	QRegExp regexp("([a-z][a-z\\d_]*/)*[a-z][a-z\\d_]*\\.[a-z]+");
+	QRegExp regexp("([a-zA-Z0-9-_]+/)*[a-zA-Z0-9-_]+\\.[a-zA-Z0-9-_]+");
 	return regexp.exactMatch(fileName);
 }
 
@@ -67,30 +67,11 @@ bool Utils::isFileNameValid(const QString &fileName, const QString &dir, QWidget
 	if (!isFileNameValid(relativePath))
 	{
 		QMessageBox::warning(parent, "", "Неверный путь к файлу " + relativePath + "\nПереименуйте файлы и папки так, чтобы они "
-			"начинались с буквы и состояли только из маленьких латинских букв, цифр и знаков подчеркивания");
+			"состояли только из латинских букв, цифр, тире и знаков подчеркивания");
 		return false;
 	}
 
 	return true;
-}
-
-QString Utils::toCamelCase(const QString &fileName)
-{
-	// заменяем все вхождения символа '_' и строчной буквы на одну заглавную букву
-	QString name = QFileInfo(fileName).baseName();
-	QString str;
-	for (int i = 0; i < name.size(); ++i)
-		str += name[i] == '_' && i < name.size() - 1 ? name[++i].toUpper() : name[i];
-	return str;
-}
-
-QString Utils::toPascalCase(const QString &fileName)
-{
-	// конвертируем строку в стиль Camel и меняем первую букву на заглавную
-	QString str = toCamelCase(fileName);
-	if (!str.isEmpty())
-		str[0] = str[0].toUpper();
-	return str;
 }
 
 bool Utils::fileExists(const QString &path)

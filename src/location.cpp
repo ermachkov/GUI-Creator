@@ -32,18 +32,14 @@ Location::~Location()
 
 bool Location::load(const QString &fileName)
 {
-	// загружаем Lua скрипт
+	// загружаем Lua скрипт и проверяем, что он вернул корневую таблицу
 	LuaScript script;
-	if (!script.load(fileName))
+	if (!script.load(fileName, 1) || !script.pushTable())
 		return false;
 
 	// пересоздаем корневой слой
 	delete mRootLayer;
 	mRootLayer = new LayerGroup();
-
-	// читаем корневую таблицу
-	if (!script.pushTable(Utils::toCamelCase(QFileInfo(fileName).baseName())))
-		return false;
 
 	// загружаем слои
 	QString type;
@@ -126,9 +122,8 @@ bool Location::save(const QString &fileName)
 	// записываем шапку файла
 	Utils::writeFileHeader(stream);
 
-	// записываем корневую таблицу
-	stream << endl << "-- Location root table. Do not declare global variables with the same name!" << endl;
-	stream << Utils::toCamelCase(QFileInfo(fileName).baseName()) << " =" << endl;
+	// записываем код для возврата корневой таблицы
+	stream << endl << "return" << endl;
 	stream << "{" << endl;
 
 	// сохраняем слои
@@ -173,16 +168,9 @@ bool Location::save(const QString &fileName)
 
 bool Location::loadTranslationFile(const QString &fileName)
 {
-	// загружаем Lua скрипт
+	// загружаем Lua скрипт и проверяем, что он вернул корневую таблицу
 	LuaScript script;
-	if (!script.load(fileName))
-	{
-		mRootLayer->loadTranslations(NULL);
-		return false;
-	}
-
-	// читаем корневую таблицу
-	if (!script.pushTable(Utils::toCamelCase(QFileInfo(fileName).baseName()) + "_translations"))
+	if (!script.load(fileName, 1) || !script.pushTable())
 	{
 		mRootLayer->loadTranslations(NULL);
 		return false;

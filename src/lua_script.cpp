@@ -13,7 +13,7 @@ LuaScript::~LuaScript()
 		lua_close(mLuaState);
 }
 
-bool LuaScript::load(const QString &fileName)
+bool LuaScript::load(const QString &fileName, int numReturnValues)
 {
 	// создаем и инициализируем новое состояние Lua
 	mLuaState = luaL_newstate();
@@ -22,9 +22,9 @@ bool LuaScript::load(const QString &fileName)
 	luaL_openlibs(mLuaState);
 
 	// загружаем и выполняем скрипт
-	if (luaL_loadfile(mLuaState, Utils::toStdString(fileName).c_str()) != 0 || lua_pcall(mLuaState, 0, 0, 0) != 0)
+	if (luaL_loadfile(mLuaState, Utils::toStdString(fileName).c_str()) != 0 || lua_pcall(mLuaState, 0, numReturnValues, 0) != 0)
 	{
-		qDebug() << lua_tostring(mLuaState, -1);
+		qWarning() << lua_tostring(mLuaState, -1);
 		lua_pop(mLuaState, 1);
 		return false;
 	}
@@ -187,10 +187,9 @@ int LuaScript::getLength() const
 	return lua_objlen(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -1);
 }
 
-bool LuaScript::pushTable(const QString &name)
+bool LuaScript::pushTable()
 {
-	// помещаем таблицу в стек
-	lua_getfield(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -1, name.toStdString().c_str());
+	// проверяем значение на вершине стека
 	if (lua_istable(mLuaState, -1) != 0)
 	{
 		++mTableIndex;
@@ -202,20 +201,17 @@ bool LuaScript::pushTable(const QString &name)
 	return false;
 }
 
+bool LuaScript::pushTable(const QString &name)
+{
+	lua_getfield(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -1, name.toStdString().c_str());
+	return pushTable();
+}
+
 bool LuaScript::pushTable(int index)
 {
-	// помещаем таблицу в стек
 	lua_pushinteger(mLuaState, index);
 	lua_gettable(mLuaState, mTableIndex == 0 ? LUA_GLOBALSINDEX : -2);
-	if (lua_istable(mLuaState, -1) != 0)
-	{
-		++mTableIndex;
-		return true;
-	}
-
-	// удаляем неверный элемент из стека
-	lua_pop(mLuaState, 1);
-	return false;
+	return pushTable();
 }
 
 void LuaScript::firstEntry()

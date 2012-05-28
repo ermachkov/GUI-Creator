@@ -77,19 +77,19 @@ private slots:
 
 	void on_mSpriteFileNameBrowsePushButton_clicked();
 
-	void on_mSpriteOpacitySlider_actionTriggered(int action);
+	void on_mSpriteOpacitySlider_sliderMoved(int value);
 
-	void on_mSpriteOpacitySlider_sliderMoved(int position);
+	void on_mSpriteOpacitySlider_valueChanged(int value);
 
 	void on_mTextLineEdit_editingFinished();
 
 	void on_mTextEditPushButton_clicked();
 
-	void on_mLabelFileNameComboBox_activated(const QString &arg);
+	void on_mLabelFileNameComboBox_activated(const QString &text);
 
 	void onFontSizeEditingFinished();
 
-	void on_mFontSizeComboBox_activated(const QString &arg);
+	void on_mFontSizeComboBox_activated(const QString &text);
 
 	void onHorzAlignmentClicked(QAbstractButton *button);
 
@@ -97,11 +97,11 @@ private slots:
 
 	void onLineSpacingEditingFinished();
 
-	void on_mLineSpacingComboBox_activated(const QString &arg);
+	void on_mLineSpacingComboBox_activated(const QString &text);
 
-	void on_mLabelOpacitySlider_actionTriggered(int action);
+	void on_mLabelOpacitySlider_sliderMoved(int value);
 
-	void on_mLabelOpacitySlider_sliderMoved(int position);
+	void on_mLabelOpacitySlider_valueChanged(int value);
 
 	void on_mLocalizationPushButton_clicked();
 
@@ -170,8 +170,12 @@ private:
 	QString getCurrentRotationAngle() const;
 	QString getCurrentRotationCenterX() const;
 	QString getCurrentRotationCenterY() const;
+	int getCurrentSpriteOpacity(bool *equal = NULL) const;
+	QString getCurrentText() const;
+	QString getCurrentLabelFileName() const;
 	QString getCurrentFontSize() const;
 	QString getCurrentLineSpacing() const;
+	int getCurrentLabelOpacity(bool *equal = NULL) const;
 
 	// Устанавливает новую позицию для выделенных объектов
 	void setNewPosition();
@@ -190,7 +194,7 @@ private:
 	void updateSpriteWidgets();
 	void updateLabelWidgets();
 
-	// просчет текущего общего ограничевающего прямоугольника
+	// просчет текущего общего ограничивающего прямоугольника
 	QRectF calculateCurrentBoundingRect() const;
 
 	// просчет процентного расположения центра вращения
@@ -217,6 +221,8 @@ private:
 
 	QIcon               mLockTextureSizeIcon;       // иконка для кнопки блокировки изменения размера
 	QIcon               mUnlockTextureSizeIcon;     // иконка для кнопки разблокировки изменения размера
+
+	bool                mOpacitySliderMoved;        // Флаг перемещения ползунка прозрачности
 };
 
 #endif // PROPERTY_WINDOW_H

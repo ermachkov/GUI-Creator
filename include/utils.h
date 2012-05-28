@@ -39,12 +39,6 @@ public:
 	// Проверяет имя файла на валидность и выдает диалоговое окно в случае ошибки
 	static bool isFileNameValid(const QString &fileName, const QString &dir, QWidget *parent);
 
-	// Конвертирует правильное имя файла в стиль Camel
-	static QString toCamelCase(const QString &fileName);
-
-	// Конвертирует правильное имя файла в стиль Pascal
-	static QString toPascalCase(const QString &fileName);
-
 	// Проверяет существование файла с чувствительностью к регистру
 	static bool fileExists(const QString &path);
 
