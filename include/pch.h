@@ -16,7 +16,7 @@
 // FTGL
 #include <FTGL/ftgl.h>
 
-// Freetype 2
+// FreeType 2
 #include <ft2build.h>
 #include FT_FREETYPE_H
 

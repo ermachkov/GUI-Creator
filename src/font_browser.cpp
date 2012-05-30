@@ -196,9 +196,9 @@ void FontBrowser::PreviewItemDelegate::createImage(const QStyleOptionViewItem &o
 		}
 
 		// определение размера требуемой области рисования
-		QSizeF floatTextSize = QSizeF(tempFont->getWidth(text), tempFont->getHeight());
+		QSizeF floatTextSize(tempFont->getWidth(text), tempFont->getHeight());
 		// округление по модулю вверх...
-		QSize textSize =  QSize(qCeil(floatTextSize.width()), qCeil(floatTextSize.height()));
+		QSize textSize(qCeil(floatTextSize.width()), qCeil(floatTextSize.height()));
 
 		// пересоздание фреймбуфера, если требуемые размеры больше текущии размеров фреймбуфера
 		if (textSize.width() > mFrameBuffer->width() || textSize.height() > mFrameBuffer->height())
