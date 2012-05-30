@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "property_window.h"
-#include "label.h"
 #include "layer.h"
 #include "project.h"
 #include "sprite.h"
@@ -422,6 +421,15 @@ void PropertyWindow::on_mSpriteOpacitySlider_valueChanged(int value)
 
 void PropertyWindow::on_mTextLineEdit_editingFinished()
 {
+	// откатываем изменения, если поле ввода пустое
+	if (mTextLineEdit->text().isEmpty())
+	{
+		QString text = getCurrentText();
+		text.replace("\n", "\\n");
+		mTextLineEdit->setText(text);
+		return;
+	}
+
 	// проверяем, что юзер действительно ввел новое значение
 	QString oldText = getCurrentText();
 	QString newText = mTextLineEdit->text();
@@ -450,19 +458,23 @@ void PropertyWindow::on_mTextEditPushButton_clicked()
 	QVBoxLayout *vBoxLayout = new QVBoxLayout(textDialog);
 
 	// многострочное поле ввода
-	QPlainTextEdit *plainTextEdit = new QPlainTextEdit(getCurrentText());
-	vBoxLayout->addWidget(plainTextEdit);
+	mPlainTextEdit = new QPlainTextEdit(getCurrentText());
+	vBoxLayout->addWidget(mPlainTextEdit);
 
 	// кнопки OK/Cancel
-	QDialogButtonBox *dialogButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-	vBoxLayout->addWidget(dialogButtonBox);
-	connect(dialogButtonBox, SIGNAL(accepted()), textDialog, SLOT(accept()));
-	connect(dialogButtonBox, SIGNAL(rejected()), textDialog, SLOT(reject()));
+	mDialogButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+	vBoxLayout->addWidget(mDialogButtonBox);
+	connect(mDialogButtonBox, SIGNAL(accepted()), textDialog, SLOT(accept()));
+	connect(mDialogButtonBox, SIGNAL(rejected()), textDialog, SLOT(reject()));
+
+	// разрешаем/запрещаем кнопку OK в зависимости от содержимого поля ввода
+	connect(mPlainTextEdit, SIGNAL(textChanged()), this, SLOT(onPlainTextEditTextChanged()));
+	onPlainTextEditTextChanged();
 
 	// показываем диалоговое окно
 	if (textDialog->exec() == QDialog::Accepted)
 	{
-		QString text = plainTextEdit->toPlainText();
+		QString text = mPlainTextEdit->toPlainText();
 		text.replace("\n", "\\n");
 		mTextLineEdit->setText(text);
 		on_mTextLineEdit_editingFinished();
@@ -470,6 +482,12 @@ void PropertyWindow::on_mTextEditPushButton_clicked()
 
 	// удаляем диалог по завершению ввода
 	delete textDialog;
+}
+
+void PropertyWindow::onPlainTextEditTextChanged()
+{
+	// запрещаем кнопку OK, если юзер очистил поле ввода
+	mDialogButtonBox->button(QDialogButtonBox::Ok)->setEnabled(!mPlainTextEdit->toPlainText().isEmpty());
 }
 
 void PropertyWindow::on_mLabelFileNameComboBox_activated(const QString &text)
@@ -523,44 +541,54 @@ void PropertyWindow::on_mFontSizeComboBox_activated(const QString &text)
 
 void PropertyWindow::onHorzAlignmentClicked(QAbstractButton *button)
 {
-	Label::HorzAlignment horzAlignment;
+	// проверяем, что юзер действительно ввел новое значение
+	bool equalHorzAlignment;
+	Label::HorzAlignment oldHorzAlignment = getCurrentHorzAlignment(&equalHorzAlignment);
+	Label::HorzAlignment newHorzAlignment;
 	if (button == mHorzAlignmentLeftPushButton)
-		horzAlignment = Label::HORZ_ALIGN_LEFT;
+		newHorzAlignment = Label::HORZ_ALIGN_LEFT;
 	else if (button == mHorzAlignmentCenterPushButton)
-		horzAlignment = Label::HORZ_ALIGN_CENTER;
+		newHorzAlignment = Label::HORZ_ALIGN_CENTER;
 	else
-		horzAlignment = Label::HORZ_ALIGN_RIGHT;
-
-	// устанавливаем новое горизонтальное выравнивание для выделенных объектов
-	foreach (GameObject *obj, mSelectedObjects)
+		newHorzAlignment = Label::HORZ_ALIGN_RIGHT;
+	if (!equalHorzAlignment || newHorzAlignment != oldHorzAlignment)
 	{
-		Label *it = dynamic_cast<Label *>(obj);
-		it->setHorzAlignment(horzAlignment);
-	}
+		// устанавливаем новое горизонтальное выравнивание для выделенных объектов
+		foreach (GameObject *obj, mSelectedObjects)
+		{
+			Label *it = dynamic_cast<Label *>(obj);
+			it->setHorzAlignment(newHorzAlignment);
+		}
 
-	// посылаем сигналы об изменении локации и слоев
-	emitLocationAndLayerChangedSignals("Изменение выравнивания надписей");
+		// посылаем сигналы об изменении локации и слоев
+		emitLocationAndLayerChangedSignals("Изменение выравнивания надписей");
+	}
 }
 
 void PropertyWindow::onVertAlignmentClicked(QAbstractButton *button)
 {
-	Label::VertAlignment vertAlignment;
+	// проверяем, что юзер действительно ввел новое значение
+	bool equalVertAlignment;
+	Label::VertAlignment oldVertAlignment = getCurrentVertAlignment(&equalVertAlignment);
+	Label::VertAlignment newVertAlignment;
 	if (button == mVertAlignmentTopPushButton)
-		vertAlignment = Label::VERT_ALIGN_TOP;
+		newVertAlignment = Label::VERT_ALIGN_TOP;
 	else if (button == mVertAlignmentCenterPushButton)
-		vertAlignment = Label::VERT_ALIGN_CENTER;
+		newVertAlignment = Label::VERT_ALIGN_CENTER;
 	else
-		vertAlignment = Label::VERT_ALIGN_BOTTOM;
-
-	// устанавливаем новое вертикальное выравнивание для выделенных объектов
-	foreach (GameObject *obj, mSelectedObjects)
+		newVertAlignment = Label::VERT_ALIGN_BOTTOM;
+	if (!equalVertAlignment || newVertAlignment != oldVertAlignment)
 	{
-		Label *it = dynamic_cast<Label *>(obj);
-		it->setVertAlignment(vertAlignment);
-	}
+		// устанавливаем новое вертикальное выравнивание для выделенных объектов
+		foreach (GameObject *obj, mSelectedObjects)
+		{
+			Label *it = dynamic_cast<Label *>(obj);
+			it->setVertAlignment(newVertAlignment);
+		}
 
-	// посылаем сигналы об изменении локации и слоев
-	emitLocationAndLayerChangedSignals("Изменение выравнивания надписей");
+		// посылаем сигналы об изменении локации и слоев
+		emitLocationAndLayerChangedSignals("Изменение выравнивания надписей");
+	}
 }
 
 void PropertyWindow::onLineSpacingEditingFinished()
@@ -916,6 +944,36 @@ QString PropertyWindow::getCurrentFontSize() const
 	return equalFontSize ? QString::number(first->getFontSize()) : "";
 }
 
+Label::HorzAlignment PropertyWindow::getCurrentHorzAlignment(bool *equal) const
+{
+	bool equalHorzAlignment = true;
+	Label *first = dynamic_cast<Label *>(mSelectedObjects.front());
+	foreach (GameObject *obj, mSelectedObjects)
+	{
+		Label *it = dynamic_cast<Label *>(obj);
+		if (it->getHorzAlignment() != first->getHorzAlignment())
+			equalHorzAlignment = false;
+	}
+	if (equal != NULL)
+		*equal = equalHorzAlignment;
+	return equalHorzAlignment ? first->getHorzAlignment() : Label::HORZ_ALIGN_LEFT;
+}
+
+Label::VertAlignment PropertyWindow::getCurrentVertAlignment(bool *equal) const
+{
+	bool equalVertAlignment = true;
+	Label *first = dynamic_cast<Label *>(mSelectedObjects.front());
+	foreach (GameObject *obj, mSelectedObjects)
+	{
+		Label *it = dynamic_cast<Label *>(obj);
+		if (it->getVertAlignment() != first->getVertAlignment())
+			equalVertAlignment = false;
+	}
+	if (equal != NULL)
+		*equal = equalVertAlignment;
+	return equalVertAlignment ? first->getVertAlignment() : Label::VERT_ALIGN_TOP;
+}
+
 QString PropertyWindow::getCurrentLineSpacing() const
 {
 	bool equalLineSpacing = true;
@@ -1213,8 +1271,6 @@ void PropertyWindow::updateSpriteWidgets()
 void PropertyWindow::updateLabelWidgets()
 {
 	// флаги идентичности значений свойств объектов в группе
-	bool equalHorzAlignment = true;
-	bool equalVertAlignment = true;
 	bool equalLabelColor = true;
 
 	Q_ASSERT(!mSelectedObjects.empty());
@@ -1224,12 +1280,6 @@ void PropertyWindow::updateLabelWidgets()
 	foreach (GameObject *obj, mSelectedObjects)
 	{
 		Label *it = dynamic_cast<Label *>(obj);
-
-		if (it->getHorzAlignment() != first->getHorzAlignment())
-			equalHorzAlignment = false;
-
-		if (it->getVertAlignment() != first->getVertAlignment())
-			equalVertAlignment = false;
 
 		if (it->getColor().rgb() != first->getColor().rgb())
 			equalLabelColor = false;
@@ -1256,44 +1306,46 @@ void PropertyWindow::updateLabelWidgets()
 		mFontSizeComboBox->lineEdit()->setText(getCurrentFontSize());
 
 	// горизонтальное выравнивание
-	mHorzAlignmentButtonGroup->setExclusive(false);
-	mHorzAlignmentLeftPushButton->setChecked(false);
-	mHorzAlignmentCenterPushButton->setChecked(false);
-	mHorzAlignmentRightPushButton->setChecked(false);
-	mHorzAlignmentButtonGroup->setExclusive(true);
+	bool equalHorzAlignment;
+	Label::HorzAlignment horzAlignment = getCurrentHorzAlignment(&equalHorzAlignment);
 	if (equalHorzAlignment)
-		switch (first->getHorzAlignment())
-		{
-		case Label::HORZ_ALIGN_LEFT:
+	{
+		if (horzAlignment == Label::HORZ_ALIGN_LEFT)
 			mHorzAlignmentLeftPushButton->setChecked(true);
-			break;
-		case Label::HORZ_ALIGN_CENTER:
+		else if (horzAlignment == Label::HORZ_ALIGN_CENTER)
 			mHorzAlignmentCenterPushButton->setChecked(true);
-			break;
-		case Label::HORZ_ALIGN_RIGHT:
+		else
 			mHorzAlignmentRightPushButton->setChecked(true);
-			break;
-		}
+	}
+	else
+	{
+		mHorzAlignmentButtonGroup->setExclusive(false);
+		mHorzAlignmentLeftPushButton->setChecked(false);
+		mHorzAlignmentCenterPushButton->setChecked(false);
+		mHorzAlignmentRightPushButton->setChecked(false);
+		mHorzAlignmentButtonGroup->setExclusive(true);
+	}
 
 	// вертикальное выравнивание
-	mVertAlignmentButtonGroup->setExclusive(false);
-	mVertAlignmentTopPushButton->setChecked(false);
-	mVertAlignmentCenterPushButton->setChecked(false);
-	mVertAlignmentBottomPushButton->setChecked(false);
-	mVertAlignmentButtonGroup->setExclusive(true);
+	bool equalVertAlignment;
+	Label::VertAlignment vertAlignment = getCurrentVertAlignment(&equalVertAlignment);
 	if (equalVertAlignment)
-		switch (first->getVertAlignment())
-		{
-		case Label::VERT_ALIGN_TOP:
+	{
+		if (vertAlignment == Label::VERT_ALIGN_TOP)
 			mVertAlignmentTopPushButton->setChecked(true);
-			break;
-		case Label::VERT_ALIGN_CENTER:
+		else if (vertAlignment == Label::VERT_ALIGN_CENTER)
 			mVertAlignmentCenterPushButton->setChecked(true);
-			break;
-		case Label::VERT_ALIGN_BOTTOM:
+		else
 			mVertAlignmentBottomPushButton->setChecked(true);
-			break;
-		}
+	}
+	else
+	{
+		mVertAlignmentButtonGroup->setExclusive(false);
+		mVertAlignmentTopPushButton->setChecked(false);
+		mVertAlignmentCenterPushButton->setChecked(false);
+		mVertAlignmentBottomPushButton->setChecked(false);
+		mVertAlignmentButtonGroup->setExclusive(true);
+	}
 
 	// межстрочный интервал
 	index = mLineSpacingComboBox->findText(getCurrentLineSpacing());

@@ -2,9 +2,9 @@
 #define PROPERTY_WINDOW_H
 
 #include "ui_property_window.h"
+#include "label.h"
 
 class BaseLayer;
-class GameObject;
 
 class PropertyWindow : public QDockWidget, private Ui::PropertyWindow
 {
@@ -84,6 +84,8 @@ private slots:
 	void on_mTextLineEdit_editingFinished();
 
 	void on_mTextEditPushButton_clicked();
+
+	void onPlainTextEditTextChanged();
 
 	void on_mLabelFileNameComboBox_activated(const QString &text);
 
@@ -174,6 +176,8 @@ private:
 	QString getCurrentText() const;
 	QString getCurrentLabelFileName() const;
 	QString getCurrentFontSize() const;
+	Label::HorzAlignment getCurrentHorzAlignment(bool *equal = NULL) const;
+	Label::VertAlignment getCurrentVertAlignment(bool *equal = NULL) const;
 	QString getCurrentLineSpacing() const;
 	int getCurrentLabelOpacity(bool *equal = NULL) const;
 
@@ -215,6 +219,9 @@ private:
 
 	QList<GameObject *> mSelectedObjects;           // текущие выделенные объекты
 	QPointF             mRotationCenter;            // текущий центр вращения выделенных объектов
+
+	QPlainTextEdit      *mPlainTextEdit;            // Многострочное поле ввода в диалоге ввода текста
+	QDialogButtonBox    *mDialogButtonBox;          // Группа кнопок в диалоге ввода текста
 
 	QButtonGroup        *mHorzAlignmentButtonGroup; // группировка кнопок горизонтального выравнивания
 	QButtonGroup        *mVertAlignmentButtonGroup; // группировка кнопок вертикального выравнивания

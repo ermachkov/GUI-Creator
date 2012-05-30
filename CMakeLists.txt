@@ -15,6 +15,7 @@ set(PRECOMPILED_HEADER include/pch.h)
 set(SOURCES
 	src/base_layer.cpp
 	src/editor_window.cpp
+	src/font.cpp
 	src/font_browser.cpp
 	src/font_manager.cpp
 	src/game_object.cpp
@@ -42,6 +43,7 @@ set(HEADERS
 	${PRECOMPILED_HEADER}
 	include/base_layer.h
 	include/editor_window.h
+	include/font.h
 	include/font_browser.h
 	include/font_manager.h
 	include/game_object.h

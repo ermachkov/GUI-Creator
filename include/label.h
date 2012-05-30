@@ -2,6 +2,7 @@
 #define LABEL_H
 
 #include "game_object.h"
+#include "font.h"
 
 // Класс текстовой надписи
 class Label : public GameObject
@@ -114,7 +115,7 @@ public:
 private:
 
 	// Тип для списка локализованных шрифтов
-	typedef QMap<QString, QSharedPointer<FTFont> > FontMap;
+	typedef QMap<QString, QSharedPointer<Font> > FontMap;
 
 	// Загружает локализованные шрифты
 	void loadFonts();
@@ -122,7 +123,7 @@ private:
 	QString                 mText;              // Текст надписи
 	QString                 mFileName;          // Имя файла со шрифтом
 	int                     mFontSize;          // Размер шрифта в пунктах
-	QSharedPointer<FTFont>  mFont;              // Шрифт надписи
+	QSharedPointer<Font>    mFont;              // Шрифт надписи
 	HorzAlignment           mHorzAlignment;     // Горизонтальное выравнивание текста
 	VertAlignment           mVertAlignment;     // Вертикальное выравнивание текста
 	qreal                   mLineSpacing;       // Межстрочный интервал

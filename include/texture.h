@@ -7,13 +7,19 @@ class Texture
 public:
 
 	// Конструктор
-	Texture(const QImage &image);
+	Texture();
+
+	// Конструктор
+	Texture(const QString &fileName);
 
 	// Деструктор
 	~Texture();
 
-	// Возвращает OpenGL идентификатор текстуры
-	GLuint getHandle() const;
+	// Проверяет, что текстура загружена
+	bool isLoaded() const;
+
+	// Проверяет, что текстура дефолтная
+	bool isDefault() const;
 
 	// Возвращает размер текстуры
 	QSize getSize() const;
@@ -29,8 +35,12 @@ public:
 
 private:
 
+	// Загружает текстуру из файла
+	void load(const QString &fileName);
+
 	GLuint  mHandle;    // Идентификатор текстуры
 	QSize   mSize;      // Размеры текстуры
+	bool    mDefault;   // Флаг текстуры по умолчанию
 };
 
 #endif // TEXTURE_H

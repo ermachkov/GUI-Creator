@@ -2,6 +2,7 @@
 #define FONT_MANAGER_H
 
 #include "singleton.h"
+#include "font.h"
 
 // Глобальный класс для создания и хранения шрифтов
 class FontManager : public Singleton<FontManager>
@@ -13,11 +14,8 @@ public:
 	// Конструктор
 	FontManager(QGLWidget *primaryGLWidget);
 
-	// Возвращает шрифт по умолчанию
-	QSharedPointer<FTFont> getDefaultFont() const;
-
 	// Загружает шрифт и возвращает указатель на него
-	QSharedPointer<FTFont> loadFont(const QString &fileName, int size, bool useDefaultFont = true);
+	QSharedPointer<Font> loadFont(const QString &fileName, int size, bool useDefaultFont = true);
 
 	// Устанавливает текущий контекст OpenGL
 	void makeCurrent();
@@ -28,23 +26,21 @@ private:
 	struct FontInfo
 	{
 		// Конструктор
-		FontInfo(const QString &fileName, int size, const QSharedPointer<FTFont> &font)
+		FontInfo(const QString &fileName, int size, const QSharedPointer<Font> &font)
 		: mFileName(fileName), mSize(size), mFont(font)
 		{
 		}
 
-		QString                 mFileName;  // Имя файла со шрифтом
-		int                     mSize;      // Размер шрифта в пунктах
-		QWeakPointer<FTFont>    mFont;      // Слабая ссылка на объект шрифта
+		QString             mFileName;  // Имя файла со шрифтом
+		int                 mSize;      // Размер шрифта в пунктах
+		QWeakPointer<Font>  mFont;      // Слабая ссылка на объект шрифта
 	};
 
 	// Тип для шрифтового кэша
 	typedef QList<FontInfo> FontCache;
 
-	QGLWidget               *mPrimaryGLWidget;  // OpenGL виджет для загрузки текстур в главном потоке
-	QSharedPointer<FTFont>  mDefaultFont;       // Шрифт по умолчанию
-	QByteArray              mDefaultFontBuffer; // Буфер в памяти для шрифта по умолчанию
-	FontCache               mFontCache;         // Шрифтовый кэш
+	QGLWidget   *mPrimaryGLWidget;  // OpenGL виджет для загрузки текстур в главном потоке
+	FontCache   mFontCache;         // Шрифтовый кэш
 };
 
 #endif // FONT_MANAGER_H

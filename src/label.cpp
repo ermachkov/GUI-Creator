@@ -20,7 +20,7 @@ Label::Label(const QString &name, int id, const QPointF &pos, const QString &fil
 	// задаем начальную позицию и размер надписи
 	if (!mFont.isNull())
 	{
-		mSize = QSizeF(qCeil(mFont->Advance(Utils::toStdWString(getText()).c_str())) + 1.0, qCeil(mFont->LineHeight()));
+		mSize = QSizeF(qCeil(mFont->getWidth(getText())) + 1.0, qCeil(mFont->getHeight()));
 		mPosition = QPointF(qFloor(pos.x() - mSize.width() / 2.0), qFloor(pos.y() - mSize.height() / 2.0));
 	}
 
@@ -294,7 +294,7 @@ QStringList Label::getMissedFiles() const
 	// возвращаем имена незагруженных шрифтов
 	QStringList missedFiles;
 	for (StringMap::const_iterator it = mFileNameMap.begin(); it != mFileNameMap.end(); ++it)
-		if (mFontMap[it.key()] == FontManager::getSingleton().getDefaultFont())
+		if (mFontMap[it.key()]->isDefault())
 			missedFiles.push_back(*it);
 	return missedFiles;
 }
@@ -317,7 +317,7 @@ void Label::draw()
 
 	// разбиваем текст на строки
 	QStringList lines;
-	qreal spaceWidth = mFont->Advance(L" ");
+	qreal spaceWidth = mFont->getWidth(" ");
 	foreach (const QString &line, getText().split("\n"))
 	{
 		// разбиваем строку на слова
@@ -326,7 +326,7 @@ void Label::draw()
 		foreach (const QString &word, line.split(" ", QString::SkipEmptyParts))
 		{
 			// определяем ширину текущего слова в пикселях
-			qreal wordWidth = mFont->Advance(Utils::toStdWString(word).c_str());
+			qreal wordWidth = mFont->getWidth(word);
 			width += wordWidth;
 
 			// переносим строку, если ее суммарная ширина превышает ширину текстового прямоугольника
@@ -349,7 +349,7 @@ void Label::draw()
 
 	// определяем начальную координату по оси Y с учетом вертикального выравнивания
 	qreal y = 0.0;
-	qreal height = ((lines.size() - 1) * mLineSpacing + 1.0) * mFont->LineHeight();
+	qreal height = ((lines.size() - 1) * mLineSpacing + 1.0) * mFont->getHeight();
 	if (mVertAlignment == VERT_ALIGN_CENTER)
 		y = (qAbs(mSize.height()) - height) / 2.0;
 	else if (mVertAlignment == VERT_ALIGN_BOTTOM)
@@ -360,7 +360,7 @@ void Label::draw()
 	{
 		// определяем координату текущей строки по оси X с учетом горизонтального выравнивания
 		qreal x = 0.0;
-		qreal width = mFont->Advance(Utils::toStdWString(line).c_str());
+		qreal width = mFont->getWidth(line);
 		if (mHorzAlignment == HORZ_ALIGN_CENTER)
 			x = (qAbs(mSize.width()) - width) / 2.0;
 		else if (mHorzAlignment == HORZ_ALIGN_RIGHT)
@@ -368,13 +368,13 @@ void Label::draw()
 
 		// отрисовываем текущую строку
 		glPushMatrix();
-		glTranslated(qCeil(x) * scale.x(), (qCeil(y) + qRound(mFont->LineHeight() / 1.25)) * scale.y(), 0.0);
+		glTranslated(qCeil(x) * scale.x(), (qCeil(y) + qRound(mFont->getHeight() / 1.25)) * scale.y(), 0.0);
 		glScaled(scale.x(), -scale.y(), 1.0);
-		mFont->Render(Utils::toStdWString(line).c_str());
+		mFont->draw(line);
 		glPopMatrix();
 
 		// переходим на следующую строку текста
-		y += mFont->LineHeight() * mLineSpacing;
+		y += mFont->getHeight() * mLineSpacing;
 	}
 
 	// восстанавливаем матрицу трансформации

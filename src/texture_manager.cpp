@@ -21,10 +21,6 @@ TextureManager::TextureManager(QGLWidget *primaryGLWidget, QGLWidget *secondaryG
 	mWatcher = new QFileSystemWatcher(this);
 	connect(mWatcher, SIGNAL(fileChanged(const QString &)), this, SLOT(onFileChanged(const QString &)));
 
-	// загружаем текстуру по умолчанию
-	mPrimaryGLWidget->makeCurrent();
-	mDefaultTexture = QSharedPointer<Texture>(new Texture(QImage(":/images/default_texture.jpg")));
-
 	// запускаем фоновый поток
 	mBackgroundThread->start();
 
@@ -42,42 +38,41 @@ TextureManager::~TextureManager()
 	delete mTextureLoader;
 }
 
-QSharedPointer<Texture> TextureManager::getDefaultTexture() const
-{
-	return mDefaultTexture;
-}
-
 QSharedPointer<Texture> TextureManager::loadTexture(const QString &fileName, bool useDefaultTexture)
 {
 	// сначала ищем текстуру в кэше
-	TextureCache::const_iterator it = mTextureCache.find(fileName);
+	TextureCache::iterator it = mTextureCache.find(fileName);
 	if (it != mTextureCache.end())
 	{
 		QSharedPointer<Texture> texture = it->mTexture.toStrongRef();
 		if (!texture.isNull())
 			return texture;
+		mTextureCache.erase(it);
 	}
 
 	// не нашли в кэше - загружаем текстуру из файла
 	QSharedPointer<Texture> texture;
-	QImage image;
 	QString path = Project::getSingleton().getRootDirectory() + fileName;
-	if (Utils::fileExists(path) && !(image = QImage(path)).isNull())
+	mPrimaryGLWidget->makeCurrent();
+	if (Utils::fileExists(path) && (texture = QSharedPointer<Texture>(new Texture(path)))->isLoaded())
 	{
 		// добавляем файл на слежение
 		if (!mWatcher->files().contains(path))
 			mWatcher->addPath(path);
 
-		// создаем текстуру и добавляем ее в кэш
-		mPrimaryGLWidget->makeCurrent();
-		texture = QSharedPointer<Texture>(new Texture(image));
+		// добавляем текстуру в кэш
 		mTextureCache.insert(fileName, TextureInfo(texture));
 	}
 	else if (useDefaultTexture)
 	{
 		// возвращаем текстуру по умолчанию
-		texture = mDefaultTexture;
+		texture = QSharedPointer<Texture>(new Texture());
 		mTextureCache.insert(fileName, TextureInfo(texture));
+	}
+	else
+	{
+		// очищаем указатель на текстуру в случае ошибки
+		texture.clear();
 	}
 
 	return texture;
@@ -97,7 +92,7 @@ void TextureManager::timerEvent(QTimerEvent *event)
 		QString path = Project::getSingleton().getRootDirectory() + it.key();
 		if (!it->mTexture.isNull())
 		{
-			if (it->mTexture == mDefaultTexture)
+			if (it->mTexture.toStrongRef()->isDefault())
 			{
 				// если файл текстуры был удален, а потом восстановлен, отправляем текстуру на загрузку
 				if (Utils::fileExists(path))
@@ -144,7 +139,7 @@ void TextureManager::onTextureLoaded(QString fileName, QSharedPointer<Texture> t
 {
 	// проверяем, используется ли текстура игровыми объектами
 	TextureCache::iterator it = mTextureCache.find(fileName);
-	if (it != mTextureCache.end() && !it->mTexture.isNull())
+	if (it != mTextureCache.end() && !it->mTexture.isNull() && (!it->mTexture.toStrongRef()->isDefault() || !texture.isNull()))
 	{
 		// добавляем файл на слежение
 		if (!texture.isNull())
@@ -155,9 +150,10 @@ void TextureManager::onTextureLoaded(QString fileName, QSharedPointer<Texture> t
 		}
 
 		// выдаем сигнал об изменении текстуры и заменяем ее в кэше
-		QSharedPointer<Texture> &newTexture = !texture.isNull() ? texture : mDefaultTexture;
+		mPrimaryGLWidget->makeCurrent();
+		QSharedPointer<Texture> newTexture = !texture.isNull() ? texture : QSharedPointer<Texture>(new Texture());
 		emit textureChanged(fileName, newTexture);
-		Q_ASSERT(it->mTexture.isNull() || it->mTexture == mDefaultTexture);
+		Q_ASSERT(it->mTexture.isNull());
 		it->mTexture = newTexture;
 	}
 }

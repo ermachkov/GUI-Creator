@@ -546,12 +546,22 @@
             </property>
             <item>
              <property name="text">
+              <string>0.5</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
               <string>0.75</string>
              </property>
             </item>
             <item>
              <property name="text">
-              <string>1.0</string>
+              <string>1</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>1.25</string>
              </property>
             </item>
             <item>
@@ -561,7 +571,7 @@
             </item>
             <item>
              <property name="text">
-              <string>2.0</string>
+              <string>2</string>
              </property>
             </item>
            </widget>

@@ -64,7 +64,7 @@ void Sprite::setFileName(const QString &fileName)
 	mTextureMap[language] = mTexture;
 
 	// пересчитываем размер спрайта, если загружена валидная текстура
-	if (mTexture != TextureManager::getSingleton().getDefaultTexture())
+	if (!mTexture->isDefault())
 	{
 		QPointF scale(mSize.width() / mTextureWidthMap[language], mSize.height() / mTextureHeightMap[language]);
 		setSize(QSizeF(mTexture->getWidth() * scale.x(), mTexture->getHeight() * scale.y()));
@@ -231,7 +231,7 @@ QStringList Sprite::getMissedFiles() const
 	// возвращаем имена незагруженных текстур
 	QStringList missedFiles;
 	for (StringMap::const_iterator it = mFileNameMap.begin(); it != mFileNameMap.end(); ++it)
-		if (mTextureMap[it.key()] == TextureManager::getSingleton().getDefaultTexture())
+		if (mTextureMap[it.key()]->isDefault())
 			missedFiles.push_back(*it);
 	return missedFiles;
 }
@@ -253,7 +253,7 @@ bool Sprite::changeTexture(const QString &fileName, const QSharedPointer<Texture
 				mTexture = texture;
 
 			// пересчитываем размер спрайта, если загружена валидная текстура
-			if (texture != TextureManager::getSingleton().getDefaultTexture())
+			if (!texture->isDefault())
 			{
 				// пересчитываем размеры спрайта
 				QPointF scale(mWidthMap[language] / mTextureWidthMap[language], mHeightMap[language] / mTextureHeightMap[language]);
@@ -301,7 +301,7 @@ void Sprite::loadTextures()
 		mTextureMap[language] = texture;
 
 		// пересчитываем размер спрайта, если загружена валидная текстура
-		if (texture != TextureManager::getSingleton().getDefaultTexture())
+		if (!texture->isDefault())
 		{
 			// пересчитываем размеры спрайта
 			QPointF scale(mWidthMap[language] / mTextureWidthMap[language], mHeightMap[language] / mTextureHeightMap[language]);

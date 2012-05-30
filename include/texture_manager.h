@@ -19,9 +19,6 @@ public:
 	// Деструктор
 	virtual ~TextureManager();
 
-	// Возвращает указатель на текстуру по умолчанию
-	QSharedPointer<Texture> getDefaultTexture() const;
-
 	// Загружает текстуру и возвращает указатель на нее
 	QSharedPointer<Texture> loadTexture(const QString &fileName, bool useDefaultTexture = true);
 
@@ -72,7 +69,6 @@ private:
 	QThread                 *mBackgroundThread;     // Фоновый поток
 	TextureLoader           *mTextureLoader;        // Загрузчик текстур
 	QFileSystemWatcher      *mWatcher;              // Объект слежения за файловой системой
-	QSharedPointer<Texture> mDefaultTexture;        // Текстура по умолчанию
 	TextureCache            mTextureCache;          // Текстурный кэш
 };
 

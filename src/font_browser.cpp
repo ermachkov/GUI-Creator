@@ -187,7 +187,7 @@ void FontBrowser::PreviewItemDelegate::createImage(const QStyleOptionViewItem &o
 		QString relativeFileName = absoluteFileName.mid(fontBrowser->getRootPath().size());
 
 		// загрузка шрифта во временную переменную
-		QSharedPointer<FTFont> tempFont = FontManager::getSingleton().loadFont(relativeFileName, fontSize, false);
+		QSharedPointer<Font> tempFont = FontManager::getSingleton().loadFont(relativeFileName, fontSize, false);
 
 		if (tempFont.isNull())
 		{
@@ -196,7 +196,7 @@ void FontBrowser::PreviewItemDelegate::createImage(const QStyleOptionViewItem &o
 		}
 
 		// определение размера требуемой области рисования
-		QSizeF floatTextSize = QSizeF(tempFont->Advance(Utils::toStdWString(text).c_str()), tempFont->LineHeight());
+		QSizeF floatTextSize = QSizeF(tempFont->getWidth(text), tempFont->getHeight());
 		// округление по модулю вверх...
 		QSize textSize =  QSize(qCeil(floatTextSize.width()), qCeil(floatTextSize.height()));
 
@@ -226,7 +226,7 @@ void FontBrowser::PreviewItemDelegate::createImage(const QStyleOptionViewItem &o
 
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
-		glTranslated(0.0, qRound(tempFont->LineHeight() / 1.25), 0.0);
+		glTranslated(0.0, qRound(tempFont->getHeight() / 1.25), 0.0);
 		glScaled(1.0, -1.0, 1.0);
 
 		// @@ выделенный текст с фокусом
@@ -238,7 +238,7 @@ void FontBrowser::PreviewItemDelegate::createImage(const QStyleOptionViewItem &o
 		glColor4d(textColor.redF(), textColor.greenF(), textColor.blueF(), 1.0);
 
 		// отрисовка предпросмотра шрифта
-		tempFont->Render(Utils::toStdWString(text).c_str());
+		tempFont->draw(text);
 
 		// копирование части отрисованного изображения
 		images.mHighlighted = mFrameBuffer->toImage().copy(0, 0, textSize.width(), textSize.height());
@@ -252,7 +252,7 @@ void FontBrowser::PreviewItemDelegate::createImage(const QStyleOptionViewItem &o
 		glColor4d(textColor.redF(), textColor.greenF(), textColor.blueF(), 1.0);
 
 		// отрисовка предпросмотра шрифта
-		tempFont->Render(Utils::toStdWString(text).c_str());
+		tempFont->draw(text);
 
 		images.mHighlightedInactive = mFrameBuffer->toImage().copy(0, 0, textSize.width(), textSize.height());
 
@@ -265,7 +265,7 @@ void FontBrowser::PreviewItemDelegate::createImage(const QStyleOptionViewItem &o
 		glColor4d(textColor.redF(), textColor.greenF(), textColor.blueF(), 1.0);
 
 		// отрисовка предпросмотра шрифта
-		tempFont->Render(Utils::toStdWString(text).c_str());
+		tempFont->draw(text);
 
 		images.mNormal = mFrameBuffer->toImage().copy(0, 0, textSize.width(), textSize.height());
 

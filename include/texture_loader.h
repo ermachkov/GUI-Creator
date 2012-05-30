@@ -25,12 +25,13 @@ public slots:
 	{
 		// загружаем текстуру и отправляем сигнал о завершении загрузки
 		QSharedPointer<Texture> texture;
-		QImage image;
 		QString path = Project::getSingleton().getRootDirectory() + fileName;
-		if (Utils::fileExists(path) && !(image = QImage(path)).isNull())
+		if (Utils::fileExists(path))
 		{
 			mSecondaryGLWidget->makeCurrent();
-			texture = QSharedPointer<Texture>(new Texture(image));
+			texture = QSharedPointer<Texture>(new Texture(path));
+			if (!texture->isLoaded())
+				texture.clear();
 			mSecondaryGLWidget->doneCurrent();
 		}
 		emit textureLoaded(fileName, texture);
