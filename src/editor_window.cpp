@@ -726,14 +726,13 @@ void EditorWindow::paintEvent(QPaintEvent *event)
 	}
 
 	// рисуем линии привязки
-	if (mEditorState == STATE_MOVE || mEditorState == STATE_RESIZE || mEditorState == STATE_MOVE_CENTER
-		|| mEditorState == STATE_HORZ_GUIDE || mEditorState == STATE_VERT_GUIDE)
+	if (isShowSnapLines())
 	{
 		painter.setPen(Qt::green);
 		if (!Utils::isNull(mHorzSnapLine))
-			drawSmartGuide(mHorzSnapLine, painter);
+			drawSnapLine(mHorzSnapLine, painter);
 		if (!Utils::isNull(mVertSnapLine))
-			drawSmartGuide(mVertSnapLine, painter);
+			drawSnapLine(mVertSnapLine, painter);
 	}
 
 	// рисуем линейки
@@ -1102,14 +1101,18 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 			// перемещаем центр вращения
 			mSnappedCenter = mSelectedObjects.size() == 1 ? mSelectedObjects.front()->getRotationCenter() : mOriginalCenter + offset;
 
-			// корректируем координаты линий привязок при одновременной привязке по обеим осям
-			if (!Utils::isNull(mHorzSnapLine) && !Utils::isNull(mVertSnapLine))
+			// корректируем координаты вертикальной линии привязки
+			if (!Utils::isNull(mVertSnapLine))
 			{
 				if (vertSnapOnCenter)
 					snapXCoord(mVertSnapLine.x1(), mSnappedRect.center().y(), mSnappedRect.center().y(), true, &mVertSnapLine);
 				else
 					snapXCoord(mVertSnapLine.x1(), mSnappedRect.top(), mSnappedRect.bottom(), true, &mVertSnapLine);
+			}
 
+			// корректируем координаты горизонтальной линии привязки
+			if (!Utils::isNull(mHorzSnapLine))
+			{
 				if (horzSnapOnCenter)
 					snapYCoord(mHorzSnapLine.y1(), mSnappedRect.center().x(), mSnappedRect.center().x(), true, &mHorzSnapLine);
 				else
@@ -1133,8 +1136,9 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 			case MARKER_CENTER_LEFT:
 				pivot = QPointF(mOriginalRect.right(), mOriginalRect.center().y());
 				roundPos = Utils::round(pos - pivot) + pivot;
-				scale.rx() = (pivot.x() - snapXCoord(roundPos.x(), pivot.y(), pivot.y(), true, &mVertSnapLine)) / mOriginalRect.width();
+				scale.rx() = (pivot.x() - snapXCoord(roundPos.x(), mOriginalRect.top(), mOriginalRect.bottom(), true, &mVertSnapLine)) / mOriginalRect.width();
 				scale.ry() = keepProportions ? qAbs(scale.x()) : 1.0;
+				snapXCoord(roundPos.x(), pivot.y() - mOriginalRect.height() / 2.0 * scale.y(), pivot.y() + mOriginalRect.height() / 2.0 * scale.y(), true, &mVertSnapLine);
 				break;
 
 			case MARKER_BOTTOM_LEFT:
@@ -1146,8 +1150,9 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 			case MARKER_BOTTOM_CENTER:
 				pivot = QPointF(mOriginalRect.center().x(), mOriginalRect.top());
 				roundPos = Utils::round(pos - pivot) + pivot;
-				scale.ry() = (snapYCoord(roundPos.y(), pivot.x(), pivot.x(), true, &mHorzSnapLine) - pivot.y()) / mOriginalRect.height();
+				scale.ry() = (snapYCoord(roundPos.y(), mOriginalRect.left(), mOriginalRect.right(), true, &mHorzSnapLine) - pivot.y()) / mOriginalRect.height();
 				scale.rx() = keepProportions ? qAbs(scale.y()) : 1.0;
+				snapYCoord(roundPos.y(), pivot.x() - mOriginalRect.width() / 2.0 * scale.x(), pivot.x() + mOriginalRect.width() / 2.0 * scale.x(), true, &mHorzSnapLine);
 				break;
 
 			case MARKER_BOTTOM_RIGHT:
@@ -1159,8 +1164,9 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 			case MARKER_CENTER_RIGHT:
 				pivot = QPointF(mOriginalRect.left(), mOriginalRect.center().y());
 				roundPos = Utils::round(pos - pivot) + pivot;
-				scale.rx() = (snapXCoord(roundPos.x(), pivot.y(), pivot.y(), true, &mVertSnapLine) - pivot.x()) / mOriginalRect.width();
+				scale.rx() = (snapXCoord(roundPos.x(), mOriginalRect.top(), mOriginalRect.bottom(), true, &mVertSnapLine) - pivot.x()) / mOriginalRect.width();
 				scale.ry() = keepProportions ? qAbs(scale.x()) : 1.0;
+				snapXCoord(roundPos.x(), pivot.y() - mOriginalRect.height() / 2.0 * scale.y(), pivot.y() + mOriginalRect.height() / 2.0 * scale.y(), true, &mVertSnapLine);
 				break;
 
 			case MARKER_TOP_RIGHT:
@@ -1172,8 +1178,9 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 			case MARKER_TOP_CENTER:
 				pivot = QPointF(mOriginalRect.center().x(), mOriginalRect.bottom());
 				roundPos = Utils::round(pos - pivot) + pivot;
-				scale.ry() = (pivot.y() - snapYCoord(roundPos.y(), pivot.x(), pivot.x(), true, &mHorzSnapLine)) / mOriginalRect.height();
+				scale.ry() = (pivot.y() - snapYCoord(roundPos.y(), mOriginalRect.left(), mOriginalRect.right(), true, &mHorzSnapLine)) / mOriginalRect.height();
 				scale.rx() = keepProportions ? qAbs(scale.y()) : 1.0;
+				snapYCoord(roundPos.y(), pivot.x() - mOriginalRect.width() / 2.0 * scale.x(), pivot.x() + mOriginalRect.width() / 2.0 * scale.x(), true, &mHorzSnapLine);
 				break;
 
 			default:
@@ -1288,12 +1295,13 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 			if (mSelectedObjects.size() == 1)
 				mSelectedObjects.front()->setRotationCenter(mSnappedCenter);
 
-			// корректируем координаты линий привязок при одновременной привязке по обеим осям
-			if (!Utils::isNull(mHorzSnapLine) && !Utils::isNull(mVertSnapLine))
-			{
+			// корректируем координаты вертикальной линии привязки
+			if (!Utils::isNull(mVertSnapLine))
 				snapXCoord(mSnappedCenter.x(), mSnappedCenter.y(), mSnappedCenter.y(), false, &mVertSnapLine);
+
+			// корректируем координаты горизонтальной линии привязки
+			if (!Utils::isNull(mHorzSnapLine))
 				snapYCoord(mSnappedCenter.y(), mSnappedCenter.x(), mSnappedCenter.x(), false, &mHorzSnapLine);
-			}
 		}
 		else if (mEditorState == STATE_HORZ_GUIDE)
 		{
@@ -1482,19 +1490,11 @@ void EditorWindow::dropEvent(QDropEvent *event)
 		return;
 	}
 
-	// определяем имя файла относительно корневого каталога
+	// проверяем путь к файлу на валидность и определяем имя файла относительно корневого каталога
 	QString rootDirectory = Project::getSingleton().getRootDirectory();
-	if (!path.startsWith(rootDirectory))
+	if (!Utils::isFileNameValid(path, rootDirectory, this))
 		return;
 	QString fileName = path.mid(rootDirectory.size());
-
-	// проверяем имя файла на валидность
-	if (!Utils::isFileNameValid(fileName))
-	{
-		QMessageBox::warning(this, "", "Неверный путь к файлу " + fileName + "\nПереименуйте файлы и папки так, чтобы они "
-			"состояли только из латинских букв, цифр, тире и знаков подчеркивания");
-		return;
-	}
 
 	// создаем объект нужного типа в окне редактора
 	GameObject *object;
@@ -1503,6 +1503,16 @@ void EditorWindow::dropEvent(QDropEvent *event)
 		object = mLocation->createSprite(pos, fileName);
 	else
 		object = mLocation->createLabel(pos, fileName, 32);
+
+	// привязываем объект к сетке, если необходимо
+	if (Options::getSingleton().isSnapToGrid())
+	{
+		QPointF position = object->getPosition();
+		int gridSpacing = getGridSpacing();
+		position.setX(qFloor((position.x() + gridSpacing / 2.0) / gridSpacing) * gridSpacing);
+		position.setY(qFloor((position.y() + gridSpacing / 2.0) / gridSpacing) * gridSpacing);
+		object->setPosition(position);
+	}
 
 	// выделяем созданный объект
 	selectGameObject(object);
@@ -1540,6 +1550,18 @@ QRectF EditorWindow::worldRectToWindow(const QRectF &rect) const
 	bottomRight.ry() = bottomRight.y() < qFloor(bottomRight.y()) + 0.5 ? qFloor(bottomRight.y()) : qFloor(bottomRight.y()) + 1.0;
 
 	return QRectF(topLeft, bottomRight);
+}
+
+int EditorWindow::getGridSpacing() const
+{
+	// подбираем подходящий шаг сетки
+	int gridSpacing = Options::getSingleton().getGridSpacing();
+	if (Options::getSingleton().isSnapToVisibleLines())
+	{
+		while (gridSpacing * mZoom < MIN_GRID_SPACING)
+			gridSpacing *= GRID_SPACING_COEFF;
+	}
+	return gridSpacing;
 }
 
 qreal EditorWindow::snapXCoord(qreal x, qreal y1, qreal y2, bool excludeSelection, QLineF *linePtr, qreal *distancePtr)
@@ -1580,15 +1602,8 @@ qreal EditorWindow::snapXCoord(qreal x, qreal y1, qreal y2, bool excludeSelectio
 	// привязываем координату к сетке
 	if (options.isSnapToGrid() && distance == SNAP_DISTANCE / mZoom)
 	{
-		// подбираем подходящий шаг сетки
-		int gridSpacing = options.getGridSpacing();
-		if (options.isSnapToVisibleLines())
-		{
-			while (gridSpacing * mZoom < MIN_GRID_SPACING)
-				gridSpacing *= GRID_SPACING_COEFF;
-		}
-
 		// округляем координату до выбранного шага сетки
+		int gridSpacing = getGridSpacing();
 		snappedX = qFloor((x + gridSpacing / 2.0) / gridSpacing) * gridSpacing;
 	}
 
@@ -1639,15 +1654,8 @@ qreal EditorWindow::snapYCoord(qreal y, qreal x1, qreal x2, bool excludeSelectio
 	// привязываем координату к сетке
 	if (options.isSnapToGrid() && distance == SNAP_DISTANCE / mZoom)
 	{
-		// подбираем подходящий шаг сетки
-		int gridSpacing = options.getGridSpacing();
-		if (options.isSnapToVisibleLines())
-		{
-			while (gridSpacing * mZoom < MIN_GRID_SPACING)
-				gridSpacing *= GRID_SPACING_COEFF;
-		}
-
 		// округляем координату до выбранного шага сетки
+		int gridSpacing = getGridSpacing();
 		snappedY = qFloor((y + gridSpacing / 2.0) / gridSpacing) * gridSpacing;
 	}
 
@@ -1692,8 +1700,8 @@ QPointF EditorWindow::calcTranslation(const QPointF &direction, bool shift, QVec
 QPointF EditorWindow::calcScale(const QPointF &pos, const QPointF &pivot, qreal sx, qreal sy, bool keepProportions)
 {
 	// привязываем точку к осям X и Y и вычисляем масштаб
-	qreal snappedX = snapXCoord(pos.x(), pos.y(), pos.y(), true, &mVertSnapLine);
-	qreal snappedY = snapYCoord(pos.y(), pos.x(), pos.x(), true, &mHorzSnapLine);
+	qreal snappedX = snapXCoord(pos.x(), qMin(pos.y(), pivot.y()), qMax(pos.y(), pivot.y()), true, &mVertSnapLine);
+	qreal snappedY = snapYCoord(pos.y(), qMin(pos.x(), pivot.x()), qMax(pos.x(), pivot.x()), true, &mHorzSnapLine);
 	QPointF scale((snappedX - pivot.x()) * sx / mOriginalRect.width(), (snappedY - pivot.y()) * sy / mOriginalRect.height());
 
 	// проверяем флаг сохранения пропорций
@@ -1704,22 +1712,26 @@ QPointF EditorWindow::calcScale(const QPointF &pos, const QPointF &pivot, qreal 
 		{
 			scale.ry() = Utils::sign(scale.y()) * qAbs(scale.x());
 			qreal y = mOriginalRect.height() * scale.y() * sy + pivot.y();
-			snapXCoord(pos.x(), y, y, true, &mVertSnapLine);
+			snapXCoord(snappedX, qMin(y, pivot.y()), qMax(y, pivot.y()), true, &mVertSnapLine);
 			mHorzSnapLine = QLineF();
 		}
 		else
 		{
 			scale.rx() = Utils::sign(scale.x()) * qAbs(scale.y());
 			qreal x = mOriginalRect.width() * scale.x() * sx + pivot.x();
-			snapYCoord(pos.y(), x, x, true, &mHorzSnapLine);
+			snapYCoord(snappedY, qMin(x, pivot.x()), qMax(x, pivot.x()), true, &mHorzSnapLine);
 			mVertSnapLine = QLineF();
 		}
 	}
-	else if (!Utils::isNull(mHorzSnapLine) && !Utils::isNull(mVertSnapLine))
+	else
 	{
-		// корректируем координаты линий привязок при одновременной привязке по обеим осям
-		snapXCoord(snappedX, snappedY, snappedY, true, &mVertSnapLine);
-		snapYCoord(snappedY, snappedX, snappedX, true, &mHorzSnapLine);
+		// корректируем координаты вертикальной линии привязки
+		if (!Utils::isNull(mVertSnapLine))
+			snapXCoord(snappedX, qMin(snappedY, pivot.y()), qMax(snappedY, pivot.y()), true, &mVertSnapLine);
+
+		// корректируем координаты горизонтальной линии привязки
+		if (!Utils::isNull(mHorzSnapLine))
+			snapYCoord(snappedY, qMin(snappedX, pivot.x()), qMax(snappedX, pivot.x()), true, &mHorzSnapLine);
 	}
 
 	return scale;
@@ -1900,7 +1912,13 @@ void EditorWindow::drawSelectionMarker(qreal x, qreal y, QPainter &painter)
 	painter.drawRect(QRectF(x - offset, y - offset, MARKER_SIZE - 1.0, MARKER_SIZE - 1.0));
 }
 
-void EditorWindow::drawSmartGuide(const QLineF &line, QPainter &painter)
+bool EditorWindow::isShowSnapLines() const
+{
+	return mEditorState == STATE_MOVE || mEditorState == STATE_RESIZE || mEditorState == STATE_MOVE_CENTER
+		|| mEditorState == STATE_HORZ_GUIDE || mEditorState == STATE_VERT_GUIDE;
+}
+
+void EditorWindow::drawSnapLine(const QLineF &line, QPainter &painter)
 {
 	// рисуем линию
 	QPointF p1 = worldToWindow(line.p1()), p2 = worldToWindow(line.p2());

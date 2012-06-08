@@ -212,6 +212,9 @@ private:
 	// Конвертирует мировые координаты прямоугольника в оконные с округлением
 	QRectF worldRectToWindow(const QRectF &rect) const;
 
+	// Возвращает текущий шаг сетки
+	int getGridSpacing() const;
+
 	// Привязывает координату X к сетке/направляющим
 	qreal snapXCoord(qreal x, qreal y1, qreal y2, bool excludeSelection, QLineF *linePtr = NULL, qreal *distancePtr = NULL);
 
@@ -248,8 +251,11 @@ private:
 	// Рисует маркер выделения
 	void drawSelectionMarker(qreal x, qreal y, QPainter &painter);
 
-	// Рисует умную направляющую
-	void drawSmartGuide(const QLineF &line, QPainter &painter);
+	// Проверяет, можно ли рисовать линии привязки
+	bool isShowSnapLines() const;
+
+	// Рисует линию привязки
+	void drawSnapLine(const QLineF &line, QPainter &painter);
 
 	Location            *mLocation;         // Игровая локация
 	QString             mFileName;          // Имя файла локации

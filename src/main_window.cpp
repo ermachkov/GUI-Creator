@@ -768,7 +768,7 @@ void MainWindow::onEditorWindowSelectionChanged(const QList<GameObject *> &objec
 
 void MainWindow::onEditorWindowMouseMoved(const QPointF &pos)
 {
-	mMousePosLabel->setText(QString("Мышь: %1, %2").arg(qFloor(pos.x())).arg(qFloor(pos.y())));
+	mMousePosLabel->setText(QString("Мышь: %1, %2").arg(qRound(pos.x())).arg(qRound(pos.y())));
 }
 
 void MainWindow::onEditorWindowUndoCommandChanged()
