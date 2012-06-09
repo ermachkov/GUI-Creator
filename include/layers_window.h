@@ -3,8 +3,8 @@
 
 #include "ui_layers_window.h"
 
-class Location;
 class BaseLayer;
+class Scene;
 
 // Класс окна слоев
 class LayersWindow : public QDockWidget, private Ui::LayersWindow
@@ -16,26 +16,26 @@ public:
 	// Конструктор
 	LayersWindow(QGLWidget *primaryGLWidget, QWidget *parent = NULL);
 
-	// Устанавливает текущую локацию
-	void setCurrentLocation(Location *location);
+	// Устанавливает текущую сцену
+	void setCurrentScene(Scene *scene);
 
 signals:
 
-	// Сигнал об изменении локации
-	void locationChanged(const QString &commandName);
+	// Сигнал об изменении сцены
+	void sceneChanged(const QString &commandName);
 
 	// Сигнал об изменении слоя в окне слоев
 	void layerChanged();
 
 	// Сигнал об изменении слоя в окне редактирования
-	void layerChanged(Location *location, BaseLayer *layer);
+	void layerChanged(Scene *scene, BaseLayer *layer);
 
 	// Сигнал об изменении слоя в окне свойств
 	void layerChanged(BaseLayer *layer);
 
 private slots:
 
-	void onLayersTreeWidgetLocationChanged(const QString &commandName);
+	void onLayersTreeWidgetSceneChanged(const QString &commandName);
 
 private:
 

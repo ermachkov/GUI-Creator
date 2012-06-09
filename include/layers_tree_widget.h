@@ -3,7 +3,7 @@
 
 #include "base_layer.h"
 
-class Location;
+class Scene;
 
 // Дерево слоёв
 class LayersTreeWidget : public QTreeWidget
@@ -27,9 +27,9 @@ public:
 	virtual ~LayersTreeWidget();
 
 	// пересоздание содержимого окна слоев
-	void setCurrentLocation(Location *location);
+	void setCurrentScene(Scene *scene);
 
-	Location *getCurrentLocation() const;
+	Scene *getCurrentScene() const;
 
 	void setPrimaryGLWidget(QGLWidget *primaryGLWidget);
 
@@ -38,8 +38,8 @@ public:
 
 signals:
 
-	// Сигнал об изменении локации
-	void locationChanged(const QString &commandName);
+	// Сигнал об изменении сцены
+	void sceneChanged(const QString &commandName);
 
 	// Сигнал об изменении слоя
 	void layerChanged();
@@ -56,7 +56,7 @@ public slots:
 	void onDelete();
 
 	// Обработчик изменения слоя в окне редактирования
-	void onEditorWindowLayerChanged(Location *location, BaseLayer *layer);
+	void onEditorWindowLayerChanged(Scene *scene, BaseLayer *layer);
 
 	// Обработчик изменения слоя в окне свойств
 	void onPropertyWindowLayerChanged(BaseLayer *layer);
@@ -171,7 +171,7 @@ private:
 	QIcon                  mLayerVisibleIcons[3]; // иконки для видимости
 	QIcon                  mLayerLockedIcons[3];  // иконки для блокировки слоя
 
-	Location              *mCurrentLocation;      // указатель на игровую локацию
+	Scene                 *mCurrentScene;         // указатель на текущую сцену
 
 	QGLWidget             *mPrimaryGLWidget;      // указатель на OpenGL виджет
 	QGLFramebufferObject  *mFrameBuffer;          // фреймбуфер для отрисовки иконки предпросмотра спрайта

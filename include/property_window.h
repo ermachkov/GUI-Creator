@@ -20,8 +20,8 @@ public:
 
 signals:
 
-	// Сигнал об изменении локации
-	void locationChanged(const QString &commandName);
+	// Сигнал об изменении сцены
+	void sceneChanged(const QString &commandName);
 
 	// Сигнал об изменении слоя
 	void layerChanged(BaseLayer *layer);
@@ -190,8 +190,8 @@ private:
 	// Устанавливает новый центр вращения для выделенных объектов
 	void setNewRotationCenter();
 
-	// Выдает сигналы об изменении локации и слоев, в которых находятся выделенные объекты
-	void emitLocationAndLayerChangedSignals(const QString &commandName);
+	// Выдает сигналы об изменении сцены и слоев, в которых находятся выделенные объекты
+	void emitSceneAndLayerChangedSignals(const QString &commandName);
 
 	// отображение значений параметров объектов в виджетах ГУИ
 	void updateCommonWidgets();

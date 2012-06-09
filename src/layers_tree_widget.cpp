@@ -2,9 +2,9 @@
 #include "layers_tree_widget.h"
 #include "base_layer.h"
 #include "game_object.h"
-#include "location.h"
 #include "layer.h"
 #include "layer_group.h"
+#include "scene.h"
 #include "utils.h"
 
 LayersTreeWidget::LayersTreeWidget(QWidget *parent)
@@ -56,19 +56,19 @@ LayersTreeWidget::~LayersTreeWidget()
 }
 
 
-void LayersTreeWidget::setCurrentLocation(Location *location)
+void LayersTreeWidget::setCurrentScene(Scene *scene)
 {
-	// сохранение текущей локации
-	mCurrentLocation = location;
+	// сохранение текущей сцены
+	mCurrentScene = scene;
 
 	// сохранение текущего слоя
-	BaseLayer *baseCurrent = mCurrentLocation->getActiveLayer();
+	BaseLayer *baseCurrent = mCurrentScene->getActiveLayer();
 
 	// Очистка окна слоев
 	clear();
 
 	// связывание с корневым элементом слоёв
-	createTreeItems(invisibleRootItem(), mCurrentLocation->getRootLayer());
+	createTreeItems(invisibleRootItem(), mCurrentScene->getRootLayer());
 
 	// восстановление текущего слоя
 	if (baseCurrent != NULL)
@@ -78,9 +78,9 @@ void LayersTreeWidget::setCurrentLocation(Location *location)
 	}
 }
 
-Location *LayersTreeWidget::getCurrentLocation() const
+Scene *LayersTreeWidget::getCurrentScene() const
 {
-	return mCurrentLocation;
+	return mCurrentScene;
 }
 
 void LayersTreeWidget::setPrimaryGLWidget(QGLWidget *primaryGLWidget)
@@ -102,7 +102,7 @@ void LayersTreeWidget::DEBUG_TREES()
 	QList<BaseLayer *> stackBase;
 
 	stackItem.push_back(invisibleRootItem());
-	stackBase.push_back(mCurrentLocation->getRootLayer());
+	stackBase.push_back(mCurrentScene->getRootLayer());
 
 	while (!stackItem.empty() || !stackBase.empty())
 	{
@@ -132,7 +132,7 @@ void LayersTreeWidget::DEBUG_TREES()
 	}
 
 	// сравнение текущего элемента
-	if (getBaseLayer(currentItem()) != mCurrentLocation->getActiveLayer())
+	if (getBaseLayer(currentItem()) != mCurrentScene->getActiveLayer())
 	{
 		qDebug() << "Error: Active with current elements are not equal";
 		return;
@@ -179,7 +179,7 @@ void LayersTreeWidget::onAddLayerGroup()
 		qDebug() << "Error in LayersWindow::onAddLayerGroup";
 	}
 
-	emit locationChanged("Создание группы слоев");
+	emit sceneChanged("Создание группы слоев");
 
 	DEBUG_TREES();
 }
@@ -221,7 +221,7 @@ void LayersTreeWidget::onAddLayer()
 		qDebug() << "Error in LayersWindow::onAddLayer";
 	}
 
-	emit locationChanged("Создание слоя");
+	emit sceneChanged("Создание слоя");
 
 	DEBUG_TREES();
 }
@@ -241,27 +241,27 @@ void LayersTreeWidget::onDelete()
 			delete item;
 		}
 
-		emit locationChanged("Удаление слоев");
+		emit sceneChanged("Удаление слоев");
 		emit layerChanged();
 	}
 
 	DEBUG_TREES();
 }
 
-void LayersTreeWidget::onEditorWindowLayerChanged(Location *location, BaseLayer *layer)
+void LayersTreeWidget::onEditorWindowLayerChanged(Scene *scene, BaseLayer *layer)
 {
 	// генерируем иконку предпросмотра
 	QIcon icon = createLayerIcon(layer);
 	layer->setThumbnail(icon);
 
-	// устанавливаем иконку для item, если локация текущая
-	if (mCurrentLocation == location)
+	// устанавливаем иконку для item, если сцена текущая
+	if (mCurrentScene == scene)
 		findItemByBaseLayer(layer)->setIcon(DATA_COLUMN, icon);
 }
 
 void LayersTreeWidget::onPropertyWindowLayerChanged(BaseLayer *layer)
 {
-	onEditorWindowLayerChanged(mCurrentLocation, layer);
+	onEditorWindowLayerChanged(mCurrentScene, layer);
 }
 
 void LayersTreeWidget::dragEnterEvent(QDragEnterEvent *event)
@@ -406,7 +406,7 @@ void LayersTreeWidget::dropEvent(QDropEvent *event)
 		delete itemSelected;
 	}
 
-	emit locationChanged(currentDropAction == Qt::MoveAction ? "Перемещение слоев" : "Копирование слоев");
+	emit sceneChanged(currentDropAction == Qt::MoveAction ? "Перемещение слоев" : "Копирование слоев");
 
 	// отладочное сравнение деревьев
 	DEBUG_TREES();
@@ -417,8 +417,8 @@ void LayersTreeWidget::keyPressEvent(QKeyEvent *event)
 	if (event->key() == Qt::Key_Delete)
 	{
 		// условие нажатия клавиши "Delete" если один слой или одна активная папка
-		if (mCurrentLocation->getRootLayer()->getNumChildLayers() != 1
-			|| mCurrentLocation->getActiveLayer() != mCurrentLocation->getRootLayer()->getChildLayer(0))
+		if (mCurrentScene->getRootLayer()->getNumChildLayers() != 1
+			|| mCurrentScene->getActiveLayer() != mCurrentScene->getRootLayer()->getChildLayer(0))
 		{
 			onDelete();
 		}
@@ -437,8 +437,8 @@ void LayersTreeWidget::contextMenuEvent(QContextMenuEvent *event)
 	QTreeWidgetItem *itemClicked = itemAt(event->pos());
 
 	// активация/деактивация пункта контекстного меню "Удалить" если один слой или одна активная папка
-	bool enableDelete = mCurrentLocation->getRootLayer()->getNumChildLayers() != 1
-		|| mCurrentLocation->getActiveLayer() != mCurrentLocation->getRootLayer()->getChildLayer(0);
+	bool enableDelete = mCurrentScene->getRootLayer()->getNumChildLayers() != 1
+		|| mCurrentScene->getActiveLayer() != mCurrentScene->getRootLayer()->getChildLayer(0);
 	mDeleteAction->setEnabled(enableDelete);
 
 	if (itemClicked != NULL)
@@ -449,21 +449,21 @@ void LayersTreeWidget::contextMenuEvent(QContextMenuEvent *event)
 
 void LayersTreeWidget::onCurrentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous)
 {
-	if (current != NULL && getBaseLayer(current) != mCurrentLocation->getActiveLayer())
+	if (current != NULL && getBaseLayer(current) != mCurrentScene->getActiveLayer())
 	{
 		// есть выделенный item и текущие слои не совпадают
 
 		// установка текущего текущего слоя BaseLayer *
-		mCurrentLocation->setActiveLayer(getBaseLayer(current));
+		mCurrentScene->setActiveLayer(getBaseLayer(current));
 	}
 /*
 	else
-		if (mCurrentLocation != NULL)
+		if (mCurrentScene != NULL)
 	{
 		// все вкладки закрыты
 
 		// установка отсутствия текущего слоя
-		mCurrentLocation->setActiveLayer(NULL);
+		mCurrentScene->setActiveLayer(NULL);
 	}
 */
 }
@@ -503,7 +503,7 @@ void LayersTreeWidget::onItemClicked(QTreeWidgetItem *item, int column)
 			break;
 		}
 
-		emit locationChanged("Изменение видимости слоя");
+		emit sceneChanged("Изменение видимости слоя");
 		emit layerChanged();
 	}
 	else if	(column == LOCK_COLUMN)
@@ -552,7 +552,7 @@ void LayersTreeWidget::onItemClicked(QTreeWidgetItem *item, int column)
 			break;
 		}
 
-		emit locationChanged("Изменение блокировки слоя");
+		emit sceneChanged("Изменение блокировки слоя");
 		emit layerChanged();
 	}
 	else if (column == DATA_COLUMN)
@@ -570,7 +570,7 @@ void LayersTreeWidget::onItemChanged(QTreeWidgetItem *item, int column)
 	{
 		getBaseLayer(item)->setName(item->text(DATA_COLUMN));
 
-		emit locationChanged("Переименование слоя");
+		emit sceneChanged("Переименование слоя");
 
 		DEBUG_TREES();
 	}
@@ -621,7 +621,7 @@ void LayersTreeWidget::onContextMenuTriggered(QAction *action)
 		// ручное досоздание дерева
 		createTreeItems(itemAdded, baseAdded);
 
-		emit locationChanged("Дублирование слоев");
+		emit sceneChanged("Дублирование слоев");
 	}
 	else if (action == mNewGroupAction)
 	{
@@ -691,7 +691,7 @@ QTreeWidgetItem *LayersTreeWidget::insertNewLayerGroup(int index, QTreeWidgetIte
 	// получение указателя BaseLayer на родителя
 	BaseLayer *baseParent = getBaseLayer(parent);
 	// создание BaseLayer с прикреплением к родителю
-	BaseLayer *baseGroup = mCurrentLocation->createLayerGroup(baseParent, index);
+	BaseLayer *baseGroup = mCurrentScene->createLayerGroup(baseParent, index);
 
 	// установка имени папки
 	newItem->setText(DATA_COLUMN, baseGroup->getName());
@@ -699,7 +699,7 @@ QTreeWidgetItem *LayersTreeWidget::insertNewLayerGroup(int index, QTreeWidgetIte
 	//newItem->setFlags(newItem->flags());
 
 	// установка текущести
-	//currentLocation->setActiveLayer(baseGroup);
+	//currentScene->setActiveLayer(baseGroup);
 	// сохранение указателя на BaseLayer в поле DATA_COLUMN
 	setBaseLayer(newItem, baseGroup);
 
@@ -753,7 +753,7 @@ void LayersTreeWidget::insertNewLayer(int index, QTreeWidgetItem *parent)
 	// получение указателя BaseLayer на родителя
 	BaseLayer *baseParent = getBaseLayer(parent);
 	// создание BaseLayer с прикреплением к родителю
-	BaseLayer *baseLayer = mCurrentLocation->createLayer(baseParent, index);
+	BaseLayer *baseLayer = mCurrentScene->createLayer(baseParent, index);
 
 	// установка имени слоя
 	newItem->setText(DATA_COLUMN, baseLayer->getName());
@@ -867,7 +867,7 @@ QString LayersTreeWidget::generateCopyName(const QString &name)
 
 	// подбираем индекс для нового имени
 	QString newName = name;
-	for (int i = index; mCurrentLocation->getRootLayer()->findLayerByName(newName) != NULL; ++i)
+	for (int i = index; mCurrentScene->getRootLayer()->findLayerByName(newName) != NULL; ++i)
 		newName = baseName + " копия" + (i > 1 ? " " + QString::number(i) : "");
 
 	return newName;
@@ -882,8 +882,8 @@ void LayersTreeWidget::adjustObjectNamesAndIds(BaseLayer *baseLayer)
 		// в слое проход по дочерним объектам
 		foreach(GameObject *object, layer->getGameObjects())
 		{
-			object->setName(mCurrentLocation->generateDuplicateName(object->getName()));
-			object->setObjectID(mCurrentLocation->generateDuplicateObjectID());
+			object->setName(mCurrentScene->generateDuplicateName(object->getName()));
+			object->setObjectID(mCurrentScene->generateDuplicateObjectID());
 		}
 	}
 	else

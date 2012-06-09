@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "layers_window.h"
-#include "location.h"
+#include "scene.h"
 
 LayersWindow::LayersWindow(QGLWidget *primaryGLWidget, QWidget *parent)
 : QDockWidget(parent)
@@ -17,22 +17,22 @@ LayersWindow::LayersWindow(QGLWidget *primaryGLWidget, QWidget *parent)
 	connect(mAddLayerPushButton, SIGNAL(clicked()), mLayersTreeWidget, SLOT(onAddLayer()));
 	connect(mDeletePushButton, SIGNAL(clicked()), mLayersTreeWidget, SLOT(onDelete()));
 
-	connect(this, SIGNAL(layerChanged(Location *, BaseLayer *)), mLayersTreeWidget, SLOT(onEditorWindowLayerChanged(Location *, BaseLayer *)));
+	connect(this, SIGNAL(layerChanged(Scene *, BaseLayer *)), mLayersTreeWidget, SLOT(onEditorWindowLayerChanged(Scene *, BaseLayer *)));
 	connect(this, SIGNAL(layerChanged(BaseLayer *)), mLayersTreeWidget, SLOT(onPropertyWindowLayerChanged(BaseLayer *)));
 
 	// перенаправление сигналов из LayersTreeWidget
-	connect(mLayersTreeWidget, SIGNAL(locationChanged(const QString &)), this, SLOT(onLayersTreeWidgetLocationChanged(const QString &)));
+	connect(mLayersTreeWidget, SIGNAL(sceneChanged(const QString &)), this, SLOT(onLayersTreeWidgetSceneChanged(const QString &)));
 	connect(mLayersTreeWidget, SIGNAL(layerChanged()), this, SIGNAL(layerChanged()));
 
 	mLayersTreeWidget->setPrimaryGLWidget(primaryGLWidget);
 }
 
-void LayersWindow::setCurrentLocation(Location *location)
+void LayersWindow::setCurrentScene(Scene *scene)
 {
-	bool enabled = location != NULL;
+	bool enabled = scene != NULL;
 
-	// локации есть - разблокировка GUI
-	// локации нет - блокировка GUI
+	// сцена есть - разблокировка GUI
+	// сцены нет - блокировка GUI
 	mLayersTreeWidget->setEnabled(enabled);
 	mAddLayerGroupPushButton->setEnabled(enabled);
 	mAddLayerPushButton->setEnabled(enabled);
@@ -41,32 +41,32 @@ void LayersWindow::setCurrentLocation(Location *location)
 	if (enabled)
 	{
 		// перенаправление обработки в метод виджета
-		mLayersTreeWidget->setCurrentLocation(location);
+		mLayersTreeWidget->setCurrentScene(scene);
 
 		// блокировка кнопки удаления если один слой или одна активная папка
 		setDeleteButtonState();
 	}
 	else
 	{
-		// отсутствует локация - очистка
+		// отсутствует сцена - очистка
 		mLayersTreeWidget->clear();
 	}
 }
 
-void LayersWindow::onLayersTreeWidgetLocationChanged(const QString &commandName)
+void LayersWindow::onLayersTreeWidgetSceneChanged(const QString &commandName)
 {
 	// блокировка кнопки удаления если один слой или одна активная папка
 	setDeleteButtonState();
 
-	emit locationChanged(commandName);
+	emit sceneChanged(commandName);
 }
 
 void LayersWindow::setDeleteButtonState()
 {
-	Location *location = mLayersTreeWidget->getCurrentLocation();
+	Scene *scene = mLayersTreeWidget->getCurrentScene();
 
-	bool enableDelete = location->getRootLayer()->getNumChildLayers() != 1
-		|| location->getActiveLayer() != location->getRootLayer()->getChildLayer(0);
+	bool enableDelete = scene->getRootLayer()->getNumChildLayers() != 1
+		|| scene->getActiveLayer() != scene->getRootLayer()->getChildLayer(0);
 
 	// активация/деактивация кнопки удаления
 	mDeletePushButton->setEnabled(enableDelete);

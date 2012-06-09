@@ -3,7 +3,7 @@
 
 class BaseLayer;
 class GameObject;
-class Location;
+class Scene;
 class Texture;
 
 // Класс окна редактора
@@ -16,28 +16,28 @@ public:
 	// Конструктор
 	EditorWindow(QWidget *parent, QGLWidget *shareWidget, const QString &fileName, QWidget *spriteWidget, QWidget *fontWidget);
 
-	// Загружает локацию из файла
+	// Загружает сцену из файла
 	bool load(const QString &fileName);
 
-	// Сохраняет локацию в файл
+	// Сохраняет сцену в файл
 	bool save(const QString &fileName);
 
 	// Загружает файл переводов
 	bool loadTranslationFile(const QString &fileName);
 
-	// Возвращает указатель на редактируемую игровую локацию
-	Location *getLocation() const;
+	// Возвращает указатель на редактируемую сцену
+	Scene *getScene() const;
 
-	// Возвращает имя файла локации
+	// Возвращает имя файла сцены
 	QString getFileName() const;
 
-	// Возвращает флаг безымянной локации
+	// Возвращает флаг безымянной сцены
 	bool isUntitled() const;
 
-	// Возвращает флаг неизмененной локации
+	// Возвращает флаг неизмененной сцены
 	bool isClean() const;
 
-	// Возвращает стек отмен локации
+	// Возвращает стек отмен сцены
 	QUndoStack *getUndoStack() const;
 
 	// Помещает в стек отмен новую команду
@@ -100,10 +100,10 @@ public:
 	// Устанавливает текущий язык
 	void setCurrentLanguage(const QString &language);
 
-	// Возвращает список отсутствующих файлов в локации
+	// Возвращает список отсутствующих файлов в сцене
 	QStringList getMissedFiles() const;
 
-	// Заменяет текстуру в локации
+	// Заменяет текстуру в сцене
 	void changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture);
 
 	// Обновляет прямоугольник выделения и центр вращения
@@ -123,8 +123,8 @@ signals:
 	// Сигнал об изменении свойств выделенных объектов
 	void objectsChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter);
 
-	// Сигнал об изменении локации
-	void locationChanged(const QString &commandName);
+	// Сигнал об изменении сцены
+	void sceneChanged(const QString &commandName);
 
 	// Сигнал об изменении координат мышки
 	void mouseMoved(const QPointF &pos);
@@ -133,7 +133,7 @@ signals:
 	void undoCommandChanged();
 
 	// Сигнал об изменении слоя
-	void layerChanged(Location *location, BaseLayer *layer);
+	void layerChanged(Scene *scene, BaseLayer *layer);
 
 protected:
 
@@ -242,8 +242,8 @@ private:
 	// Возвращает список родительских слоев выделенных объектов
 	QSet<BaseLayer *> getParentLayers() const;
 
-	// Выдает сигналы об изменении локации и заданных слоев
-	void emitLayerChangedSignals(const QSet<BaseLayer *> &layers, const QString &commandName);
+	// Выдает сигналы об изменении сцены и заданных слоев
+	void emitSceneAndLayerChangedSignals(const QSet<BaseLayer *> &layers, const QString &commandName);
 
 	// Ищет маркер выделения
 	SelectionMarker findSelectionMarker(const QPointF &pos, qreal size) const;
@@ -257,9 +257,9 @@ private:
 	// Рисует линию привязки
 	void drawSnapLine(const QLineF &line, QPainter &painter);
 
-	Location            *mLocation;         // Игровая локация
-	QString             mFileName;          // Имя файла локации
-	bool                mUntitled;          // Флаг безымянной локации
+	Scene               *mScene;            // Указатель на объект сцены
+	QString             mFileName;          // Имя файла сцены
+	bool                mUntitled;          // Флаг безымянной сцены
 	EditorState         mEditorState;       // Текущее состояние редактирования
 
 	bool                mEditEnabled;       // Флаг разрешения редактирования

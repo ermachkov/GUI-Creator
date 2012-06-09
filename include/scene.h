@@ -1,27 +1,27 @@
-#ifndef LOCATION_H
-#define LOCATION_H
+#ifndef SCENE_H
+#define SCENE_H
 
 class BaseLayer;
 class GameObject;
 class Layer;
 
-// Класс игровой локации
-class Location : public QObject
+// Класс сцены
+class Scene : public QObject
 {
 	Q_OBJECT
 
 public:
 
 	// Конструктор
-	Location(QObject *parent);
+	Scene(QObject *parent);
 
 	// Деструктор
-	virtual ~Location();
+	virtual ~Scene();
 
-	// Загружает локацию из файла
+	// Загружает сцену из файла
 	bool load(const QString &fileName);
 
-	// Сохраняет локацию в файл
+	// Сохраняет сцену в файл
 	bool save(const QString &fileName);
 
 	// Загружает файл переводов
@@ -39,13 +39,13 @@ public:
 	// Возвращает доступный активный слой для добавления/вставки объектов
 	Layer *getAvailableLayer() const;
 
-	// Возвращает стек отмен локации
+	// Возвращает стек отмен сцены
 	QUndoStack *getUndoStack() const;
 
-	// Возвращает флаг неизмененной локации
+	// Возвращает флаг неизмененной сцены
 	bool isClean() const;
 
-	// Устанавливает флаг неизмененной локации
+	// Устанавливает флаг неизмененной сцены
 	void setClean();
 
 	// Помещает в стек отмен новую команду
@@ -120,21 +120,21 @@ private:
 	public:
 
 		// Конструктор
-		UndoCommand(const QString &text, Location *location);
+		UndoCommand(const QString &text, Scene *scene);
 
-		// Восстанавливает ранее сохраненное состояние локации
+		// Восстанавливает ранее сохраненное состояние сцены
 		void restore();
 
 	private:
 
-		Location    *mLocation;     // Указатель на локацию
-		QByteArray  mData;          // Сохраненное состояние локации
+		Scene       *mScene;        // Указатель на объект сцены
+		QByteArray  mData;          // Сохраненное состояние сцены
 	};
 
-	// Загружает локацию из бинарного потока
+	// Загружает сцену из бинарного потока
 	bool load(QDataStream &stream);
 
-	// Сохраняет локацию в бинарный поток
+	// Сохраняет сцену в бинарный поток
 	bool save(QDataStream &stream);
 
 	BaseLayer       *mRootLayer;        // Корневой слой
@@ -142,7 +142,7 @@ private:
 
 	QUndoStack      *mUndoStack;        // Текущий стек отмен
 	int             mCommandIndex;      // Индекс текущей команды в стеке отмен
-	UndoCommand     *mInitialState;     // Начальное состояние локации
+	UndoCommand     *mInitialState;     // Начальное состояние сцены
 
 	int             mObjectIndex;       // Текущий индекс для генерации уникальных идентификаторов объектов
 	int             mLayerIndex;        // Текущий индекс для генерации имен слоев
@@ -154,4 +154,4 @@ private:
 	QList<qreal>    mVertGuides;        // Вертикальные направляющие
 };
 
-#endif // LOCATION_H
+#endif // SCENE_H

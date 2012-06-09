@@ -6,7 +6,7 @@
 return
 {
 	-- Paths to resource directories relative to the project root directory
-	locationsDirectory = "scenes/",
+	scenesDirectory = "scenes/",
 	localizationDirectory = "l10n/",
 	spritesDirectory = "sprites/",
 	fontsDirectory = "fonts/",

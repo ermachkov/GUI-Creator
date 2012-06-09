@@ -25,7 +25,6 @@ set(SOURCES
 	src/layer_group.cpp
 	src/layers_tree_widget.cpp
 	src/layers_window.cpp
-	src/location.cpp
 	src/lua_script.cpp
 	src/main.cpp
 	src/main_window.cpp
@@ -33,6 +32,7 @@ set(SOURCES
 	src/options_dialog.cpp
 	src/project.cpp
 	src/property_window.cpp
+	src/scene.cpp
 	src/sprite.cpp
 	src/sprite_browser.cpp
 	src/texture.cpp
@@ -53,13 +53,13 @@ set(HEADERS
 	include/layer_group.h
 	include/layers_tree_widget.h
 	include/layers_window.h
-	include/location.h
 	include/lua_script.h
 	include/main_window.h
 	include/options.h
 	include/options_dialog.h
 	include/project.h
 	include/property_window.h
+	include/scene.h
 	include/singleton.h
 	include/sprite.h
 	include/sprite_browser.h

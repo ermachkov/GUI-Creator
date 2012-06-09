@@ -30,7 +30,7 @@ void Project::close()
 	// устанавливаем значения по умолчанию
 	mFileName = "";
 	mRootDirectory = Utils::addTrailingSlash(QDir::currentPath());
-	mLocationsDirectory = "levels/";
+	mScenesDirectory = "scenes/";
 	mLocalizationDirectory = "l10n/";
 	mSpritesDirectory = "sprites/";
 	mFontsDirectory = "fonts/";
@@ -55,9 +55,9 @@ QString Project::getRootDirectory() const
 	return mRootDirectory;
 }
 
-QString Project::getLocationsDirectory() const
+QString Project::getScenesDirectory() const
 {
-	return mLocationsDirectory;
+	return mScenesDirectory;
 }
 
 QString Project::getLocalizationDirectory() const
@@ -114,10 +114,10 @@ bool Project::loadProjectFile(const QString &fileName)
 		return false;
 
 	// загружаем относительные пути к ресурсным каталогам
-	if (!script.getString("locationsDirectory", mLocationsDirectory) || !script.getString("localizationDirectory", mLocalizationDirectory)
+	if (!script.getString("scenesDirectory", mScenesDirectory) || !script.getString("localizationDirectory", mLocalizationDirectory)
 		|| !script.getString("spritesDirectory", mSpritesDirectory) || !script.getString("fontsDirectory", mFontsDirectory))
 		return false;
-	mLocationsDirectory = Utils::addTrailingSlash(mLocationsDirectory);
+	mScenesDirectory = Utils::addTrailingSlash(mScenesDirectory);
 	mLocalizationDirectory = Utils::addTrailingSlash(mLocalizationDirectory);
 	mSpritesDirectory = Utils::addTrailingSlash(mSpritesDirectory);
 	mFontsDirectory = Utils::addTrailingSlash(mFontsDirectory);
@@ -183,7 +183,7 @@ bool Project::saveProjectFile(const QString &fileName)
 
 	// записываем относительные пути к ресурсным каталогам
 	stream << "\t-- Paths to resource directories relative to the project root directory" << endl;
-	stream << "\tlocationsDirectory = " << Utils::quotify(mLocationsDirectory) << "," << endl;
+	stream << "\tscenesDirectory = " << Utils::quotify(mScenesDirectory) << "," << endl;
 	stream << "\tlocalizationDirectory = " << Utils::quotify(mLocalizationDirectory) << "," << endl;
 	stream << "\tspritesDirectory = " << Utils::quotify(mSpritesDirectory) << "," << endl;
 	stream << "\tfontsDirectory = " << Utils::quotify(mFontsDirectory) << "," << endl;

@@ -137,8 +137,8 @@ private slots:
 	// Обработчик изменения файла переводов
 	void onTranslationFileChanged(const QString &path);
 
-	// Обработчик изменения локации
-	void onLocationChanged(const QString &commandName);
+	// Обработчик изменения сцены
+	void onSceneChanged(const QString &commandName);
 
 	// Обработчик изменения выделения в окне редактирования
 	void onEditorWindowSelectionChanged(const QList<GameObject *> &objects, const QPointF &rotationCenter);
@@ -206,7 +206,7 @@ private:
 	// Создает новое окно редактирования
 	EditorWindow *createEditorWindow(const QString &fileName);
 
-	// Определяет имя файла переводов по имени файла локации
+	// Определяет имя файла переводов по имени файла сцены
 	QString getTranslationFileName(const QString &fileName) const;
 
 	// Обновляет состояния пунктов главного меню
@@ -218,7 +218,7 @@ private:
 	// Обновляет пункты меню Undo/Redo и звездочку в имени вкладки
 	void updateUndoRedoActions();
 
-	// Проверяет текущую локацию на наличие отсутствующих файлов
+	// Проверяет текущую сцену на наличие отсутствующих файлов
 	void checkMissedFiles();
 
 	SpriteBrowser       *mSpriteBrowser;            // Браузер спрайтов

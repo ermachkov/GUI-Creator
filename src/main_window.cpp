@@ -200,11 +200,11 @@ MainWindow::MainWindow()
 	connect(mZoomComboBox->lineEdit(), SIGNAL(editingFinished()), this, SLOT(onZoomEditingFinished()));
 
 	// связываем сигналы об изменениях в окне слоев
-	connect(mLayersWindow, SIGNAL(locationChanged(const QString &)), this, SLOT(onLocationChanged(const QString &)));
+	connect(mLayersWindow, SIGNAL(sceneChanged(const QString &)), this, SLOT(onSceneChanged(const QString &)));
 	connect(mLayersWindow, SIGNAL(layerChanged()), this, SLOT(onLayerWindowLayerChanged()));
 
 	// связываем сигналы об изменениях в окне свойств
-	connect(mPropertyWindow, SIGNAL(locationChanged(const QString &)), this, SLOT(onLocationChanged(const QString &)));
+	connect(mPropertyWindow, SIGNAL(sceneChanged(const QString &)), this, SLOT(onSceneChanged(const QString &)));
 	connect(mPropertyWindow, SIGNAL(objectsChanged(const QPointF &)), this, SLOT(onPropertyWindowObjectsChanged(const QPointF &)));
 	connect(mPropertyWindow, SIGNAL(allowedEditorActionsChanged()), this, SLOT(onPropertyWindowAllowedEditorActionsChanged()));
 	connect(mPropertyWindow, SIGNAL(layerChanged(BaseLayer *)), mLayersWindow, SIGNAL(layerChanged(BaseLayer *)));
@@ -342,7 +342,7 @@ void MainWindow::on_mOpenAction_triggered()
 	QString filter = "Файлы " + QCoreApplication::applicationName() + " (*.lua);;Все файлы (*)";
 	if (fileName.isEmpty())
 		fileName = QFileDialog::getOpenFileName(this, "Открыть", Options::getSingleton().getLastOpenedDirectory(), filter);
-	if (!Utils::isFileNameValid(fileName, Project::getSingleton().getRootDirectory() + Project::getSingleton().getLocationsDirectory(), this))
+	if (!Utils::isFileNameValid(fileName, Project::getSingleton().getRootDirectory() + Project::getSingleton().getScenesDirectory(), this))
 		return;
 
 	// сохраняем каталог с выбранным файлом
@@ -386,7 +386,7 @@ void MainWindow::on_mOpenAction_triggered()
 	// обновляем список последних файлов
 	updateRecentFilesActions(fileName);
 
-	// проверяем локацию на наличие отсутствующих файлов
+	// проверяем сцену на наличие отсутствующих файлов
 	checkMissedFiles();
 }
 
@@ -416,7 +416,7 @@ bool MainWindow::on_mSaveAsAction_triggered()
 	QString dir = editorWindow->isUntitled() ? Options::getSingleton().getLastOpenedDirectory() + editorWindow->getFileName() : editorWindow->getFileName();
 	QString filter = "Файлы " + QCoreApplication::applicationName() + " (*.lua);;Все файлы (*)";
 	QString fileName = QFileDialog::getSaveFileName(this, "Сохранить как", dir, filter);
-	if (!Utils::isFileNameValid(fileName, Project::getSingleton().getRootDirectory() + Project::getSingleton().getLocationsDirectory(), this))
+	if (!Utils::isFileNameValid(fileName, Project::getSingleton().getRootDirectory() + Project::getSingleton().getScenesDirectory(), this))
 		return false;
 
 	// сохраняем каталог с выбранным файлом
@@ -601,10 +601,10 @@ bool MainWindow::on_mTabWidget_tabCloseRequested(int index)
 	// удаляем вкладку вместе с окном редактора
 	if (close)
 	{
-		// сбрасываем текущую локацию
+		// сбрасываем текущую сцену
 		if (index == mTabWidget->currentIndex())
 		{
-			mLayersWindow->setCurrentLocation(NULL);
+			mLayersWindow->setCurrentScene(NULL);
 			mPropertyWindow->onEditorWindowSelectionChanged(QList<GameObject *>(), QPointF());
 		}
 
@@ -645,8 +645,8 @@ void MainWindow::on_mTabWidget_currentChanged(int index)
 		setWindowTitle("");
 		updateUndoRedoActions();
 
-		// устанавливаем текущую локацию
-		mLayersWindow->setCurrentLocation(editorWindow->getLocation());
+		// устанавливаем текущую сцену
+		mLayersWindow->setCurrentScene(editorWindow->getScene());
 		mPropertyWindow->onEditorWindowSelectionChanged(editorWindow->getSelectedObjects(), editorWindow->getRotationCenter());
 		mHistoryWindow->setUndoStack(editorWindow->getUndoStack());
 	}
@@ -679,8 +679,8 @@ void MainWindow::on_mTabWidget_currentChanged(int index)
 		setWindowFilePath("");
 		setWindowTitle(QCoreApplication::applicationName());
 
-		// сбрасываем текущую локацию
-		mLayersWindow->setCurrentLocation(NULL);
+		// сбрасываем текущую сцену
+		mLayersWindow->setCurrentScene(NULL);
 		mPropertyWindow->onEditorWindowSelectionChanged(QList<GameObject *>(), QPointF());
 		mHistoryWindow->setUndoStack(NULL);
 	}
@@ -731,7 +731,7 @@ void MainWindow::onLanguageChanged(const QString &language)
 	EditorWindow *editorWindow = getCurrentEditorWindow();
 	if (editorWindow != NULL)
 	{
-		mLayersWindow->setCurrentLocation(editorWindow->getLocation());
+		mLayersWindow->setCurrentScene(editorWindow->getScene());
 		mPropertyWindow->onEditorWindowSelectionChanged(editorWindow->getSelectedObjects(), editorWindow->getRotationCenter());
 	}
 }
@@ -747,7 +747,7 @@ void MainWindow::onTranslationFileChanged(const QString &path)
 	}
 }
 
-void MainWindow::onLocationChanged(const QString &commandName)
+void MainWindow::onSceneChanged(const QString &commandName)
 {
 	getCurrentEditorWindow()->pushCommand(commandName);
 	updateUndoRedoActions();
@@ -782,7 +782,7 @@ void MainWindow::onEditorWindowUndoCommandChanged()
 		editorWindow->loadTranslationFile(getTranslationFileName(editorWindow->getFileName()));
 
 	// обновляем окно слоев и главное меню
-	mLayersWindow->setCurrentLocation(editorWindow->getLocation());
+	mLayersWindow->setCurrentScene(editorWindow->getScene());
 	updateUndoRedoActions();
 }
 
@@ -829,10 +829,10 @@ EditorWindow *MainWindow::createEditorWindow(const QString &fileName)
 	connect(editorWindow, SIGNAL(zoomChanged(const QString &)), this, SLOT(onZoomChanged(const QString &)));
 	connect(editorWindow, SIGNAL(selectionChanged(const QList<GameObject *> &, const QPointF &)),
 		this, SLOT(onEditorWindowSelectionChanged(const QList<GameObject *> &, const QPointF &)));
-	connect(editorWindow, SIGNAL(locationChanged(const QString &)), this, SLOT(onLocationChanged(const QString &)));
+	connect(editorWindow, SIGNAL(sceneChanged(const QString &)), this, SLOT(onSceneChanged(const QString &)));
 	connect(editorWindow, SIGNAL(mouseMoved(const QPointF &)), this, SLOT(onEditorWindowMouseMoved(const QPointF &)));
 	connect(editorWindow, SIGNAL(undoCommandChanged()), this, SLOT(onEditorWindowUndoCommandChanged()));
-	connect(editorWindow, SIGNAL(layerChanged(Location *, BaseLayer *)), mLayersWindow, SIGNAL(layerChanged(Location *, BaseLayer *)));
+	connect(editorWindow, SIGNAL(layerChanged(Scene *, BaseLayer *)), mLayersWindow, SIGNAL(layerChanged(Scene *, BaseLayer *)));
 
 	// связывание сигналов изменения выделения объектов для отправки в ГУИ настроек
 	connect(editorWindow, SIGNAL(selectionChanged(const QList<GameObject *> &, const QPointF &)),
@@ -859,9 +859,9 @@ EditorWindow *MainWindow::createEditorWindow(const QString &fileName)
 QString MainWindow::getTranslationFileName(const QString &fileName) const
 {
 	Project &project = Project::getSingleton();
-	QString locationsDir = project.getRootDirectory() + project.getLocationsDirectory();
+	QString scenesDir = project.getRootDirectory() + project.getScenesDirectory();
 	QString localizationDir = project.getRootDirectory() + project.getLocalizationDirectory();
-	return localizationDir + fileName.mid(locationsDir.size());
+	return localizationDir + fileName.mid(scenesDir.size());
 }
 
 void MainWindow::updateMainMenuActions()

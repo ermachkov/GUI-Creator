@@ -2,9 +2,9 @@
 #include "editor_window.h"
 #include "game_object.h"
 #include "layer.h"
-#include "location.h"
 #include "options.h"
 #include "project.h"
+#include "scene.h"
 #include "sprite.h"
 #include "utils.h"
 
@@ -35,14 +35,14 @@ EditorWindow::EditorWindow(QWidget *parent, QGLWidget *shareWidget, const QStrin
 	// обновляем разрешенные операции редактирования
 	updateAllowedEditorActions();
 
-	// создаем новую локацию
-	mLocation = new Location(this);
-	connect(mLocation, SIGNAL(undoCommandChanged()), this, SIGNAL(undoCommandChanged()));
+	// создаем новую сцену
+	mScene = new Scene(this);
+	connect(mScene, SIGNAL(undoCommandChanged()), this, SIGNAL(undoCommandChanged()));
 }
 
 bool EditorWindow::load(const QString &fileName)
 {
-	if (mLocation->load(fileName))
+	if (mScene->load(fileName))
 	{
 		// устанавливаем имя файла
 		mFileName = fileName;
@@ -55,12 +55,12 @@ bool EditorWindow::load(const QString &fileName)
 
 bool EditorWindow::save(const QString &fileName)
 {
-	if (mLocation->save(fileName))
+	if (mScene->save(fileName))
 	{
-		// устанавливаем имя файла и флаг неизмененной локации
+		// устанавливаем имя файла и флаг неизмененной сцены
 		mFileName = fileName;
 		mUntitled = false;
-		mLocation->setClean();
+		mScene->setClean();
 		return true;
 	}
 
@@ -69,12 +69,12 @@ bool EditorWindow::save(const QString &fileName)
 
 bool EditorWindow::loadTranslationFile(const QString &fileName)
 {
-	return mLocation->loadTranslationFile(fileName);
+	return mScene->loadTranslationFile(fileName);
 }
 
-Location *EditorWindow::getLocation() const
+Scene *EditorWindow::getScene() const
 {
-	return mLocation;
+	return mScene;
 }
 
 QString EditorWindow::getFileName() const
@@ -89,17 +89,17 @@ bool EditorWindow::isUntitled() const
 
 bool EditorWindow::isClean() const
 {
-	return mLocation->isClean();
+	return mScene->isClean();
 }
 
 QUndoStack *EditorWindow::getUndoStack() const
 {
-	return mLocation->getUndoStack();
+	return mScene->getUndoStack();
 }
 
 void EditorWindow::pushCommand(const QString &commandName)
 {
-	mLocation->pushCommand(commandName);
+	mScene->pushCommand(commandName);
 }
 
 qreal EditorWindow::getZoom() const
@@ -138,22 +138,22 @@ QPointF EditorWindow::getRotationCenter() const
 
 bool EditorWindow::canUndo() const
 {
-	return mLocation->canUndo();
+	return mScene->canUndo();
 }
 
 bool EditorWindow::canRedo() const
 {
-	return mLocation->canRedo();
+	return mScene->canRedo();
 }
 
 void EditorWindow::undo()
 {
-	mLocation->undo();
+	mScene->undo();
 }
 
 void EditorWindow::redo()
 {
-	mLocation->redo();
+	mScene->redo();
 }
 
 void EditorWindow::cut()
@@ -164,7 +164,7 @@ void EditorWindow::cut()
 		QSet<BaseLayer *> layers = getParentLayers();
 		qDeleteAll(mSelectedObjects);
 		deselectAll();
-		emitLayerChangedSignals(layers, "Вырезание объектов");
+		emitSceneAndLayerChangedSignals(layers, "Вырезание объектов");
 	}
 }
 
@@ -191,7 +191,7 @@ void EditorWindow::copy()
 
 void EditorWindow::paste()
 {
-	Layer *layer = mLocation->getAvailableLayer();
+	Layer *layer = mScene->getAvailableLayer();
 	if (mEditorState == STATE_IDLE && layer != NULL)
 	{
 		// получаем байтовый массив
@@ -204,7 +204,7 @@ void EditorWindow::paste()
 		QList<GameObject *> objects;
 		while (!stream.atEnd())
 		{
-			GameObject *object = mLocation->loadGameObject(stream);
+			GameObject *object = mScene->loadGameObject(stream);
 			if (object != NULL)
 			{
 				objects.push_back(object);
@@ -219,17 +219,17 @@ void EditorWindow::paste()
 		// генерируем новые имена и ID для созданных объектов и добавляем их в активный слой
 		for (int i = objects.size() - 1; i >= 0; --i)
 		{
-			objects[i]->setName(mLocation->generateDuplicateName(objects[i]->getName()));
-			objects[i]->setObjectID(mLocation->generateDuplicateObjectID());
+			objects[i]->setName(mScene->generateDuplicateName(objects[i]->getName()));
+			objects[i]->setObjectID(mScene->generateDuplicateObjectID());
 			layer->insertGameObject(0, objects[i]);
 		}
 
 		// выделяем вставленные объекты
 		selectGameObjects(objects);
 
-		// обновляем курсор мыши и посылаем сигналы об изменении локации и слоев
+		// обновляем курсор мыши и посылаем сигналы об изменении сцены и слоев
 		updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
-		emitLayerChangedSignals(getParentLayers(), "Вставка объектов");
+		emitSceneAndLayerChangedSignals(getParentLayers(), "Вставка объектов");
 	}
 }
 
@@ -240,7 +240,7 @@ void EditorWindow::clear()
 		QSet<BaseLayer *> layers = getParentLayers();
 		qDeleteAll(mSelectedObjects);
 		deselectAll();
-		emitLayerChangedSignals(layers, "Удаление объектов");
+		emitSceneAndLayerChangedSignals(layers, "Удаление объектов");
 	}
 }
 
@@ -248,7 +248,7 @@ void EditorWindow::selectAll()
 {
 	if (mEditorState == STATE_IDLE)
 	{
-		selectGameObjects(mLocation->getRootLayer()->findActiveGameObjects());
+		selectGameObjects(mScene->getRootLayer()->findActiveGameObjects());
 		updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
 	}
 }
@@ -293,11 +293,11 @@ void EditorWindow::bringToFront()
 			}
 		}
 
-		// обновляем курсор мыши и посылаем сигналы об изменении локации и слоев
+		// обновляем курсор мыши и посылаем сигналы об изменении сцены и слоев
 		if (moved)
 		{
 			updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
-			emitLayerChangedSignals(getParentLayers(), "Перемещение объектов на передний план");
+			emitSceneAndLayerChangedSignals(getParentLayers(), "Перемещение объектов на передний план");
 		}
 	}
 }
@@ -333,11 +333,11 @@ void EditorWindow::sendToBack()
 			}
 		}
 
-		// обновляем курсор мыши и посылаем сигналы об изменении локации и слоев
+		// обновляем курсор мыши и посылаем сигналы об изменении сцены и слоев
 		if (moved)
 		{
 			updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
-			emitLayerChangedSignals(getParentLayers(), "Перемещение объектов на задний план");
+			emitSceneAndLayerChangedSignals(getParentLayers(), "Перемещение объектов на задний план");
 		}
 	}
 }
@@ -372,11 +372,11 @@ void EditorWindow::moveUp()
 			}
 		}
 
-		// обновляем курсор мыши и посылаем сигналы об изменении локации и слоев
+		// обновляем курсор мыши и посылаем сигналы об изменении сцены и слоев
 		if (moved)
 		{
 			updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
-			emitLayerChangedSignals(getParentLayers(), "Перемещение объектов вверх");
+			emitSceneAndLayerChangedSignals(getParentLayers(), "Перемещение объектов вверх");
 		}
 	}
 }
@@ -411,11 +411,11 @@ void EditorWindow::moveDown()
 			}
 		}
 
-		// обновляем курсор мыши и посылаем сигналы об изменении локации и слоев
+		// обновляем курсор мыши и посылаем сигналы об изменении сцены и слоев
 		if (moved)
 		{
 			updateMouseCursor(windowToWorld(mapFromGlobal(QCursor::pos())));
-			emitLayerChangedSignals(getParentLayers(), "Перемещение объектов вниз");
+			emitSceneAndLayerChangedSignals(getParentLayers(), "Перемещение объектов вниз");
 		}
 	}
 }
@@ -423,7 +423,7 @@ void EditorWindow::moveDown()
 void EditorWindow::setCurrentLanguage(const QString &language)
 {
 	// устанавливаем новый язык
-	mLocation->getRootLayer()->setCurrentLanguage(language);
+	mScene->getRootLayer()->setCurrentLanguage(language);
 
 	// обновляем разрешенные операции редактирования
 	updateAllowedEditorActions();
@@ -443,13 +443,13 @@ void EditorWindow::setCurrentLanguage(const QString &language)
 
 QStringList EditorWindow::getMissedFiles() const
 {
-	return mLocation->getRootLayer()->getMissedFiles();
+	return mScene->getRootLayer()->getMissedFiles();
 }
 
 void EditorWindow::changeTexture(const QString &fileName, const QSharedPointer<Texture> &texture)
 {
 	// заменяем текстуры во всех объектах
-	QList<GameObject *> objects = mLocation->getRootLayer()->changeTexture(fileName, texture);
+	QList<GameObject *> objects = mScene->getRootLayer()->changeTexture(fileName, texture);
 
 	// пересчитываем прямоугольник выделения и центр вращения
 	if (mEditorState == STATE_IDLE && !mSelectedObjects.empty())
@@ -470,7 +470,7 @@ void EditorWindow::changeTexture(const QString &fileName, const QSharedPointer<T
 
 	// выдаем сигналы об изменении слоев
 	foreach (BaseLayer *layer, layers)
-		emit layerChanged(mLocation, layer);
+		emit layerChanged(mScene, layer);
 }
 
 void EditorWindow::updateSelection(const QPointF &rotationCenter)
@@ -635,11 +635,11 @@ void EditorWindow::paintEvent(QPaintEvent *event)
 		glPopMatrix();
 	}
 
-	// рисуем локацию
+	// рисуем сцену
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	mLocation->getRootLayer()->draw();
+	mScene->getRootLayer()->draw();
 	glDisable(GL_TEXTURE_2D);
 	glDisable(GL_BLEND);
 
@@ -709,18 +709,18 @@ void EditorWindow::paintEvent(QPaintEvent *event)
 	{
 		// рисуем горизонтальные направляющие
 		painter.setPen(QColor(0, 192, 192));
-		int numHorzGuides = mLocation->getNumGuides(true);
+		int numHorzGuides = mScene->getNumGuides(true);
 		for (int i = 0; i < numHorzGuides; ++i)
 		{
-			qreal y = qFloor((mLocation->getGuide(true, i) - mCameraPos.y()) * mZoom) + 0.5;
+			qreal y = qFloor((mScene->getGuide(true, i) - mCameraPos.y()) * mZoom) + 0.5;
 			painter.drawLine(QPointF(0.5, y), QPointF(width() - 0.5, y));
 		}
 
 		// рисуем вертикальные направляющие
-		int numVertGuides = mLocation->getNumGuides(false);
+		int numVertGuides = mScene->getNumGuides(false);
 		for (int i = 0; i < numVertGuides; ++i)
 		{
-			qreal x = qFloor((mLocation->getGuide(false, i) - mCameraPos.x()) * mZoom) + 0.5;
+			qreal x = qFloor((mScene->getGuide(false, i) - mCameraPos.x()) * mZoom) + 0.5;
 			painter.drawLine(QPointF(x, 0.5), QPointF(x, height() - 0.5));
 		}
 	}
@@ -833,20 +833,20 @@ void EditorWindow::mousePressEvent(QMouseEvent *event)
 		{
 			// создаем горизонтальную направляющую и переходим в режим перетаскивания
 			mEditorState = STATE_HORZ_GUIDE;
-			mGuideIndex = mLocation->addGuide(true, qRound(pos.y()));
+			mGuideIndex = mScene->addGuide(true, qRound(pos.y()));
 		}
 		else if (showGuides && event->pos().x() < RULER_SIZE)
 		{
 			// создаем вертикальную направляющую и переходим в режим перетаскивания
 			mEditorState = STATE_VERT_GUIDE;
-			mGuideIndex = mLocation->addGuide(false, qRound(pos.x()));
+			mGuideIndex = mScene->addGuide(false, qRound(pos.x()));
 		}
-		else if (showGuides && (mGuideIndex = mLocation->findGuide(true, pos.y(), distance)) != -1)
+		else if (showGuides && (mGuideIndex = mScene->findGuide(true, pos.y(), distance)) != -1)
 		{
 			// переходим в режим перетаскивания горизонтальной направляющей
 			mEditorState = STATE_HORZ_GUIDE;
 		}
-		else if (showGuides && (mGuideIndex = mLocation->findGuide(false, pos.x(), distance)) != -1)
+		else if (showGuides && (mGuideIndex = mScene->findGuide(false, pos.x(), distance)) != -1)
 		{
 			// переходим в режим перетаскивания вертикальной направляющей
 			mEditorState = STATE_VERT_GUIDE;
@@ -867,7 +867,7 @@ void EditorWindow::mousePressEvent(QMouseEvent *event)
 			mEditorState = STATE_ROTATE;
 			mRotationVector = QVector2D(pos - mOriginalCenter).normalized();
 		}
-		else if ((object = mLocation->getRootLayer()->findGameObjectByPoint(pos)) != NULL)
+		else if ((object = mScene->getRootLayer()->findGameObjectByPoint(pos)) != NULL)
 		{
 			if ((event->modifiers() & Qt::ControlModifier) != 0)
 			{
@@ -917,7 +917,7 @@ void EditorWindow::mouseReleaseEvent(QMouseEvent *event)
 			if (mEditorState == STATE_SELECT)
 			{
 				// выделяем игровые объекты, попавшие в рамку
-				selectGameObjects(mLocation->getRootLayer()->findGameObjectsByRect(mSelectionRect.normalized()));
+				selectGameObjects(mScene->getRootLayer()->findGameObjectsByRect(mSelectionRect.normalized()));
 			}
 			else if (mEditorState == STATE_MOVE || mEditorState == STATE_RESIZE || mEditorState == STATE_ROTATE)
 			{
@@ -927,35 +927,35 @@ void EditorWindow::mouseReleaseEvent(QMouseEvent *event)
 				// обновляем координаты центра вращения
 				mOriginalCenter = mSnappedCenter = mSelectedObjects.size() == 1 ? mSelectedObjects.front()->getRotationCenter() : mSnappedCenter;
 
-				// посылаем сигналы об изменении локации и слоев
+				// посылаем сигналы об изменении сцены и слоев
 				if (mEditorState == STATE_MOVE)
-					emitLayerChangedSignals(getParentLayers(), "Перемещение объектов");
+					emitSceneAndLayerChangedSignals(getParentLayers(), "Перемещение объектов");
 				else if (mEditorState == STATE_RESIZE)
-					emitLayerChangedSignals(getParentLayers(), "Изменение размеров объектов");
+					emitSceneAndLayerChangedSignals(getParentLayers(), "Изменение размеров объектов");
 				else
-					emitLayerChangedSignals(getParentLayers(), "Поворот объектов");
+					emitSceneAndLayerChangedSignals(getParentLayers(), "Поворот объектов");
 			}
 			else if (mEditorState == STATE_MOVE_CENTER)
 			{
 				// обновляем координаты центра вращения
 				mOriginalCenter = mSnappedCenter = mSelectedObjects.size() == 1 ? mSelectedObjects.front()->getRotationCenter() : mSnappedCenter;
 
-				// посылаем сигнал об изменении локации
-				emit locationChanged("Перемещение центра вращения");
+				// посылаем сигнал об изменении сцены
+				emit sceneChanged("Перемещение центра вращения");
 			}
 			else if (mEditorState == STATE_HORZ_GUIDE)
 			{
 				if (event->pos().y() >= RULER_SIZE && event->pos().y() < height())
 				{
 					// посылаем сигнал о создании или перемещении направляющей
-					emit locationChanged(mFirstPos.y() < RULER_SIZE ? "Создание направляющей" : "Перемещение направляющей");
+					emit sceneChanged(mFirstPos.y() < RULER_SIZE ? "Создание направляющей" : "Перемещение направляющей");
 				}
 				else
 				{
 					// удаляем направляющую и посылаем сигнал, если ее вытащили за пределы окна со свободного места
-					mLocation->removeGuide(true, mGuideIndex);
+					mScene->removeGuide(true, mGuideIndex);
 					if (mFirstPos.y() >= RULER_SIZE)
-						emit locationChanged("Удаление направляющей");
+						emit sceneChanged("Удаление направляющей");
 				}
 			}
 			else if (mEditorState == STATE_VERT_GUIDE)
@@ -963,14 +963,14 @@ void EditorWindow::mouseReleaseEvent(QMouseEvent *event)
 				if (event->pos().x() >= RULER_SIZE && event->pos().x() < width())
 				{
 					// посылаем сигнал о создании или перемещении направляющей
-					emit locationChanged(mFirstPos.x() < RULER_SIZE ? "Создание направляющей" : "Перемещение направляющей");
+					emit sceneChanged(mFirstPos.x() < RULER_SIZE ? "Создание направляющей" : "Перемещение направляющей");
 				}
 				else
 				{
 					// удаляем направляющую и посылаем сигнал, если ее вытащили за пределы окна со свободного места
-					mLocation->removeGuide(false, mGuideIndex);
+					mScene->removeGuide(false, mGuideIndex);
 					if (mFirstPos.x() >= RULER_SIZE)
-						emit locationChanged("Удаление направляющей");
+						emit sceneChanged("Удаление направляющей");
 				}
 			}
 		}
@@ -978,7 +978,7 @@ void EditorWindow::mouseReleaseEvent(QMouseEvent *event)
 		{
 			// удаляем созданную направляющую при щелчке по линейке без перетаскивания
 			if (mFirstPos.x() < RULER_SIZE || mFirstPos.y() < RULER_SIZE)
-				mLocation->removeGuide(mEditorState == STATE_HORZ_GUIDE, mGuideIndex);
+				mScene->removeGuide(mEditorState == STATE_HORZ_GUIDE, mGuideIndex);
 		}
 
 		// возвращаемся в состояние простоя
@@ -1312,9 +1312,9 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 				const qreal MAX_COORD = 1.0E+8;
 				qreal distance = SNAP_DISTANCE / mZoom;
 				mHorzSnapLine = mVertSnapLine = QLineF();
-				mLocation->getRootLayer()->snapYCoord(pos.y(), MAX_COORD, -MAX_COORD, QList<GameObject *>(), snappedY, distance, mHorzSnapLine);
+				mScene->getRootLayer()->snapYCoord(pos.y(), MAX_COORD, -MAX_COORD, QList<GameObject *>(), snappedY, distance, mHorzSnapLine);
 			}
-			mLocation->setGuide(true, mGuideIndex, qRound(snappedY));
+			mScene->setGuide(true, mGuideIndex, qRound(snappedY));
 		}
 		else if (mEditorState == STATE_VERT_GUIDE)
 		{
@@ -1325,9 +1325,9 @@ void EditorWindow::mouseMoveEvent(QMouseEvent *event)
 				const qreal MAX_COORD = 1.0E+8;
 				qreal distance = SNAP_DISTANCE / mZoom;
 				mHorzSnapLine = mVertSnapLine = QLineF();
-				mLocation->getRootLayer()->snapXCoord(pos.x(), MAX_COORD, -MAX_COORD, QList<GameObject *>(), snappedX, distance, mVertSnapLine);
+				mScene->getRootLayer()->snapXCoord(pos.x(), MAX_COORD, -MAX_COORD, QList<GameObject *>(), snappedX, distance, mVertSnapLine);
 			}
-			mLocation->setGuide(false, mGuideIndex, qRound(snappedX));
+			mScene->setGuide(false, mGuideIndex, qRound(snappedX));
 		}
 
 		// отправляем сигнал об изменении объектов
@@ -1425,8 +1425,8 @@ void EditorWindow::keyReleaseEvent(QKeyEvent *event)
 	if ((event->key() == Qt::Key_Left || event->key() == Qt::Key_Right || event->key() == Qt::Key_Up || event->key() == Qt::Key_Down)
 		&& !event->isAutoRepeat() && mMoveEnabled && !mSelectedObjects.empty() && mEditorState == STATE_IDLE)
 	{
-		// посылаем сигналы об изменении локации и слоев
-		emitLayerChangedSignals(getParentLayers(), "Перемещение объектов");
+		// посылаем сигналы об изменении сцены и слоев
+		emitSceneAndLayerChangedSignals(getParentLayers(), "Перемещение объектов");
 	}
 	else if (event->key() == Qt::Key_Shift && !event->isAutoRepeat() && mEditorState != STATE_IDLE)
 	{
@@ -1443,7 +1443,7 @@ void EditorWindow::keyReleaseEvent(QKeyEvent *event)
 void EditorWindow::dragEnterEvent(QDragEnterEvent *event)
 {
 	// выходим, если текущий активный слой недоступен
-	if (mLocation->getAvailableLayer() == NULL)
+	if (mScene->getAvailableLayer() == NULL)
 		return;
 
 	// проверяем, что перетаскивается элемент из браузера спрайтов или шрифтов
@@ -1454,7 +1454,7 @@ void EditorWindow::dragEnterEvent(QDragEnterEvent *event)
 void EditorWindow::dropEvent(QDropEvent *event)
 {
 	// выходим, если текущий активный слой недоступен
-	if (mLocation->getAvailableLayer() == NULL)
+	if (mScene->getAvailableLayer() == NULL)
 		return;
 
 	// получаем полный путь к ресурсному файлу
@@ -1500,9 +1500,9 @@ void EditorWindow::dropEvent(QDropEvent *event)
 	GameObject *object;
 	QPointF pos = windowToWorld(event->pos());
 	if (event->source() == mSpriteWidget)
-		object = mLocation->createSprite(pos, fileName);
+		object = mScene->createSprite(pos, fileName);
 	else
-		object = mLocation->createLabel(pos, fileName, 32);
+		object = mScene->createLabel(pos, fileName, 32);
 
 	// привязываем объект к сетке, если необходимо
 	if (Options::getSingleton().isSnapToGrid())
@@ -1517,9 +1517,9 @@ void EditorWindow::dropEvent(QDropEvent *event)
 	// выделяем созданный объект
 	selectGameObject(object);
 
-	// обновляем курсор мыши и посылаем сигналы об изменении локации и слоев
+	// обновляем курсор мыши и посылаем сигналы об изменении сцены и слоев
 	updateMouseCursor(pos);
-	emitLayerChangedSignals(getParentLayers(), "Создание объекта");
+	emitSceneAndLayerChangedSignals(getParentLayers(), "Создание объекта");
 
 	// устанавливаем фокус на окне редактирования
 	setFocus();
@@ -1576,10 +1576,10 @@ qreal EditorWindow::snapXCoord(qreal x, qreal y1, qreal y2, bool excludeSelectio
 	if (options.isSnapToGuides())
 	{
 		// привязываем координату к обычным направляющим
-		int index = mLocation->findGuide(false, x, distance);
+		int index = mScene->findGuide(false, x, distance);
 		if (index != -1)
 		{
-			snappedX = mLocation->getGuide(false, index);
+			snappedX = mScene->getGuide(false, index);
 			line = QLineF(snappedX, y1, snappedX, y2);
 		}
 
@@ -1596,7 +1596,7 @@ qreal EditorWindow::snapXCoord(qreal x, qreal y1, qreal y2, bool excludeSelectio
 	if (options.isEnableSmartGuides())
 	{
 		const QList<GameObject *> &excludedObjects = excludeSelection ? mSelectedObjects : QList<GameObject *>();
-		mLocation->getRootLayer()->snapXCoord(x, y1, y2, excludedObjects, snappedX, distance, line);
+		mScene->getRootLayer()->snapXCoord(x, y1, y2, excludedObjects, snappedX, distance, line);
 	}
 
 	// привязываем координату к сетке
@@ -1628,10 +1628,10 @@ qreal EditorWindow::snapYCoord(qreal y, qreal x1, qreal x2, bool excludeSelectio
 	if (options.isSnapToGuides())
 	{
 		// привязываем координату к обычным направляющим
-		int index = mLocation->findGuide(true, y, distance);
+		int index = mScene->findGuide(true, y, distance);
 		if (index != -1)
 		{
-			snappedY = mLocation->getGuide(true, index);
+			snappedY = mScene->getGuide(true, index);
 			line = QLineF(x1, snappedY, x2, snappedY);
 		}
 
@@ -1648,7 +1648,7 @@ qreal EditorWindow::snapYCoord(qreal y, qreal x1, qreal x2, bool excludeSelectio
 	if (options.isEnableSmartGuides())
 	{
 		const QList<GameObject *> &excludedObjects = excludeSelection ? mSelectedObjects : QList<GameObject *>();
-		mLocation->getRootLayer()->snapYCoord(y, x1, x2, excludedObjects, snappedY, distance, line);
+		mScene->getRootLayer()->snapYCoord(y, x1, x2, excludedObjects, snappedY, distance, line);
 	}
 
 	// привязываем координату к сетке
@@ -1790,7 +1790,7 @@ void EditorWindow::sortSelectedGameObjects()
 	// сортируем выделенные объекты по глубине и пересоздаем списки исходных позиций, размеров и углов
 	if (!mSelectedObjects.empty())
 	{
-		mSelectedObjects = mLocation->getRootLayer()->sortGameObjects(mSelectedObjects);
+		mSelectedObjects = mScene->getRootLayer()->sortGameObjects(mSelectedObjects);
 		mOriginalPositions.clear();
 		mOriginalSizes.clear();
 		mOriginalAngles.clear();
@@ -1819,12 +1819,12 @@ void EditorWindow::updateMouseCursor(const QPointF &pos)
 			// курсор над линейками
 			setCursor(Qt::ArrowCursor);
 		}
-		else if (showGuides && mLocation->findGuide(true, pos.y(), distance) != -1)
+		else if (showGuides && mScene->findGuide(true, pos.y(), distance) != -1)
 		{
 			// курсор над горизонтальной направляющей
 			setCursor(Qt::SplitVCursor);
 		}
-		else if (showGuides && mLocation->findGuide(false, pos.x(), distance) != -1)
+		else if (showGuides && mScene->findGuide(false, pos.x(), distance) != -1)
 		{
 			// курсор над вертикальной направляющей
 			setCursor(Qt::SplitHCursor);
@@ -1846,7 +1846,7 @@ void EditorWindow::updateMouseCursor(const QPointF &pos)
 			// курсор рядом с маркером выделения
 			setCursor(mRotateCursor);
 		}
-		else if ((object = mLocation->getRootLayer()->findGameObjectByPoint(pos)) != NULL
+		else if ((object = mScene->getRootLayer()->findGameObjectByPoint(pos)) != NULL
 			&& (mSelectedObjects.contains(object) ? mMoveEnabled : object->isLocalized()))
 		{
 			// курсор над игровым объектом
@@ -1869,12 +1869,12 @@ QSet<BaseLayer *> EditorWindow::getParentLayers() const
 	return layers;
 }
 
-void EditorWindow::emitLayerChangedSignals(const QSet<BaseLayer *> &layers, const QString &commandName)
+void EditorWindow::emitSceneAndLayerChangedSignals(const QSet<BaseLayer *> &layers, const QString &commandName)
 {
-	// посылаем сигналы об изменении локации и слоев
-	emit locationChanged(commandName);
+	// посылаем сигналы об изменении сцены и слоев
+	emit sceneChanged(commandName);
 	foreach (BaseLayer *layer, layers)
-		emit layerChanged(mLocation, layer);
+		emit layerChanged(mScene, layer);
 }
 
 EditorWindow::SelectionMarker EditorWindow::findSelectionMarker(const QPointF &pos, qreal size) const

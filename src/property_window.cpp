@@ -128,8 +128,8 @@ bool PropertyWindow::eventFilter(QObject *object, QEvent *event)
 						it->setColor(color);
 					}
 
-					// посылаем сигналы об изменении локации и слоев
-					emitLocationAndLayerChangedSignals("Изменение цвета спрайтов");
+					// посылаем сигналы об изменении сцены и слоев
+					emitSceneAndLayerChangedSignals("Изменение цвета спрайтов");
 				}
 
 				return true;
@@ -153,8 +153,8 @@ bool PropertyWindow::eventFilter(QObject *object, QEvent *event)
 						it->setColor(color);
 					}
 
-					// посылаем сигналы об изменении локации и слоев
-					emitLocationAndLayerChangedSignals("Изменение цвета надписей");
+					// посылаем сигналы об изменении сцены и слоев
+					emitSceneAndLayerChangedSignals("Изменение цвета надписей");
 				}
 
 				return true;
@@ -180,7 +180,7 @@ void PropertyWindow::on_mNameLineEdit_editingFinished()
 	if (mNameLineEdit->text() != mSelectedObjects.front()->getName())
 	{
 		mSelectedObjects.front()->setName(mNameLineEdit->text());
-		emit locationChanged("Изменение имени объекта");
+		emit sceneChanged("Изменение имени объекта");
 	}
 }
 
@@ -249,8 +249,8 @@ void PropertyWindow::on_mFlipXCheckBox_clicked(bool checked)
 	mRotationCenterXLineEdit->setText(getCurrentRotationCenterX());
 	mRotationCenterYLineEdit->setText(getCurrentRotationCenterY());
 
-	// посылаем сигналы об изменении локации, слоев и объектов
-	emitLocationAndLayerChangedSignals("Отражение объектов по горизонтали");
+	// посылаем сигналы об изменении сцены, слоев и объектов
+	emitSceneAndLayerChangedSignals("Отражение объектов по горизонтали");
 	emit objectsChanged(mRotationCenter);
 }
 
@@ -274,8 +274,8 @@ void PropertyWindow::on_mFlipYCheckBox_clicked(bool checked)
 	mRotationCenterXLineEdit->setText(getCurrentRotationCenterX());
 	mRotationCenterYLineEdit->setText(getCurrentRotationCenterY());
 
-	// посылаем сигналы об изменении локации, слоев и объектов
-	emitLocationAndLayerChangedSignals("Отражение объектов по вертикали");
+	// посылаем сигналы об изменении сцены, слоев и объектов
+	emitSceneAndLayerChangedSignals("Отражение объектов по вертикали");
 	emit objectsChanged(mRotationCenter);
 }
 
@@ -297,8 +297,8 @@ void PropertyWindow::onRotationAngleEditingFinished()
 			vec.x() * qSin(angle) + vec.y() * qCos(angle) + mRotationCenter.y()));
 		obj->setRotationAngle(newAngle);
 
-		// посылаем сигналы об изменении локации, слоев и объектов
-		emitLocationAndLayerChangedSignals("Изменение угла поворота объектов");
+		// посылаем сигналы об изменении сцены, слоев и объектов
+		emitSceneAndLayerChangedSignals("Изменение угла поворота объектов");
 		emit objectsChanged(mRotationCenter);
 	}
 
@@ -384,8 +384,8 @@ void PropertyWindow::on_mSpriteFileNameBrowsePushButton_clicked()
 		updateCommonWidgets();
 		updateSpriteWidgets();
 
-		// посылаем сигналы об изменении локации, слоев и объектов
-		emitLocationAndLayerChangedSignals("Изменение текстуры спрайтов");
+		// посылаем сигналы об изменении сцены, слоев и объектов
+		emitSceneAndLayerChangedSignals("Изменение текстуры спрайтов");
 		emit objectsChanged(mRotationCenter);
 	}
 }
@@ -415,7 +415,7 @@ void PropertyWindow::on_mSpriteOpacitySlider_valueChanged(int value)
 	{
 		on_mSpriteOpacitySlider_sliderMoved(value);
 		mOpacitySliderMoved = false;
-		emitLocationAndLayerChangedSignals("Изменение прозрачности спрайтов");
+		emitSceneAndLayerChangedSignals("Изменение прозрачности спрайтов");
 	}
 }
 
@@ -443,8 +443,8 @@ void PropertyWindow::on_mTextLineEdit_editingFinished()
 			it->setText(newText);
 		}
 
-		// посылаем сигналы об изменении локации и слоев
-		emitLocationAndLayerChangedSignals("Изменение текста надписей");
+		// посылаем сигналы об изменении сцены и слоев
+		emitSceneAndLayerChangedSignals("Изменение текста надписей");
 	}
 }
 
@@ -504,8 +504,8 @@ void PropertyWindow::on_mLabelFileNameComboBox_activated(const QString &text)
 			it->setFileName(newPath);
 		}
 
-		// посылаем сигналы об изменении локации и слоев
-		emitLocationAndLayerChangedSignals("Изменение шрифта надписей");
+		// посылаем сигналы об изменении сцены и слоев
+		emitSceneAndLayerChangedSignals("Изменение шрифта надписей");
 	}
 }
 
@@ -523,8 +523,8 @@ void PropertyWindow::onFontSizeEditingFinished()
 			it->setFontSize(newFontSize);
 		}
 
-		// посылаем сигналы об изменении локации и слоев
-		emitLocationAndLayerChangedSignals("Изменение размера шрифта надписей");
+		// посылаем сигналы об изменении сцены и слоев
+		emitSceneAndLayerChangedSignals("Изменение размера шрифта надписей");
 	}
 
 	// обновляем гуи
@@ -560,8 +560,8 @@ void PropertyWindow::onHorzAlignmentClicked(QAbstractButton *button)
 			it->setHorzAlignment(newHorzAlignment);
 		}
 
-		// посылаем сигналы об изменении локации и слоев
-		emitLocationAndLayerChangedSignals("Изменение выравнивания надписей");
+		// посылаем сигналы об изменении сцены и слоев
+		emitSceneAndLayerChangedSignals("Изменение выравнивания надписей");
 	}
 }
 
@@ -586,8 +586,8 @@ void PropertyWindow::onVertAlignmentClicked(QAbstractButton *button)
 			it->setVertAlignment(newVertAlignment);
 		}
 
-		// посылаем сигналы об изменении локации и слоев
-		emitLocationAndLayerChangedSignals("Изменение выравнивания надписей");
+		// посылаем сигналы об изменении сцены и слоев
+		emitSceneAndLayerChangedSignals("Изменение выравнивания надписей");
 	}
 }
 
@@ -605,8 +605,8 @@ void PropertyWindow::onLineSpacingEditingFinished()
 			it->setLineSpacing(newLineSpacing);
 		}
 
-		// посылаем сигналы об изменении локации и слоев
-		emitLocationAndLayerChangedSignals("Изменение межстрочного интервала надписей");
+		// посылаем сигналы об изменении сцены и слоев
+		emitSceneAndLayerChangedSignals("Изменение межстрочного интервала надписей");
 	}
 
 	// обновляем гуи
@@ -646,7 +646,7 @@ void PropertyWindow::on_mLabelOpacitySlider_valueChanged(int value)
 	{
 		on_mLabelOpacitySlider_sliderMoved(value);
 		mOpacitySliderMoved = false;
-		emitLocationAndLayerChangedSignals("Изменение прозрачности надписей");
+		emitSceneAndLayerChangedSignals("Изменение прозрачности надписей");
 	}
 }
 
@@ -1032,8 +1032,8 @@ void PropertyWindow::setNewPosition()
 			mRotationCenter += delta;
 		}
 
-		// посылаем сигналы об изменении локации, слоев и объектов
-		emitLocationAndLayerChangedSignals("Изменение позиции объектов");
+		// посылаем сигналы об изменении сцены, слоев и объектов
+		emitSceneAndLayerChangedSignals("Изменение позиции объектов");
 		emit objectsChanged(mRotationCenter);
 	}
 
@@ -1105,8 +1105,8 @@ void PropertyWindow::setNewSize(bool widthChanged)
 				oldBoundingRect.top() + (mRotationCenter.y() - oldBoundingRect.top()) * scale.y());
 		}
 
-		// посылаем сигналы об изменении локации, слоев и объектов
-		emitLocationAndLayerChangedSignals("Изменение размеров объектов");
+		// посылаем сигналы об изменении сцены, слоев и объектов
+		emitSceneAndLayerChangedSignals("Изменение размеров объектов");
 		emit objectsChanged(mRotationCenter);
 	}
 
@@ -1135,8 +1135,8 @@ void PropertyWindow::setNewRotationCenter()
 		if (mSelectedObjects.size() == 1)
 			mSelectedObjects.front()->setRotationCenter(mRotationCenter);
 
-		// посылаем сигналы об изменении локации и объектов
-		emit locationChanged("Изменение центра вращения");
+		// посылаем сигналы об изменении сцены и объектов
+		emit sceneChanged("Изменение центра вращения");
 		emit objectsChanged(mRotationCenter);
 	}
 
@@ -1145,10 +1145,10 @@ void PropertyWindow::setNewRotationCenter()
 	mRotationCenterYLineEdit->setText(getCurrentRotationCenterY());
 }
 
-void PropertyWindow::emitLocationAndLayerChangedSignals(const QString &commandName)
+void PropertyWindow::emitSceneAndLayerChangedSignals(const QString &commandName)
 {
-	// выдаем сигнал об изменении локации
-	emit locationChanged(commandName);
+	// выдаем сигнал об изменении сцены
+	emit sceneChanged(commandName);
 
 	// формируем список измененных слоев
 	QSet<BaseLayer *> layers;

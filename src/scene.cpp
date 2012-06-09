@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "location.h"
+#include "scene.h"
 #include "label.h"
 #include "layer.h"
 #include "layer_group.h"
@@ -7,7 +7,7 @@
 #include "sprite.h"
 #include "utils.h"
 
-Location::Location(QObject *parent)
+Scene::Scene(QObject *parent)
 : QObject(parent), mCommandIndex(0), mObjectIndex(1), mLayerIndex(1), mLayerGroupIndex(1), mSpriteIndex(1), mLabelIndex(1)
 {
 	// создаем корневой слой
@@ -20,17 +20,17 @@ Location::Location(QObject *parent)
 	mUndoStack = new QUndoStack(this);
 	connect(mUndoStack, SIGNAL(indexChanged(int)), this, SLOT(onUndoStackIndexChanged(int)));
 
-	// сохраняем начальное состояние локации
+	// сохраняем начальное состояние сцены
 	mInitialState = new UndoCommand("", this);
 }
 
-Location::~Location()
+Scene::~Scene()
 {
 	delete mInitialState;
 	delete mRootLayer;
 }
 
-bool Location::load(const QString &fileName)
+bool Scene::load(const QString &fileName)
 {
 	// загружаем Lua скрипт и проверяем, что он вернул корневую таблицу
 	LuaScript script;
@@ -101,14 +101,14 @@ bool Location::load(const QString &fileName)
 	// извлекаем из стека корневую таблицу
 	script.popTable();
 
-	// пересохраняем начальное состояние локации
+	// пересохраняем начальное состояние сцены
 	delete mInitialState;
 	mInitialState = new UndoCommand("", this);
 
 	return true;
 }
 
-bool Location::save(const QString &fileName)
+bool Scene::save(const QString &fileName)
 {
 	// открываем файл
 	QFile file(fileName);
@@ -166,7 +166,7 @@ bool Location::save(const QString &fileName)
 	return stream.status() == QTextStream::Ok;
 }
 
-bool Location::loadTranslationFile(const QString &fileName)
+bool Scene::loadTranslationFile(const QString &fileName)
 {
 	// загружаем Lua скрипт и проверяем, что он вернул корневую таблицу
 	LuaScript script;
@@ -185,90 +185,90 @@ bool Location::loadTranslationFile(const QString &fileName)
 	return true;
 }
 
-BaseLayer *Location::getRootLayer() const
+BaseLayer *Scene::getRootLayer() const
 {
 	return mRootLayer;
 }
 
-BaseLayer *Location::getActiveLayer() const
+BaseLayer *Scene::getActiveLayer() const
 {
 	return mActiveLayer;
 }
 
-void Location::setActiveLayer(BaseLayer *layer)
+void Scene::setActiveLayer(BaseLayer *layer)
 {
 	mActiveLayer = layer;
 }
 
-Layer *Location::getAvailableLayer() const
+Layer *Scene::getAvailableLayer() const
 {
 	// возвращаем указатель на активный слой, если он не папка, видим и не заблокирован
 	Layer *layer = dynamic_cast<Layer *>(mActiveLayer);
 	return layer != NULL && layer->getVisibleState() == BaseLayer::LAYER_VISIBLE && layer->getLockState() == BaseLayer::LAYER_UNLOCKED ? layer : NULL;
 }
 
-QUndoStack *Location::getUndoStack() const
+QUndoStack *Scene::getUndoStack() const
 {
 	return mUndoStack;
 }
 
-bool Location::isClean() const
+bool Scene::isClean() const
 {
 	return mUndoStack->isClean();
 }
 
-void Location::setClean()
+void Scene::setClean()
 {
 	mUndoStack->setClean();
 }
 
-void Location::pushCommand(const QString &commandName)
+void Scene::pushCommand(const QString &commandName)
 {
 	mCommandIndex = mUndoStack->index() + 1;
 	mUndoStack->push(new UndoCommand(commandName, this));
 }
 
-bool Location::canUndo() const
+bool Scene::canUndo() const
 {
 	return mUndoStack->canUndo();
 }
 
-bool Location::canRedo() const
+bool Scene::canRedo() const
 {
 	return mUndoStack->canRedo();
 }
 
-void Location::undo()
+void Scene::undo()
 {
 	mUndoStack->undo();
 }
 
-void Location::redo()
+void Scene::redo()
 {
 	mUndoStack->redo();
 }
 
-BaseLayer *Location::createLayer(BaseLayer *parent, int index)
+BaseLayer *Scene::createLayer(BaseLayer *parent, int index)
 {
 	return new Layer(QString("Слой %1").arg(mLayerIndex++), parent, index);
 }
 
-BaseLayer *Location::createLayerGroup(BaseLayer *parent, int index)
+BaseLayer *Scene::createLayerGroup(BaseLayer *parent, int index)
 {
 	return new LayerGroup(QString("Группа %1").arg(mLayerGroupIndex++), parent, index);
 }
 
-GameObject *Location::createSprite(const QPointF &pos, const QString &fileName)
+GameObject *Scene::createSprite(const QPointF &pos, const QString &fileName)
 {
 	return new Sprite(QString("Спрайт %1").arg(mSpriteIndex++), mObjectIndex++, pos, fileName, getAvailableLayer());
 }
 
-GameObject *Location::createLabel(const QPointF &pos, const QString &fileName, int size)
+GameObject *Scene::createLabel(const QPointF &pos, const QString &fileName, int size)
 {
 	return new Label(QString("Текст %1").arg(mLabelIndex++), mObjectIndex++, pos, fileName, size, getAvailableLayer());
 }
 
-GameObject *Location::loadGameObject(QDataStream &stream)
+GameObject *Scene::loadGameObject(QDataStream &stream)
 {
 	// читаем тип объекта
 	QString type;
@@ -295,7 +295,7 @@ GameObject *Location::loadGameObject(QDataStream &stream)
 	return object;
 }
 
-QString Location::generateDuplicateName(const QString &name) const
+QString Scene::generateDuplicateName(const QString &name) const
 {
 	// выделяем базовую часть имени
 	QString baseName = name;
@@ -319,30 +319,30 @@ QString Location::generateDuplicateName(const QString &name) const
 	return newName;
 }
 
-int Location::generateDuplicateObjectID()
+int Scene::generateDuplicateObjectID()
 {
 	return mObjectIndex++;
 }
 
-int Location::getNumGuides(bool horz) const
+int Scene::getNumGuides(bool horz) const
 {
 	const QList<qreal> &guides = horz ? mHorzGuides : mVertGuides;
 	return guides.size();
 }
 
-qreal Location::getGuide(bool horz, int index) const
+qreal Scene::getGuide(bool horz, int index) const
 {
 	const QList<qreal> &guides = horz ? mHorzGuides : mVertGuides;
 	return guides[index];
 }
 
-void Location::setGuide(bool horz, int index, qreal coord)
+void Scene::setGuide(bool horz, int index, qreal coord)
 {
 	QList<qreal> &guides = horz ? mHorzGuides : mVertGuides;
 	guides[index] = coord;
 }
 
-int Location::findGuide(bool horz, qreal coord, qreal &distance) const
+int Scene::findGuide(bool horz, qreal coord, qreal &distance) const
 {
 	// ищем ближайшую направляющую к заданной координате
 	const QList<qreal> &guides = horz ? mHorzGuides : mVertGuides;
@@ -359,22 +359,22 @@ int Location::findGuide(bool horz, qreal coord, qreal &distance) const
 	return index;
 }
 
-int Location::addGuide(bool horz, qreal coord)
+int Scene::addGuide(bool horz, qreal coord)
 {
 	QList<qreal> &guides = horz ? mHorzGuides : mVertGuides;
 	guides.push_back(coord);
 	return guides.size() - 1;
 }
 
-void Location::removeGuide(bool horz, int index)
+void Scene::removeGuide(bool horz, int index)
 {
 	QList<qreal> &guides = horz ? mHorzGuides : mVertGuides;
 	guides.removeAt(index);
 }
 
-void Location::onUndoStackIndexChanged(int index)
+void Scene::onUndoStackIndexChanged(int index)
 {
-	// восстанавливаем ранее сохраненное состояние локации и посылаем сигнал об изменении текущей команды в стеке отмен
+	// восстанавливаем ранее сохраненное состояние сцены и посылаем сигнал об изменении текущей команды в стеке отмен
 	if (mCommandIndex != index)
 	{
 		mCommandIndex = index;
@@ -384,7 +384,7 @@ void Location::onUndoStackIndexChanged(int index)
 	}
 }
 
-bool Location::load(QDataStream &stream)
+bool Scene::load(QDataStream &stream)
 {
 	// сохраняем текущий корневой слой для отложенного удаления при выходе из функции, чтобы минимизировать загрузку/выгрузку ресурсов
 	QScopedPointer<BaseLayer> oldRootLayer(mRootLayer);
@@ -421,7 +421,7 @@ bool Location::load(QDataStream &stream)
 	return stream.status() == QDataStream::Ok;
 }
 
-bool Location::save(QDataStream &stream)
+bool Scene::save(QDataStream &stream)
 {
 	// сохраняем слои
 	mRootLayer->save(stream);
@@ -441,15 +441,15 @@ bool Location::save(QDataStream &stream)
 	return stream.status() == QDataStream::Ok;
 }
 
-Location::UndoCommand::UndoCommand(const QString &text, Location *location)
-: QUndoCommand(text), mLocation(location)
+Scene::UndoCommand::UndoCommand(const QString &text, Scene *scene)
+: QUndoCommand(text), mScene(scene)
 {
 	QDataStream stream(&mData, QIODevice::WriteOnly);
-	mLocation->save(stream);
+	mScene->save(stream);
 }
 
-void Location::UndoCommand::restore()
+void Scene::UndoCommand::restore()
 {
 	QDataStream stream(&mData, QIODevice::ReadOnly);
-	mLocation->load(stream);
+	mScene->load(stream);
 }
