@@ -158,7 +158,7 @@ void EditorWindow::redo()
 
 void EditorWindow::cut()
 {
-	if (mEditorState == STATE_IDLE && !mSelectedObjects.empty())
+	if (mEditorState == STATE_IDLE && !mSelectedObjects.empty() && canDeleteSelectedObjects())
 	{
 		copy();
 		QSet<BaseLayer *> layers = getParentLayers();
@@ -235,7 +235,7 @@ void EditorWindow::paste()
 
 void EditorWindow::clear()
 {
-	if (mEditorState == STATE_IDLE && !mSelectedObjects.empty())
+	if (mEditorState == STATE_IDLE && !mSelectedObjects.empty() && canDeleteSelectedObjects())
 	{
 		QSet<BaseLayer *> layers = getParentLayers();
 		qDeleteAll(mSelectedObjects);
@@ -657,21 +657,22 @@ void EditorWindow::paintEvent(QPaintEvent *event)
 			if (angle == 0.0 || angle == 90.0 || angle == 180.0 || angle == 270.0)
 			{
 				QRectF rect = worldRectToWindow(object->getBoundingRect());
-				painter.drawRect(rect.adjusted(0.5, 0.5, -0.5, -0.5));
+				painter.drawRect(rect.translated(0.5, 0.5));
 			}
 			else
 			{
+				painter.save();
 				painter.translate(worldToWindow(object->getPosition()));
 				painter.rotate(angle);
 				painter.scale(mZoom, mZoom);
 				painter.drawRect(0.0, 0.0, object->getSize().width(), object->getSize().height());
-				painter.resetTransform();
+				painter.restore();
 			}
 		}
 
 		// рисуем общий прямоугольник выделения
 		QRectF rect = worldRectToWindow(mSnappedRect);
-		painter.drawRect(rect.adjusted(0.5, 0.5, -0.5, -0.5));
+		painter.drawRect(rect.translated(0.5, 0.5));
 
 		// рисуем маркеры выделения
 		QPointF center(qFloor(rect.center().x()) + 0.5, qFloor(rect.center().y()) + 0.5);
@@ -679,11 +680,11 @@ void EditorWindow::paintEvent(QPaintEvent *event)
 		painter.setBrush(QBrush(QColor(0, 127, 255)));
 		drawSelectionMarker(rect.left() + 0.5, rect.top() + 0.5, painter);
 		drawSelectionMarker(rect.left() + 0.5, center.y(), painter);
-		drawSelectionMarker(rect.left() + 0.5, rect.bottom() - 0.5, painter);
-		drawSelectionMarker(center.x(), rect.bottom() - 0.5, painter);
-		drawSelectionMarker(rect.right() - 0.5, rect.bottom() - 0.5, painter);
-		drawSelectionMarker(rect.right() - 0.5, center.y(), painter);
-		drawSelectionMarker(rect.right() - 0.5, rect.top() + 0.5, painter);
+		drawSelectionMarker(rect.left() + 0.5, rect.bottom() + 0.5, painter);
+		drawSelectionMarker(center.x(), rect.bottom() + 0.5, painter);
+		drawSelectionMarker(rect.right() + 0.5, rect.bottom() + 0.5, painter);
+		drawSelectionMarker(rect.right() + 0.5, center.y(), painter);
+		drawSelectionMarker(rect.right() + 0.5, rect.top() + 0.5, painter);
 		drawSelectionMarker(center.x(), rect.top() + 0.5, painter);
 
 		// рисуем центр вращения
@@ -701,7 +702,7 @@ void EditorWindow::paintEvent(QPaintEvent *event)
 		QRectF rect = worldRectToWindow(mSelectionRect.normalized());
 		painter.setPen(QColor(0, 127, 255));
 		painter.setBrush(QBrush(QColor(0, 100, 255, 60)));
-		painter.drawRect(rect.adjusted(0.5, 0.5, -0.5, -0.5));
+		painter.drawRect(rect.translated(0.5, 0.5));
 	}
 
 	// рисуем направляющие
@@ -1801,6 +1802,29 @@ void EditorWindow::sortSelectedGameObjects()
 			mOriginalAngles.push_back(object->getRotationAngle());
 		}
 	}
+}
+
+bool EditorWindow::canDeleteSelectedObjects()
+{
+	if (!mSelectedObjects.empty() && !mUntitled)
+	{
+		// определяем имя файла имен
+		Project &project = Project::getSingleton();
+		QString scenesDir = project.getRootDirectory() + project.getScenesDirectory();
+		QString namesDir = project.getRootDirectory() + project.getNamesDirectory();
+		QString fileName = namesDir + mFileName.mid(scenesDir.size());
+
+		// выдаем предупреждение, если хотя бы один из выделенных объектов используется в файле имен
+		QList<GameObject *> usedObjects = mScene->findUsedGameObjects(fileName, mSelectedObjects);
+		if (!usedObjects.empty())
+		{
+			QMessageBox::warning(this, "", "Невозможно удалить выделенные объекты, поскольку объект с именем \""
+				+ usedObjects.front()->getName() + "\" используется в программе");
+			return false;
+		}
+	}
+
+	return true;
 }
 
 void EditorWindow::updateMouseCursor(const QPointF &pos)

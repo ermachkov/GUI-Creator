@@ -604,7 +604,7 @@ bool MainWindow::on_mTabWidget_tabCloseRequested(int index)
 		// сбрасываем текущую сцену
 		if (index == mTabWidget->currentIndex())
 		{
-			mLayersWindow->setCurrentScene(NULL);
+			mLayersWindow->setCurrentScene(NULL, "");
 			mPropertyWindow->onEditorWindowSelectionChanged(QList<GameObject *>(), QPointF());
 		}
 
@@ -646,7 +646,7 @@ void MainWindow::on_mTabWidget_currentChanged(int index)
 		updateUndoRedoActions();
 
 		// устанавливаем текущую сцену
-		mLayersWindow->setCurrentScene(editorWindow->getScene());
+		mLayersWindow->setCurrentScene(editorWindow->getScene(), !editorWindow->isUntitled() ? editorWindow->getFileName() : "");
 		mPropertyWindow->onEditorWindowSelectionChanged(editorWindow->getSelectedObjects(), editorWindow->getRotationCenter());
 		mHistoryWindow->setUndoStack(editorWindow->getUndoStack());
 	}
@@ -680,7 +680,7 @@ void MainWindow::on_mTabWidget_currentChanged(int index)
 		setWindowTitle(QCoreApplication::applicationName());
 
 		// сбрасываем текущую сцену
-		mLayersWindow->setCurrentScene(NULL);
+		mLayersWindow->setCurrentScene(NULL, "");
 		mPropertyWindow->onEditorWindowSelectionChanged(QList<GameObject *>(), QPointF());
 		mHistoryWindow->setUndoStack(NULL);
 	}
@@ -731,7 +731,7 @@ void MainWindow::onLanguageChanged(const QString &language)
 	EditorWindow *editorWindow = getCurrentEditorWindow();
 	if (editorWindow != NULL)
 	{
-		mLayersWindow->setCurrentScene(editorWindow->getScene());
+		mLayersWindow->setCurrentScene(editorWindow->getScene(), !editorWindow->isUntitled() ? editorWindow->getFileName() : "");
 		mPropertyWindow->onEditorWindowSelectionChanged(editorWindow->getSelectedObjects(), editorWindow->getRotationCenter());
 	}
 }
@@ -782,7 +782,7 @@ void MainWindow::onEditorWindowUndoCommandChanged()
 		editorWindow->loadTranslationFile(getTranslationFileName(editorWindow->getFileName()));
 
 	// обновляем окно слоев и главное меню
-	mLayersWindow->setCurrentScene(editorWindow->getScene());
+	mLayersWindow->setCurrentScene(editorWindow->getScene(), !editorWindow->isUntitled() ? editorWindow->getFileName() : "");
 	updateUndoRedoActions();
 }
 

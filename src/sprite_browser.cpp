@@ -264,8 +264,6 @@ void SpriteBrowser::update(QString oldPath, QString newPath)
 	// установка слежения за текущей директорией если она существует
 	if (QFile::exists(getRootPath() + mRelativePath))
 		mWatcher->addPath(getRootPath() + mRelativePath);
-	else
-		qWarning() << "Warning: Directory not added to Watcher" << getRootPath() + mRelativePath;
 
 	QDir currentDir = QDir(getRootPath() + mRelativePath);
 	// получение только директорий
@@ -311,6 +309,8 @@ void SpriteBrowser::update(QString oldPath, QString newPath)
 		// путь к каталогу изменился
 
 		// у всех в кеше снять измененность
+		// FIXME: А потом на хабре еще удивляются, а че ж форычи в Qt тормозят.. Почему элемент-итератор не ссылка???
+		// здесь на КАЖДОЙ итерации ПОЛНАЯ копия элемента создается вместе со всеми полями и иконками
 		foreach (IconWithInfo element, mThumbnailCache)
 			element.setChanged(false);
 

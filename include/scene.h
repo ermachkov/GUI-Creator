@@ -27,6 +27,9 @@ public:
 	// Загружает файл переводов
 	bool loadTranslationFile(const QString &fileName);
 
+	// Ищет объекты, используемые в файле имен
+	QList<GameObject *> findUsedGameObjects(const QString &fileName, const QList<GameObject *> &objects) const;
+
 	// Возвращает корневой слой
 	BaseLayer *getRootLayer() const;
 

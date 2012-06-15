@@ -118,6 +118,11 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
 	add_definitions("-Wall -Winvalid-pch")
 endif()
 
+# включаем поддержку C++11 в GCC
+if(CMAKE_COMPILER_IS_GNUCXX)
+	add_definitions("-std=c++11")
+endif()
+
 # определяем макрос для статической линковки FTGL
 if(MSVC)
 	add_definitions("/D FTGL_LIBRARY_STATIC")

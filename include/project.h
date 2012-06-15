@@ -34,6 +34,9 @@ public:
 	// Возвращает относительный путь к каталогу с переводами
 	QString getLocalizationDirectory() const;
 
+	// Возвращает относительный путь к каталогу с именами
+	QString getNamesDirectory() const;
+
 	// Возвращает относительный путь к каталогу со спрайтами
 	QString getSpritesDirectory() const;
 
@@ -67,6 +70,7 @@ private:
 	QString     mRootDirectory;         // Абсолютный путь к корневому каталогу проекта
 	QString     mScenesDirectory;       // Относительный путь к каталогу со сценами
 	QString     mLocalizationDirectory; // Относительный путь к каталогу с переводами
+	QString     mNamesDirectory;        // Относительный путь к каталогу с именами
 	QString     mSpritesDirectory;      // Относительный путь к каталогу со спрайтами
 	QString     mFontsDirectory;        // Относительный путь к каталогу со шрифтами
 

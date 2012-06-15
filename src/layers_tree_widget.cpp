@@ -4,6 +4,7 @@
 #include "game_object.h"
 #include "layer.h"
 #include "layer_group.h"
+#include "project.h"
 #include "scene.h"
 #include "utils.h"
 
@@ -56,10 +57,11 @@ LayersTreeWidget::~LayersTreeWidget()
 }
 
 
-void LayersTreeWidget::setCurrentScene(Scene *scene)
+void LayersTreeWidget::setCurrentScene(Scene *scene, const QString &fileName)
 {
 	// сохранение текущей сцены
 	mCurrentScene = scene;
+	mCurrentFileName = fileName;
 
 	// сохранение текущего слоя
 	BaseLayer *baseCurrent = mCurrentScene->getActiveLayer();
@@ -228,8 +230,12 @@ void LayersTreeWidget::onAddLayer()
 
 void LayersTreeWidget::onDelete()
 {
+	// проверяем, можно ли удалить выделенные слои
+	if (!canDeleteSelectedLayers())
+		return;
+
 	// окно с подтверждением удаления
-	int ret = QMessageBox::warning(this, "", "Удалить слой?", QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+	int ret = QMessageBox::warning(this, "", "Удалить выделенные слои?", QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
 
 	if (ret == QMessageBox::Yes)
 	{
@@ -845,7 +851,6 @@ void LayersTreeWidget::createTreeItems(QTreeWidgetItem *item, BaseLayer *base)
 
 		createTreeItems(currentItem, currentBase);
 	}
-
 }
 
 QString LayersTreeWidget::generateCopyName(const QString &name)
@@ -894,6 +899,39 @@ void LayersTreeWidget::adjustObjectNamesAndIds(BaseLayer *baseLayer)
 			adjustObjectNamesAndIds(childBaseLayer);
 		}
 	}
+}
+
+bool LayersTreeWidget::canDeleteSelectedLayers()
+{
+	// безымянный файл - удалять слои можно всегда
+	if (mCurrentFileName.isEmpty())
+		return true;
+
+	// получаем список всех игровых объектов в выделенных слоях и их потомках
+	QList<GameObject *> objects;
+	foreach (QTreeWidgetItem *item, selectedItems())
+		objects.append(getBaseLayer(item)->getGameObjects());
+
+	// проверяем, можно ли удалить выделенные слои
+	if (!objects.empty())
+	{
+		// определяем имя файла имен
+		Project &project = Project::getSingleton();
+		QString scenesDir = project.getRootDirectory() + project.getScenesDirectory();
+		QString namesDir = project.getRootDirectory() + project.getNamesDirectory();
+		QString fileName = namesDir + mCurrentFileName.mid(scenesDir.size());
+
+		// выдаем предупреждение, если хотя бы один из объектов используется в файле имен
+		QList<GameObject *> usedObjects = mCurrentScene->findUsedGameObjects(fileName, objects);
+		if (!usedObjects.empty())
+		{
+			QMessageBox::warning(this, "", "Невозможно удалить выделенные слои, поскольку объект с именем \""
+				+ usedObjects.front()->getName() + "\" используется в программе");
+			return false;
+		}
+	}
+
+	return true;
 }
 
 QTreeWidgetItem *LayersTreeWidget::findItemByBaseLayer(BaseLayer *layer, QTreeWidgetItem *item) const

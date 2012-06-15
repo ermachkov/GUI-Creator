@@ -8,6 +8,7 @@ return
 	-- Paths to resource directories relative to the project root directory
 	scenesDirectory = "scenes/",
 	localizationDirectory = "l10n/",
+	namesDirectory = "names/",
 	spritesDirectory = "sprites/",
 	fontsDirectory = "fonts/",
 

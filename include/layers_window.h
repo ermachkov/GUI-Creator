@@ -17,7 +17,7 @@ public:
 	LayersWindow(QGLWidget *primaryGLWidget, QWidget *parent = NULL);
 
 	// Устанавливает текущую сцену
-	void setCurrentScene(Scene *scene);
+	void setCurrentScene(Scene *scene, const QString &fileName);
 
 signals:
 

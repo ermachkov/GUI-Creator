@@ -20,9 +20,6 @@ public:
 	// Деструктор
 	virtual ~Layer();
 
-	// Возвращает список игровых объектов
-	QList<GameObject *> getGameObjects() const;
-
 	// Возвращает количество игровых объектов в слое
 	int getNumGameObjects() const;
 
@@ -52,6 +49,9 @@ public:
 
 	// Возвращает ограничивающий прямоугольник слоя
 	virtual QRectF getBoundingRect() const;
+
+	// Возвращает список всех игровых объектов
+	virtual QList<GameObject *> getGameObjects() const;
 
 	// Ищет все активные игровые объекты
 	virtual QList<GameObject *> findActiveGameObjects() const;

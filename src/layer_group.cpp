@@ -150,6 +150,15 @@ QRectF LayerGroup::getBoundingRect() const
 	return rect;
 }
 
+QList<GameObject *> LayerGroup::getGameObjects() const
+{
+	// получаем список объектов в дочерних слоях от верхнего к нижнему
+	QList<GameObject *> objects;
+	foreach (BaseLayer *layer, mChildLayers)
+		objects.append(layer->getGameObjects());
+	return objects;
+}
+
 QList<GameObject *> LayerGroup::findActiveGameObjects() const
 {
 	// получаем список объектов в дочерних слоях от верхнего к нижнему, если группа слоев видима и не заблокирована

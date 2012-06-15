@@ -236,6 +236,9 @@ private:
 	// Сортирует выделенные игровые объекты по глубине
 	void sortSelectedGameObjects();
 
+	// Проверяет, можно ли удалить выделенные игровые объекты
+	bool canDeleteSelectedObjects();
+
 	// Обновляет курсор мыши
 	void updateMouseCursor(const QPointF &pos);
 

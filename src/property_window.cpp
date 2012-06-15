@@ -725,10 +725,6 @@ void PropertyWindow::updateWidgetsVisibleAndEnabled()
 					// - fileName(Label), fontSize
 					setGridLayoutRowsEnabled(mScrollAreaLayout, 12, 2, true);
 				}
-				else
-				{
-					qWarning() << "Error can't find type of object";
-				}
 			}
 			else
 			{
@@ -795,10 +791,6 @@ void PropertyWindow::updateWidgetsVisibleAndEnabled()
 		// установка видимости свойтвам надписи
 		setGridLayoutRowsVisible(mScrollAreaLayout, 11, 8, true);
 		updateLabelWidgets();
-	}
-	else
-	{
-		qWarning() << "Error can't find type of object";
 	}
 }
 

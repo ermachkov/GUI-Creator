@@ -27,7 +27,7 @@ public:
 	virtual ~LayersTreeWidget();
 
 	// пересоздание содержимого окна слоев
-	void setCurrentScene(Scene *scene);
+	void setCurrentScene(Scene *scene, const QString &fileName);
 
 	Scene *getCurrentScene() const;
 
@@ -131,6 +131,9 @@ private:
 	// генерация новых id и objectName для созданных копий объектов
 	void adjustObjectNamesAndIds(BaseLayer *baseLayer);
 
+	// Проверяет, можно ли удалить выделенные слои
+	bool canDeleteSelectedLayers();
+
 	// поиск GUI слоя по BaseLayer * слоя
 	QTreeWidgetItem *findItemByBaseLayer(BaseLayer *layer, QTreeWidgetItem *item = NULL) const;
 
@@ -172,6 +175,7 @@ private:
 	QIcon                  mLayerLockedIcons[3];  // иконки для блокировки слоя
 
 	Scene                 *mCurrentScene;         // указатель на текущую сцену
+	QString               mCurrentFileName;       // Имя файла текущей сцены
 
 	QGLWidget             *mPrimaryGLWidget;      // указатель на OpenGL виджет
 	QGLFramebufferObject  *mFrameBuffer;          // фреймбуфер для отрисовки иконки предпросмотра спрайта

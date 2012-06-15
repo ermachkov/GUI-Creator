@@ -32,6 +32,7 @@ void Project::close()
 	mRootDirectory = Utils::addTrailingSlash(QDir::currentPath());
 	mScenesDirectory = "scenes/";
 	mLocalizationDirectory = "l10n/";
+	mNamesDirectory = "names/";
 	mSpritesDirectory = "sprites/";
 	mFontsDirectory = "fonts/";
 
@@ -63,6 +64,11 @@ QString Project::getScenesDirectory() const
 QString Project::getLocalizationDirectory() const
 {
 	return mLocalizationDirectory;
+}
+
+QString Project::getNamesDirectory() const
+{
+	return mNamesDirectory;
 }
 
 QString Project::getSpritesDirectory() const
@@ -115,10 +121,12 @@ bool Project::loadProjectFile(const QString &fileName)
 
 	// загружаем относительные пути к ресурсным каталогам
 	if (!script.getString("scenesDirectory", mScenesDirectory) || !script.getString("localizationDirectory", mLocalizationDirectory)
-		|| !script.getString("spritesDirectory", mSpritesDirectory) || !script.getString("fontsDirectory", mFontsDirectory))
+		|| !script.getString("namesDirectory", mNamesDirectory) || !script.getString("spritesDirectory", mSpritesDirectory)
+		|| !script.getString("fontsDirectory", mFontsDirectory))
 		return false;
 	mScenesDirectory = Utils::addTrailingSlash(mScenesDirectory);
 	mLocalizationDirectory = Utils::addTrailingSlash(mLocalizationDirectory);
+	mNamesDirectory = Utils::addTrailingSlash(mNamesDirectory);
 	mSpritesDirectory = Utils::addTrailingSlash(mSpritesDirectory);
 	mFontsDirectory = Utils::addTrailingSlash(mFontsDirectory);
 
@@ -185,6 +193,7 @@ bool Project::saveProjectFile(const QString &fileName)
 	stream << "\t-- Paths to resource directories relative to the project root directory" << endl;
 	stream << "\tscenesDirectory = " << Utils::quotify(mScenesDirectory) << "," << endl;
 	stream << "\tlocalizationDirectory = " << Utils::quotify(mLocalizationDirectory) << "," << endl;
+	stream << "\tnamesDirectory = " << Utils::quotify(mNamesDirectory) << "," << endl;
 	stream << "\tspritesDirectory = " << Utils::quotify(mSpritesDirectory) << "," << endl;
 	stream << "\tfontsDirectory = " << Utils::quotify(mFontsDirectory) << "," << endl;
 

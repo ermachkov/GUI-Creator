@@ -27,7 +27,7 @@ LayersWindow::LayersWindow(QGLWidget *primaryGLWidget, QWidget *parent)
 	mLayersTreeWidget->setPrimaryGLWidget(primaryGLWidget);
 }
 
-void LayersWindow::setCurrentScene(Scene *scene)
+void LayersWindow::setCurrentScene(Scene *scene, const QString &fileName)
 {
 	bool enabled = scene != NULL;
 
@@ -41,7 +41,7 @@ void LayersWindow::setCurrentScene(Scene *scene)
 	if (enabled)
 	{
 		// перенаправление обработки в метод виджета
-		mLayersTreeWidget->setCurrentScene(scene);
+		mLayersTreeWidget->setCurrentScene(scene, fileName);
 
 		// блокировка кнопки удаления если один слой или одна активная папка
 		setDeleteButtonState();

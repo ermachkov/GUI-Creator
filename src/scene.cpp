@@ -185,6 +185,26 @@ bool Scene::loadTranslationFile(const QString &fileName)
 	return true;
 }
 
+QList<GameObject *> Scene::findUsedGameObjects(const QString &fileName, const QList<GameObject *> &objects) const
+{
+	// загружаем Lua скрипт и проверяем, что он вернул корневую таблицу
+	LuaScript script;
+	if (!script.load(fileName, 1) || !script.pushTable())
+		return QList<GameObject *>();
+
+	// ищем объекты, используемые в файле имен
+	QList<GameObject *> usedObjects;
+	QString name;
+	foreach (GameObject *object, objects)
+		if (script.getString(object->getObjectID(), name))
+			usedObjects.push_back(object);
+
+	// извлекаем из стека корневую таблицу
+	script.popTable();
+
+	return usedObjects;
+}
+
 BaseLayer *Scene::getRootLayer() const
 {
 	return mRootLayer;

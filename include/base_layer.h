@@ -116,6 +116,9 @@ public:
 	// Возвращает ограничивающий прямоугольник слоя
 	virtual QRectF getBoundingRect() const = 0;
 
+	// Возвращает список всех игровых объектов
+	virtual QList<GameObject *> getGameObjects() const = 0;
+
 	// Ищет все активные игровые объекты
 	virtual QList<GameObject *> findActiveGameObjects() const = 0;
 

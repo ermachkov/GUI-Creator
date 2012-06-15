@@ -28,11 +28,6 @@ Layer::~Layer()
 		delete mGameObjects.front();
 }
 
-QList<GameObject *> Layer::getGameObjects() const
-{
-	return mGameObjects;
-}
-
 int Layer::getNumGameObjects() const
 {
 	return mGameObjects.size();
@@ -198,6 +193,11 @@ QRectF Layer::getBoundingRect() const
 	foreach (GameObject *object, mGameObjects)
 		rect |= object->getBoundingRect();
 	return rect;
+}
+
+QList<GameObject *> Layer::getGameObjects() const
+{
+	return mGameObjects;
 }
 
 QList<GameObject *> Layer::findActiveGameObjects() const
